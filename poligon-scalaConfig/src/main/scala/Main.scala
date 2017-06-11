@@ -1,12 +1,18 @@
 import java.nio.charset.Charset
-import java.util
 
 import MyMacros._
-import com.avsystem.commons.SharedExtensions._
+import com.avsystem.commons.concurrent.RunNowEC
+
+import scala.concurrent.ExecutionContext
+
+class ScalaNormalClass(val arg1: String, arg2: Int)(implicit ec: ExecutionContext)
 
 object Main {
+
+  final val s = "constant!! "
+
   def main(args: Array[String]): Unit = {
-    val s = new String(Array(1.toChar,1.toChar,2.toChar).asInstanceOf[Array[Byte]], 10, 12, Charset.defaultCharset()).toHoconConfig
-    println(s)
+    println(new ScalaNormalClass("normal \" \\\" class \n", 23)(RunNowEC).toHoconConfig)
+    println(new JavaClass(s).toHoconConfig)
   }
 }

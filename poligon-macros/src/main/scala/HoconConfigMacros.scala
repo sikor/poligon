@@ -17,22 +17,18 @@ class HoconConfigMacros(val c: blackbox.Context) {
   def toHoconConfig[T: c.WeakTypeTag]: Tree = {
     val q"$_(new $classIdent(...$args))" = c.prefix.tree
     val clsName = classIdent.symbol.fullName
-    val a = args.asInstanceOf[List[List[Tree]]]
-    val tpeOfClass = weakTypeOf[T]
-    val constructorArgsTpes = (a.map(_.map(t => t.tpe)) match {
-      case Nil => List(List())
-      case other => other
-    }).flatten
-    val mem = tpeOfClass.members.filter(_.isConstructor).map(paramsTypes).mkString(", ")
-    val constructor = tpeOfClass.members.filter(member => member.isConstructor && paramsTypes(member).size == constructorArgsTpes.size && paramsTypes(member).zip(constructorArgsTpes).forall {
-      case (t1, t2) => t2.erasure.<:<(t1.erasure)
-    }).mkString("constructor: ", ", ", s" arg tpes: $constructorArgsTpes, constructors: $mem")
+    val a = args.asInstanceOf[List[List[Tree]]].flatten
+    val constructor = getConstructor(a)
+    val constructorArgsNames = constructor.paramLists.flatten.map(p => p.asTerm.name)
+    val constructorMap = constructorArgsNames.zip(a.map(getArgValue)).map {
+      case (name, value) => s"$name = $value"
+    }.mkString("\n")
     val beanDef =
       s"""
          |{
          |  %class = $clsName
          |  %constructor-args = {
-         |    $constructor
+         |    $constructorMap
          |  }
          |}
        """.stripMargin
@@ -42,12 +38,20 @@ class HoconConfigMacros(val c: blackbox.Context) {
 
   }
 
-  private def getConstructor[T: c.WeakTypeTag](a: List[List[Tree]]): MethodSymbol = {
+  private def getArgValue(arg: Tree): String = {
+    val t = arg.tpe
+    arg match {
+      case l: Literal => l.value.value match {
+        case s: String => s""""${s.replaceAllLiterally("\\", "\\\\").replaceAllLiterally("\n", "\\n").replaceAllLiterally("\"", "\\\"")}""""
+        case other => other.toString
+      }
+      case _ => s"${arg.toString()}, ${showRaw(arg)}"
+    }
+  }
+
+  private def getConstructor[T: c.WeakTypeTag](a: List[Tree]): MethodSymbol = {
     val tpeOfClass = weakTypeOf[T]
-    val constructorArgsTpes = (a.map(_.map(t => t.tpe)) match {
-      case Nil => List(List())
-      case other => other
-    }).flatten
+    val constructorArgsTpes = a.map(_.tpe)
     tpeOfClass.members.find { member =>
       if (member.isConstructor) {
         val params = paramsTypes(member)
