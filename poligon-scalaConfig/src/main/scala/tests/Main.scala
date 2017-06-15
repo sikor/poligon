@@ -19,22 +19,27 @@ trait PartialConfig {
 trait DefaultConfig {
   this: PartialConfig =>
 
-  def foo = new ScalaNormalClass("arg1", 2)(RunNowEC).toHoconConfig
+  def foo = new ScalaNormalClass("arg1", 2)(RunNowEC).toBeanDef
 
-  def bar = new MainClass(foo.ref, par.ref).toHoconConfig
+  def bar = new MainClass(foo.ref, par.ref).toBeanDef
 }
 
 object CustomConfig extends DefaultConfig with PartialConfig {
-  def par = new ScalaNormalClass("pardef", 3)(RunNowEC).toHoconConfig
+  def par = new ScalaNormalClass("pardef", 3)(RunNowEC).toBeanDef
 }
+
+class HasListArg(names: List[String])
+
 
 object Main {
 
   final val s = "constant!! "
+  final val map = Map(1 -> "String")
 
   def main(args: Array[String]): Unit = {
-    println(new ScalaNormalClass("normal \" \\\" class \n", 23)(RunNowEC).toHoconConfig)
-    println(new JavaClass(s).toHoconConfig)
+    println(new ScalaNormalClass("normal \" \\\" class \n", 23)(RunNowEC).toBeanDef)
+    println(new JavaClass(s).toBeanDef)
     println(CustomConfig.bar)
+    println(new HasListArg(List("pawel", "asia")).toBeanDef)
   }
 }

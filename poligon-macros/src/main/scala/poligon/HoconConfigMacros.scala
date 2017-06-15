@@ -7,22 +7,37 @@ import scala.reflect.macros.blackbox
 object MyMacros {
 
   implicit final class ObjectOps[T](t: T) {
-    def toHoconConfig: BeanDef[T] = macro HoconConfigMacros.toHoconConfig[T]
+    def toBeanDef: BeanDef[T] = macro HoconConfigMacros.toBeanDef[T]
+  }
+
+  implicit final class ListOps[T](t: List[T]) {
+    @compileTimeOnly("as method can be used only as constructor or setter argument in BeadDef")
+    def as[I[_] <: TraversableOnce[_]]: I[T] = throw new NotImplementedError()
   }
 
 }
 
-case class BeanDef[T](hocon: String) {
+class BeanDef[T](hocon: String) {
   @compileTimeOnly("ref method can be used only as constructor or setter argument in BeanDef.")
   def ref: T = throw new NotImplementedError()
+
+  override def toString: String = hocon
 }
 
 class HoconConfigMacros(val c: blackbox.Context) {
 
   import c.universe._
 
+  val ThisPkg = q"_root_.poligon"
+  val BeanDefCls = tq"$ThisPkg.BeanDef"
 
-  def toHoconConfig[T: c.WeakTypeTag]: Tree = {
+  val ScalaPkg = q"_root_.scala"
+  val CollectionPkg = q"$ScalaPkg.collection"
+  val ListObj = q"$CollectionPkg.immutable.List"
+  val ListCls = tq"$CollectionPkg.immutable.List"
+
+
+  def toBeanDef[T: c.WeakTypeTag]: Tree = {
     val q"$_(new $classIdent(...$args))" = c.prefix.tree
     val clsName = classIdent.symbol.fullName
     val a = args.asInstanceOf[List[List[Tree]]].flatten
@@ -41,9 +56,8 @@ class HoconConfigMacros(val c: blackbox.Context) {
          |}
        """.stripMargin
     q"""
-       _root_.poligon.BeanDef($beanDef)
+       new $BeanDefCls($beanDef)
          """
-
   }
 
   private def getArgValue(arg: Tree): String = {
@@ -53,6 +67,7 @@ class HoconConfigMacros(val c: blackbox.Context) {
         case other => other.toString
       }
       case q"""$_.this.$refName.ref""" => s"{%ref = $refName}"
+      case q"""scala.collection.immutable.List.apply[$_](..$items)""" => s"[${items.map(getArgValue).mkString(", ")}]"
       case _ => s"${arg.toString()}, ${showRaw(arg)}"
     }
   }
