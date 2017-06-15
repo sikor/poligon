@@ -1,4 +1,4 @@
-
+package somePackage;
 
 public class JavaClass {
     private final String onlyArg;

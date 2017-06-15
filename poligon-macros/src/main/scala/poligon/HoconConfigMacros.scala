@@ -1,12 +1,20 @@
+package poligon
+
+import scala.annotation.compileTimeOnly
 import scala.reflect.macros.blackbox
 
 
 object MyMacros {
 
   implicit final class ObjectOps[T](t: T) {
-    def toHoconConfig: String = macro HoconConfigMacros.toHoconConfig[T]
+    def toHoconConfig: BeanDef[T] = macro HoconConfigMacros.toHoconConfig[T]
   }
 
+}
+
+case class BeanDef[T](hocon: String) {
+  @compileTimeOnly("ref method can be used only as constructor or setter argument in BeanDef.")
+  def ref: T = throw new NotImplementedError()
 }
 
 class HoconConfigMacros(val c: blackbox.Context) {
@@ -33,18 +41,18 @@ class HoconConfigMacros(val c: blackbox.Context) {
          |}
        """.stripMargin
     q"""
-       $beanDef
+       _root_.poligon.BeanDef($beanDef)
          """
 
   }
 
   private def getArgValue(arg: Tree): String = {
-    val t = arg.tpe
     arg match {
       case l: Literal => l.value.value match {
         case s: String => s""""${s.replaceAllLiterally("\\", "\\\\").replaceAllLiterally("\n", "\\n").replaceAllLiterally("\"", "\\\"")}""""
         case other => other.toString
       }
+      case q"""$_.this.$refName.ref""" => s"{%ref = $refName}"
       case _ => s"${arg.toString()}, ${showRaw(arg)}"
     }
   }
