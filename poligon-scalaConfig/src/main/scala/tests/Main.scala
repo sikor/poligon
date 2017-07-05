@@ -1,11 +1,13 @@
 package tests
 
 import com.avsystem.commons.concurrent.RunNowEC
-import poligon.BeanDef
+import poligon.{BeanDef, HoconList, ListDef}
 import poligon.MyMacros._
 import somePackage.JavaClass
 
 import scala.concurrent.ExecutionContext
+
+class TakesList(val vec: Vector[Int])
 
 class ScalaNormalClass(val arg1: String, arg2: Int)(implicit ec: ExecutionContext)
 
@@ -26,6 +28,8 @@ trait DefaultConfig {
 
 object CustomConfig extends DefaultConfig with PartialConfig {
   def par = new ScalaNormalClass("pardef", 3)(RunNowEC).toBeanDef
+
+  def some(arg: HoconList[Int]) = new TakesList(ListDef.empty[Int].amend(arg).as[Vector]).toBeanDef
 }
 
 class HasListArg(names: List[String])
@@ -41,5 +45,16 @@ object Main {
     println(new JavaClass(s).toBeanDef)
     println(CustomConfig.bar)
     println(new HasListArg(List("pawel", "asia")).toBeanDef)
+    println(CustomConfig.some(ListDef.empty))
   }
 }
+
+/**
+  * hocon functionality
+  * * append to list/map, override key in map
+  * * reference any existing nested value in config, by constructor argument - copy method, by getters and setters
+  * * modify existing field in the bean, using existing value, for example append to list/string
+  * * prototyping like hocon? - needs referencing, copying instead of overriding beans, special case for changing class
+  * factory beans/methods
+  * default arguments
+  **/
