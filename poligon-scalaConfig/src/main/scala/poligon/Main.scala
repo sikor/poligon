@@ -1,7 +1,6 @@
-package tests
+package poligon
 
 import com.avsystem.commons.concurrent.RunNowEC
-import poligon.{BeanDef, HoconList, ListDef}
 import poligon.MyMacros._
 import somePackage.JavaClass
 

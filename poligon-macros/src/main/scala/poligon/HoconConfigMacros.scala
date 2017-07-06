@@ -74,7 +74,9 @@ class HoconConfigMacros(val c: blackbox.Context) {
     val constructor = getConstructor(a)
     val constructorArgsNames = constructor.paramLists.flatten.map(p => p.asTerm.name)
     val constructorMap = joinStringTrees(constructorArgsNames.zip(a.map(getArgValue)).map {
-      case (name, value) => trees"$name = $value\n"
+      case (name, value) =>
+        trees"""$name = $value
+             """
     })
     val beanDef =
       trees"""
@@ -94,12 +96,15 @@ class HoconConfigMacros(val c: blackbox.Context) {
     arg match {
       case l: Literal => l.value.value match {
         case s: String =>
-          val str = s.replaceAllLiterally("\\", "\\\\").replaceAllLiterally("\n", "\\n").replaceAllLiterally("\"", "\\\"")
+          val str = "\"" + s.replaceAllLiterally("\\", "\\\\").replaceAllLiterally("\n", "\\n").replaceAllLiterally("\"", "\\\"") + "\""
           q"""$str"""
         case other => q"${other.toString}"
       }
       case q"""$_.this.$refName.ref""" => q"""${s"{%ref = $refName}"}"""
-      case q"""scala.collection.immutable.List.apply[$_](..$items)""" => q"""${s"[${items.map(getArgValue).mkString(", ")}]"}"""
+      case q"""scala.collection.immutable.List.apply[$_](..$items)""" =>
+        val argsTrees = items.map(getArgValue)
+        val list = s"[${argsTrees.mkString(", ")}]"
+        q"$list"
       case q"""$listDef.as[$_]""" => q"$listDef.toHocon"
       case _ => q"""${s"${arg.toString()}, ${showRaw(arg)}"}"""
     }
