@@ -28,7 +28,7 @@ trait DefaultConfig {
 object CustomConfig extends DefaultConfig with PartialConfig {
   def par = new ScalaNormalClass("pardef", 3)(RunNowEC).toBeanDef
 
-  def some(arg: HoconList[Int]) = new TakesList(ListDef.empty[Int].amend(arg).as[Vector]).toBeanDef
+  def some(arg: HoconList[Int]) = new TakesList(List(1, 2).toListDef.amend(arg).as[Vector]).toBeanDef
 }
 
 class HasListArg(names: List[String])
@@ -44,7 +44,7 @@ object Main {
     println(new JavaClass(s).toBeanDef)
     println(CustomConfig.bar)
     println(new HasListArg(List("pawel", "asia")).toBeanDef)
-    println(CustomConfig.some(ListDef.empty))
+    println(CustomConfig.some(List(1, 2, 3).toListDef))
   }
 }
 
