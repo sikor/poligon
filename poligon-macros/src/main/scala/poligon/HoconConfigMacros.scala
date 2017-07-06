@@ -97,14 +97,13 @@ class HoconConfigMacros(val c: blackbox.Context) {
       case l: Literal => l.value.value match {
         case s: String =>
           val str = "\"" + s.replaceAllLiterally("\\", "\\\\").replaceAllLiterally("\n", "\\n").replaceAllLiterally("\"", "\\\"") + "\""
-          q"""$str"""
+          q"$str"
         case other => q"${other.toString}"
       }
       case q"""$_.this.$refName.ref""" => q"""${s"{%ref = $refName}"}"""
       case q"""scala.collection.immutable.List.apply[$_](..$items)""" =>
         val argsTrees = items.map(getArgValue)
-        val list = s"[${argsTrees.mkString(", ")}]"
-        q"$list"
+        joinStringTressToHoconList(argsTrees)
       case q"""$listDef.as[$_]""" => q"$listDef.toHocon"
       case _ => q"""${s"${arg.toString()}, ${showRaw(arg)}"}"""
     }
@@ -131,6 +130,10 @@ class HoconConfigMacros(val c: blackbox.Context) {
 
   def joinStringTrees(trees: List[Tree]): Tree = {
     q"""List[String](..$trees).mkString"""
+  }
+
+  def joinStringTressToHoconList(trees: List[Tree]): Tree = {
+    q"""List[String](..$trees).mkString("[", ", ", "]")"""
   }
 
   implicit class TreeList(val sc: StringContext) {
