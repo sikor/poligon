@@ -12,6 +12,7 @@ object MyMacros {
 
   implicit final class ListOps[T](t: List[T]) {
     def toListDef: ListDef[T] = macro HoconConfigMacros.toListDef[T]
+    def toAppendDef: AppendDef[T] = macro HoconConfigMacros.toAppendDef[T]
   }
 
 }
@@ -53,6 +54,7 @@ class HoconConfigMacros(val c: blackbox.Context) {
   val ThisPkg = q"_root_.poligon"
   val BeanDefCls = tq"$ThisPkg.BeanDef"
   val ListDefCls = tq"$ThisPkg.ListDef"
+  val AppendDefCls = tq"$ThisPkg.AppendDef"
 
   val ScalaPkg = q"_root_.scala"
   val CollectionPkg = q"$ScalaPkg.collection"
@@ -61,9 +63,17 @@ class HoconConfigMacros(val c: blackbox.Context) {
 
   def toListDef[T: c.WeakTypeTag]: Tree = {
     val q"""$_(scala.collection.immutable.List.apply[$_](..$items))""" = c.prefix.tree
-    val hoconItems = items.map(getArgValue)
+    val hoconItems = items.asInstanceOf[List[Tree]].map(getArgValue)
     q"""
-      new ListDef(..$hoconItems)
+      new $ListDefCls(..$hoconItems)
+     """
+  }
+
+  def toAppendDef[T: c.WeakTypeTag]: Tree = {
+    val q"""$_(scala.collection.immutable.List.apply[$_](..$items))""" = c.prefix.tree
+    val hoconItems = items.asInstanceOf[List[Tree]].map(getArgValue)
+    q"""
+      new $AppendDefCls(..$hoconItems)
      """
   }
 
@@ -102,7 +112,7 @@ class HoconConfigMacros(val c: blackbox.Context) {
       }
       case q"""$_.this.$refName.ref""" => q"""${s"{%ref = $refName}"}"""
       case q"""scala.collection.immutable.List.apply[$_](..$items)""" =>
-        val argsTrees = items.map(getArgValue)
+        val argsTrees = items.asInstanceOf[List[Tree]].map(getArgValue)
         joinStringTressToHoconList(argsTrees)
       case q"""$listDef.as[$_]""" => q"$listDef.toHocon"
       case _ => q"""${s"${arg.toString()}, ${showRaw(arg)}"}"""

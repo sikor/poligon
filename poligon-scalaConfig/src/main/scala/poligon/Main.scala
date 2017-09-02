@@ -44,7 +44,7 @@ object Main {
     println(new JavaClass(s).toBeanDef)
     println(CustomConfig.bar)
     println(new HasListArg(List("pawel", "asia")).toBeanDef)
-    println(CustomConfig.some(List(1, 2, 3).toListDef))
+    println(CustomConfig.some(List(1, 2, 3).toAppendDef))
   }
 }
 
