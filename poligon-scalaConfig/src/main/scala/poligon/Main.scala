@@ -2,7 +2,6 @@ package poligon
 
 import com.avsystem.commons.concurrent.RunNowEC
 import poligon.MyMacros._
-import somePackage.JavaClass
 
 import scala.concurrent.ExecutionContext
 
@@ -26,9 +25,11 @@ trait DefaultConfig {
 }
 
 object CustomConfig extends DefaultConfig with PartialConfig {
-  def par = new ScalaNormalClass("pardef", 3)(RunNowEC).toBeanDef
+  def par: BeanDef[ScalaNormalClass] = new ScalaNormalClass("pardef", 3)(RunNowEC).toBeanDef
 
-  def some(arg: HoconList[Int]) = new TakesList(List(1, 2).toListDef.amend(arg).as[Vector]).toBeanDef
+  def some(arg: HoconList[Int]): BeanDef[TakesList] = new TakesList(List(1, 2).toListDef.amend(arg).as[Vector]).toBeanDef
+
+  def some: BeanDef[TakesList] = some(AppendDef.empty)
 }
 
 class HasListArg(names: List[String])
@@ -40,20 +41,27 @@ object Main {
   final val map = Map(1 -> "String")
 
   def main(args: Array[String]): Unit = {
-    println(new ScalaNormalClass("normal \" \\\" class \n", 23)(RunNowEC).toBeanDef)
-    println(new JavaClass(s).toBeanDef)
-    println(CustomConfig.bar)
-    println(new HasListArg(List("pawel", "asia")).toBeanDef)
-    println(CustomConfig.some(List(1, 2, 3).toAppendDef))
+//    println(new ScalaNormalClass("normal \" \\\" class \n", 23)(RunNowEC).toBeanDef)
+//    println(new JavaClass(s).toBeanDef)
+//    println(CustomConfig.bar)
+//    println(new HasListArg(List("pawel", "asia")).toBeanDef)
+//    println(CustomConfig.some(List(1, 2, 3).toAppendDef))
+    println(MyMacros.toHoconConfig(CustomConfig))
   }
 }
 
 /**
   * hocon functionality
-  * * append to list/map, override key in map
+  * * append to list/map, override key in map (in hocon you can copy existing bean def and change it or change the argument in exisiting bean)
+  *   Copying existing bean by calling constructor method and with correct arguments so you get bean def.
+  *   Split: abstract bean and concrete bean, for each bean that can be modificable you have to create abstract bean with method arguments and use it to create concrete bean.
+  *   You can override default concrete bean using method overriding. Only methods without arguments (even no empty arguments list?) are used as concret beans and are listed in final configuration.
+  *   (Perhaps abstract beans without argument should be denoted as empty arguments list or separate bean type)
   * * reference any existing nested value in config, by constructor argument - copy method, by getters and setters
   * * modify existing field in the bean, using existing value, for example append to list/string
   * * prototyping like hocon? - needs referencing, copying instead of overriding beans, special case for changing class
-  * factory beans/methods
+  * factory beans/methods (for scala singleton beans methods and classic java factory beans with arguments)
   * default arguments
+  * Singleton objects refs
+  * handling setters
   **/

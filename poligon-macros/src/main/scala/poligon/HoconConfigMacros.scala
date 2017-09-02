@@ -1,5 +1,7 @@
 package poligon
 
+import com.avsystem.commons.misc.Opt
+
 import scala.annotation.compileTimeOnly
 import scala.reflect.macros.blackbox
 
@@ -12,12 +14,15 @@ object MyMacros {
 
   implicit final class ListOps[T](t: List[T]) {
     def toListDef: ListDef[T] = macro HoconConfigMacros.toListDef[T]
+
     def toAppendDef: AppendDef[T] = macro HoconConfigMacros.toAppendDef[T]
   }
 
+  def toHoconConfig[T](holder: T): String = macro HoconConfigMacros.toHoconConfig[T]
+
 }
 
-class BeanDef[T](hocon: String) {
+class BeanDef[T](val hocon: String) {
   @compileTimeOnly("ref method can be used only as constructor or setter argument in BeanDef.")
   def ref: T = throw new NotImplementedError()
 
@@ -41,15 +46,24 @@ class ListDef[T](val items: String*) extends HoconList[T] {
   }
 }
 
+
 object ListDef {
   def empty[T] = new ListDef[T]()
 }
 
 class AppendDef[T](val items: String*) extends HoconList[T]
 
+
+object AppendDef {
+  def empty[T] = new AppendDef[T]()
+}
+
 class HoconConfigMacros(val c: blackbox.Context) {
 
   import c.universe._
+
+  val NewLineStringTree: Tree = reify("\n").tree
+  val EmptyStringTree: Tree = reify("").tree
 
   val ThisPkg = q"_root_.poligon"
   val BeanDefCls = tq"$ThisPkg.BeanDef"
@@ -60,6 +74,32 @@ class HoconConfigMacros(val c: blackbox.Context) {
   val CollectionPkg = q"$ScalaPkg.collection"
   val ListObj = q"$CollectionPkg.immutable.List"
   val ListCls = tq"$CollectionPkg.immutable.List"
+
+  class BeanDefSignature {
+    def unapply(s: Symbol): Opt[MethodSymbol] = {
+      if (s.isMethod) {
+        val methodSymbol = s.asMethod
+        if (methodSymbol.typeSignature.paramLists.isEmpty && methodSymbol.returnType <:< typeOf[BeanDef[_]]) {
+          Opt(methodSymbol)
+        } else {
+          Opt.Empty
+        }
+      } else {
+        Opt.Empty
+      }
+    }
+  }
+
+  def toHoconConfig[T: c.WeakTypeTag](holder: Tree): Tree = {
+    val tpeOfClass = weakTypeOf[T]
+    val beanDefSignature = new BeanDefSignature
+    val beans = tpeOfClass.members.collect {
+      case beanDefSignature(m) =>
+        q""" ${s"${m.name} = "} + $holder.${m.name}.hocon"""
+    }.toList
+
+    joinStringTrees(beans, NewLineStringTree)
+  }
 
   def toListDef[T: c.WeakTypeTag]: Tree = {
     val q"""$_(scala.collection.immutable.List.apply[$_](..$items))""" = c.prefix.tree
@@ -85,18 +125,15 @@ class HoconConfigMacros(val c: blackbox.Context) {
     val constructorArgsNames = constructor.paramLists.flatten.map(p => p.asTerm.name)
     val constructorMap = joinStringTrees(constructorArgsNames.zip(a.map(getArgValue)).map {
       case (name, value) =>
-        trees"""$name = $value
-             """
-    })
+        trees"""$name = $value"""
+    }, NewLineStringTree)
     val beanDef =
-      trees"""
-         {
+      trees"""{
            %class = $clsName
            %constructor-args = {
              $constructorMap
            }
-         }
-       """
+      }"""
     q"""
        new $BeanDefCls($beanDef)
          """
@@ -111,7 +148,7 @@ class HoconConfigMacros(val c: blackbox.Context) {
         case other => q"${other.toString}"
       }
       case q"""$_.this.$refName.ref""" => q"""${s"{%ref = $refName}"}"""
-      case q"""scala.collection.immutable.List.apply[$_](..$items)""" =>
+      case q"""_root_.scala.collection.immutable.List.apply[$_](..$items)""" =>
         val argsTrees = items.asInstanceOf[List[Tree]].map(getArgValue)
         joinStringTressToHoconList(argsTrees)
       case q"""$listDef.as[$_]""" => q"$listDef.toHocon"
@@ -138,12 +175,12 @@ class HoconConfigMacros(val c: blackbox.Context) {
     member.asMethod.paramLists.flatMap(_.map(t => t.typeSignature))
   }
 
-  def joinStringTrees(trees: List[Tree]): Tree = {
-    q"""List[String](..$trees).mkString"""
+  def joinStringTrees(trees: List[Tree], separator: Tree): Tree = {
+    q"""$ListObj[String](..$trees).mkString($separator)"""
   }
 
   def joinStringTressToHoconList(trees: List[Tree]): Tree = {
-    q"""List[String](..$trees).mkString("[", ", ", "]")"""
+    q"""$ListObj[String](..$trees).mkString("[", ", ", "]")"""
   }
 
   implicit class TreeList(val sc: StringContext) {
@@ -157,7 +194,7 @@ class HoconConfigMacros(val c: blackbox.Context) {
           buf += toTree(expressions.next())
         }
       }
-      joinStringTrees(buf.result())
+      joinStringTrees(buf.result(), EmptyStringTree)
     }
 
     private def toTree(value: Any): Tree = {
