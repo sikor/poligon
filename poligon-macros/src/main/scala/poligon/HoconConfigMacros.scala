@@ -1,5 +1,6 @@
 package poligon
 
+import com.avsystem.commons.macros.MacroCommons
 import com.avsystem.commons.misc.Opt
 
 import scala.annotation.compileTimeOnly
@@ -58,7 +59,7 @@ object AppendDef {
   def empty[T] = new AppendDef[T]()
 }
 
-class HoconConfigMacros(val c: blackbox.Context) {
+class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
 
   import c.universe._
 
@@ -69,11 +70,6 @@ class HoconConfigMacros(val c: blackbox.Context) {
   val BeanDefCls = tq"$ThisPkg.BeanDef"
   val ListDefCls = tq"$ThisPkg.ListDef"
   val AppendDefCls = tq"$ThisPkg.AppendDef"
-
-  val ScalaPkg = q"_root_.scala"
-  val CollectionPkg = q"$ScalaPkg.collection"
-  val ListObj = q"$CollectionPkg.immutable.List"
-  val ListCls = tq"$CollectionPkg.immutable.List"
 
   class BeanDefSignature {
     def unapply(s: Symbol): Opt[MethodSymbol] = {
@@ -117,16 +113,20 @@ class HoconConfigMacros(val c: blackbox.Context) {
      """
   }
 
+  private def getParametersMap(method: MethodSymbol, args: List[Tree]): Tree = {
+    val argsNames = method.paramLists.flatten.map(p => p.asTerm.name)
+    joinStringTrees(argsNames.zip(args.map(getArgValue)).map {
+      case (name, value) =>
+        trees"""$name = $value"""
+    }, NewLineStringTree)
+  }
+
   def toBeanDef[T: c.WeakTypeTag]: Tree = {
     val q"$_(new $classIdent(...$args))" = c.prefix.tree
     val clsName = classIdent.symbol.fullName
     val a = args.asInstanceOf[List[List[Tree]]].flatten
-    val constructor = getConstructor(a)
-    val constructorArgsNames = constructor.paramLists.flatten.map(p => p.asTerm.name)
-    val constructorMap = joinStringTrees(constructorArgsNames.zip(a.map(getArgValue)).map {
-      case (name, value) =>
-        trees"""$name = $value"""
-    }, NewLineStringTree)
+    val constructor = findMethodForArgs(classIdent.tpe, _.isConstructor, a)
+    val constructorMap = getParametersMap(constructor, a)
     val beanDef =
       trees"""{
            %class = $clsName
@@ -152,23 +152,33 @@ class HoconConfigMacros(val c: blackbox.Context) {
         val argsTrees = items.asInstanceOf[List[Tree]].map(getArgValue)
         joinStringTressToHoconList(argsTrees)
       case q"""$listDef.as[$_]""" => q"$listDef.toHocon"
+      case q"""$obj.$staticMethod(...$args)""" if obj.tpe.typeSymbol.isModuleClass => //add second case for java static?
+        val className = obj.tpe.toString.stripSuffix(".type")
+        val factoryMethodName = staticMethod.toString()
+        val argsFlat = args.asInstanceOf[List[List[Tree]]].flatten
+        val met = findMethodForArgs(obj.tpe, _.name.toString == staticMethod.toString(), argsFlat)
+        val paramsMap = getParametersMap(met, argsFlat)
+        trees"""{
+                  %class = $className
+                  %factory-method = $factoryMethodName${if (argsFlat.nonEmpty) "\n%construct = true\n" else ""}$paramsMap
+                }"""
       case _ => q"""${s"${arg.toString()}, ${showRaw(arg)}"}"""
+
     }
   }
 
-  private def getConstructor[T: c.WeakTypeTag](a: List[Tree]): MethodSymbol = {
-    val tpeOfClass = weakTypeOf[T]
-    val constructorArgsTpes = a.map(_.tpe)
+  private def findMethodForArgs(tpeOfClass: Type, filter: Symbol => Boolean, a: List[Tree]): MethodSymbol = {
+    val argsTypes = a.map(_.tpe)
     tpeOfClass.members.find { member =>
-      if (member.isConstructor) {
+      if (filter(member)) {
         val params = paramsTypes(member)
-        params.size == constructorArgsTpes.size && params.zip(constructorArgsTpes).forall {
+        params.size == argsTypes.size && params.zip(argsTypes).forall {
           case (t1, t2) => t2.erasure.<:<(t1.erasure)
         }
       } else {
         false
       }
-    }.map(_.asMethod).getOrElse(c.abort(c.enclosingPosition, "Constructor for args not found"))
+    }.map(_.asMethod).getOrElse(c.abort(c.enclosingPosition, "Method for args not found"))
   }
 
   private def paramsTypes[T: c.WeakTypeTag](member: Symbol) = {
