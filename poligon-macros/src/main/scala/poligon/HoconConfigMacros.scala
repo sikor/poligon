@@ -121,19 +121,10 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
     }, NewLineStringTree)
   }
 
+
   def toBeanDef[T: c.WeakTypeTag]: Tree = {
-    val q"$_(new $classIdent(...$args))" = c.prefix.tree
-    val clsName = classIdent.symbol.fullName
-    val a = args.asInstanceOf[List[List[Tree]]].flatten
-    val constructor = findMethodForArgs(classIdent.tpe, _.isConstructor, a)
-    val constructorMap = getParametersMap(constructor, a)
-    val beanDef =
-      trees"""{
-           %class = $clsName
-           %constructor-args = {
-             $constructorMap
-           }
-      }"""
+    val q"$_($value)" = c.prefix.tree
+    val beanDef = getArgValue(value)
     q"""
        new $BeanDefCls($beanDef)
          """
@@ -141,6 +132,17 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
 
   private def getArgValue(arg: Tree): Tree = {
     arg match {
+      case q"new $classIdent(...$args)" =>
+        val clsName = classIdent.symbol.fullName
+        val a = args.asInstanceOf[List[List[Tree]]].flatten
+        val constructor = findMethodForArgs(classIdent.tpe, _.isConstructor, a)
+        val constructorMap = getParametersMap(constructor, a)
+        trees"""{
+           %class = $clsName
+           %constructor-args = {
+             $constructorMap
+           }
+      }"""
       case l: Literal => l.value.value match {
         case s: String =>
           val str = "\"" + s.replaceAllLiterally("\\", "\\\\").replaceAllLiterally("\n", "\\n").replaceAllLiterally("\"", "\\\"") + "\""
@@ -152,7 +154,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
         val argsTrees = items.asInstanceOf[List[Tree]].map(getArgValue)
         joinStringTressToHoconList(argsTrees)
       case q"""$listDef.as[$_]""" => q"$listDef.toHocon"
-      case q"""$obj.$staticMethod(...$args)""" if obj.tpe.typeSymbol.isModuleClass => //add second case for java static?
+      case q"""$obj.$staticMethod(...$args)""" if obj.tpe.typeSymbol.isModuleClass => //strangely it works also for java static methods.
         val className = obj.tpe.toString.stripSuffix(".type")
         val factoryMethodName = staticMethod.toString()
         val argsFlat = args.asInstanceOf[List[List[Tree]]].flatten
@@ -163,7 +165,6 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
                   %factory-method = $factoryMethodName${if (argsFlat.nonEmpty) "\n%construct = true\n" else ""}$paramsMap
                 }"""
       case _ => q"""${s"${arg.toString()}, ${showRaw(arg)}"}"""
-
     }
   }
 

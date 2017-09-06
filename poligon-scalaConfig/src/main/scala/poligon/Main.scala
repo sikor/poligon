@@ -2,6 +2,7 @@ package poligon
 
 import com.avsystem.commons.concurrent.RunNowEC
 import poligon.MyMacros._
+import somePackage.JavaClass
 
 import scala.concurrent.ExecutionContext
 
@@ -37,6 +38,8 @@ object CustomConfig extends DefaultConfig with PartialConfig {
   def some(arg: HoconList[Int]): BeanDef[TakesList] = new TakesList(List(1, 2).toListDef.amend(arg).as[Vector]).toBeanDef
 
   def some: BeanDef[TakesList] = some(AppendDef.empty)
+
+  def javaFactoryBean: BeanDef[JavaClass] = JavaClass.javaFactory("javaFactoryArg").toBeanDef
 }
 
 class HasListArg(names: List[String])
