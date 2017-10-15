@@ -1,8 +1,10 @@
 package poligon
 
 import com.avsystem.commons.concurrent.RunNowEC
-import poligon.MyMacros._
+import poligon.parser.BeanDef.{BeanDef, ListValue}
+import poligon.parser.MyMacros
 import somePackage.JavaClass
+import poligon.parser.MyMacros._
 
 import scala.concurrent.ExecutionContext
 
@@ -27,17 +29,17 @@ object InheritsStaticMethod extends HasStaticMethods {
 trait DefaultConfig {
   this: PartialConfig =>
 
-  def foo = new ScalaNormalClass(InheritsStaticMethod.factory(32), 2)(RunNowEC.get).toBeanDef
+  def foo: BeanDef[ScalaNormalClass] = new ScalaNormalClass(InheritsStaticMethod.factory(32), 2)(RunNowEC.get).toBeanDef
 
-  def bar = new MainClass(foo.ref, par.ref).toBeanDef
+  def bar: BeanDef[MainClass] = new MainClass(foo.ref, par.ref).toBeanDef
 }
 
 object CustomConfig extends DefaultConfig with PartialConfig {
   def par: BeanDef[ScalaNormalClass] = new ScalaNormalClass("pardef", 3)(RunNowEC.get).toBeanDef
 
-  def some(arg: HoconList[Int]): BeanDef[TakesList] = new TakesList(List(1, 2).toListDef.amend(arg).as[Vector]).toBeanDef
+//  def some(arg: ListValue[Int, List]): BeanDef[TakesList] = new TakesList(List(1, 2).toListDef.amend(arg).as[Vector]).toBeanDef
 
-  def some: BeanDef[TakesList] = some(AppendDef.empty)
+//  def some: BeanDef[TakesList] = some(ListValue.empty)
 
   def javaFactoryBean: BeanDef[JavaClass] = JavaClass.javaFactory("javaFactoryArg").toBeanDef
 }
@@ -51,12 +53,12 @@ object Main {
   final val map = Map(1 -> "String")
 
   def main(args: Array[String]): Unit = {
-    //    println(new ScalaNormalClass("normal \" \\\" class \n", 23)(RunNowEC).toBeanDef)
-    //    println(new JavaClass(s).toBeanDef)
+//        println(new ScalaNormalClass("normal \" \\\" class \n", 23)(RunNowEC).toBeanDef)
+        println(new JavaClass(s).toBeanDef)
     //    println(CustomConfig.bar)
     //    println(new HasListArg(List("pawel", "asia")).toBeanDef)
     //    println(CustomConfig.some(List(1, 2, 3).toAppendDef))
-    println(MyMacros.toHoconConfig(CustomConfig))
+//    println(MyMacros.toBeanDefs(CustomConfig))
   }
 }
 

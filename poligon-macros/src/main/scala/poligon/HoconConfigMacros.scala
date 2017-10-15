@@ -3,61 +3,8 @@ package poligon
 import com.avsystem.commons.macros.MacroCommons
 import com.avsystem.commons.misc.Opt
 
-import scala.annotation.compileTimeOnly
 import scala.reflect.macros.blackbox
 
-
-object MyMacros {
-
-  implicit final class ObjectOps[T](t: T) {
-    def toBeanDef: BeanDef[T] = macro HoconConfigMacros.toBeanDef[T]
-  }
-
-  implicit final class ListOps[T](t: List[T]) {
-    def toListDef: ListDef[T] = macro HoconConfigMacros.toListDef[T]
-
-    def toAppendDef: AppendDef[T] = macro HoconConfigMacros.toAppendDef[T]
-  }
-
-  def toHoconConfig[T](holder: T): String = macro HoconConfigMacros.toHoconConfig[T]
-
-}
-
-class BeanDef[T](val hocon: String) {
-  @compileTimeOnly("ref method can be used only as constructor or setter argument in BeanDef.")
-  def ref: T = throw new NotImplementedError()
-
-  override def toString: String = hocon
-}
-
-sealed trait HoconList[T]
-
-class ListDef[T](val items: String*) extends HoconList[T] {
-
-  @compileTimeOnly("as method can be used only as constructor or setter argument in BeadDef")
-  def as[I[_] <: TraversableOnce[_]]: I[T] = throw new NotImplementedError()
-
-  def toHocon: String = items.mkString("[", ", ", "]")
-
-  def amend(other: HoconList[T]): ListDef[T] = {
-    other match {
-      case l: ListDef[T] => l
-      case a: AppendDef[T] => new ListDef(items ++ a.items: _*)
-    }
-  }
-}
-
-
-object ListDef {
-  def empty[T] = new ListDef[T]()
-}
-
-class AppendDef[T](val items: String*) extends HoconList[T]
-
-
-object AppendDef {
-  def empty[T] = new AppendDef[T]()
-}
 
 class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
 
@@ -68,22 +15,23 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
 
   val ParserPkg = q"_root_.poligon.parser"
   val BeanDefObj = q"$ParserPkg.BeanDef"
+  val BeanDefTpe = tq"$ParserPkg.BeanDef"
   val ConstructorCC = q"$BeanDefObj.Constructor"
   val FactoryMethodCC = q"$BeanDefObj.FactoryMethod"
   val SimpleValueCC = q"$BeanDefObj.SimpleValue"
   val ListValueCC = q"$BeanDefObj.ListValue"
   val MapValueCC = q"$BeanDefObj.MapValue"
+  val ArgCC = q"$BeanDefObj.Arg"
+  val ReferencedCC = q"$BeanDefObj.Referenced"
 
   val ThisPkg = q"_root_.poligon"
-  val BeanDefCls = tq"$ThisPkg.BeanDef"
-  val ListDefCls = tq"$ThisPkg.ListDef"
-  val AppendDefCls = tq"$ThisPkg.AppendDef"
 
   class BeanDefSignature {
     def unapply(s: Symbol): Opt[MethodSymbol] = {
       if (s.isMethod) {
         val methodSymbol = s.asMethod
-        if (methodSymbol.typeSignature.paramLists.isEmpty && methodSymbol.returnType <:< typeOf[BeanDef[_]]) {
+        //TODO: fix BeanDefTpe by compiling in context, currently null
+        if (methodSymbol.typeSignature.paramLists.isEmpty && methodSymbol.returnType <:< BeanDefTpe.tpe) {
           Opt(methodSymbol)
         } else {
           Opt.Empty
@@ -99,43 +47,33 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
     val beanDefSignature = new BeanDefSignature
     val beans = tpeOfClass.members.collect {
       case beanDefSignature(m) =>
-        q""" ${s"${m.name} = "} + $holder.${m.name}.hocon"""
-    }.toList
-
-    joinStringTrees(beans, NewLineStringTree)
+        val name = m.name.toString
+        q"($name, $holder.${m.name})"
+    }
+    q"Map(..$beans)"
   }
 
-  def toListDef[T: c.WeakTypeTag]: Tree = {
-    val q"""$_(scala.collection.immutable.List.apply[$_](..$items))""" = c.prefix.tree
-    val hoconItems = items.asInstanceOf[List[Tree]].map(getArgValue)
-    q"""
-      new $ListDefCls(..$hoconItems)
-     """
+  def toListDef: Tree = {
+    val q"""$_($listDef)""" = c.prefix.tree
+    getArgValue(listDef)
   }
 
-  def toAppendDef[T: c.WeakTypeTag]: Tree = {
-    val q"""$_(scala.collection.immutable.List.apply[$_](..$items))""" = c.prefix.tree
-    val hoconItems = items.asInstanceOf[List[Tree]].map(getArgValue)
-    q"""
-      new $AppendDefCls(..$hoconItems)
-     """
-  }
-
-  private def getParametersMap(method: MethodSymbol, args: List[Tree]): Tree = {
-    val argsNames = method.paramLists.flatten.map(p => p.asTerm.name)
-    joinStringTrees(argsNames.zip(args.map(getArgValue)).map {
+  /**
+    * @return Vector[Arg]
+    */
+  private def getArgsVector(method: MethodSymbol, args: List[Tree]): Tree = {
+    val argsNames = method.paramLists.flatten.map(p => p.asTerm.name.toString)
+    val argsVec = argsNames.zip(args.map(getArgValue)).map {
       case (name, value) =>
-        trees"""$name = $value"""
-    }, NewLineStringTree)
+        q"$ArgCC($name, $value)"
+    }
+    q"Vector(..$argsVec)"
   }
 
 
   def toBeanDef[T: c.WeakTypeTag]: Tree = {
     val q"$_($value)" = c.prefix.tree
-    val beanDef = getArgValue(value)
-    q"""
-       new $BeanDefCls($beanDef)
-         """
+    getArgValue(value)
   }
 
   private def getArgValue(arg: Tree): Tree = {
@@ -144,35 +82,31 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
         val clsName = classIdent.symbol.fullName
         val a = args.asInstanceOf[List[List[Tree]]].flatten
         val constructor = findMethodForArgs(classIdent.tpe, _.isConstructor, a)
-        val constructorMap = getParametersMap(constructor, a)
-        trees"""{
-           %class = $clsName
-           %constructor-args = {
-             $constructorMap
-           }
-      }"""
-      case l: Literal => l.value.value match {
-        case s: String =>
-          val str = "\"" + s.replaceAllLiterally("\\", "\\\\").replaceAllLiterally("\n", "\\n").replaceAllLiterally("\"", "\\\"") + "\""
-          q"$str"
-        case other => q"${other.toString}"
-      }
-      case q"""$_.this.$refName.ref""" => q"""${s"{%ref = $refName}"}"""
-      case q"""_root_.scala.collection.immutable.List.apply[$_](..$items)""" =>
+        val argsVector = getArgsVector(constructor, a)
+        q"$ConstructorCC($clsName, $argsVector)"
+      case l: Literal =>
+        l.value.value match {
+          case s: String =>
+            val escaped = l.toString()
+            q"$SimpleValueCC($escaped)"
+          case _ => q"$SimpleValueCC($l)"
+        }
+      case q"""$something.this.$refName.ref""" =>
+        val refNameStr = refName.toString()
+        q"$ReferencedCC($refNameStr, $something.this.$refName)"
+      case q"scala.collection.immutable.List.apply[$_](..$items)" =>
         val argsTrees = items.asInstanceOf[List[Tree]].map(getArgValue)
-        joinStringTressToHoconList(argsTrees)
-      case q"""$listDef.as[$_]""" => q"$listDef.toHocon"
+        q"$ListValueCC(..$argsTrees)"
+      case q"""$listDef.as[$_]""" =>
+        q"$listDef"
       case q"""$obj.$staticMethod(...$args)""" if obj.tpe.typeSymbol.isModuleClass => //strangely it works also for java static methods.
         val className = obj.tpe.toString.stripSuffix(".type")
         val factoryMethodName = staticMethod.toString()
         val argsFlat = args.asInstanceOf[List[List[Tree]]].flatten
         val met = findMethodForArgs(obj.tpe, _.name.toString == staticMethod.toString(), argsFlat)
-        val paramsMap = getParametersMap(met, argsFlat)
-        trees"""{
-                  %class = $className
-                  %factory-method = $factoryMethodName${if (argsFlat.nonEmpty) "\n%construct = true\n" else ""}$paramsMap
-                }"""
-      case _ => q"""${s"${arg.toString()}, ${showRaw(arg)}"}"""
+        val argsVector = getArgsVector(met, argsFlat)
+        q"$FactoryMethodCC($className, $factoryMethodName, $argsVector)"
+      case _ => throw new IllegalArgumentException(s"${arg.toString()}, ${showRaw(arg)}")
     }
   }
 
