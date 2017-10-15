@@ -66,6 +66,14 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
   val NewLineStringTree: Tree = reify("\n").tree
   val EmptyStringTree: Tree = reify("").tree
 
+  val ParserPkg = q"_root_.poligon.parser"
+  val BeanDefObj = q"$ParserPkg.BeanDef"
+  val ConstructorCC = q"$BeanDefObj.Constructor"
+  val FactoryMethodCC = q"$BeanDefObj.FactoryMethod"
+  val SimpleValueCC = q"$BeanDefObj.SimpleValue"
+  val ListValueCC = q"$BeanDefObj.ListValue"
+  val MapValueCC = q"$BeanDefObj.MapValue"
+
   val ThisPkg = q"_root_.poligon"
   val BeanDefCls = tq"$ThisPkg.BeanDef"
   val ListDefCls = tq"$ThisPkg.ListDef"
