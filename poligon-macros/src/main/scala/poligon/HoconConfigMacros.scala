@@ -15,7 +15,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
 
   val ParserPkg = q"_root_.poligon.parser"
   val BeanDefObj = q"$ParserPkg.BeanDef"
-  val BeanDefTpe = tq"$ParserPkg.BeanDef"
+  val BeanDefTpe: c.universe.Type = getType(tq"$BeanDefObj.BeanDef[_]")
   val ConstructorCC = q"$BeanDefObj.Constructor"
   val FactoryMethodCC = q"$BeanDefObj.FactoryMethod"
   val SimpleValueCC = q"$BeanDefObj.SimpleValue"
@@ -23,6 +23,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
   val MapValueCC = q"$BeanDefObj.MapValue"
   val ArgCC = q"$BeanDefObj.Arg"
   val ReferencedCC = q"$BeanDefObj.Referenced"
+  val BeansMapCC = q"$BeanDefObj.BeansMap"
 
   val ThisPkg = q"_root_.poligon"
 
@@ -30,8 +31,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
     def unapply(s: Symbol): Opt[MethodSymbol] = {
       if (s.isMethod) {
         val methodSymbol = s.asMethod
-        //TODO: fix BeanDefTpe by compiling in context, currently null
-        if (methodSymbol.typeSignature.paramLists.isEmpty && methodSymbol.returnType <:< BeanDefTpe.tpe) {
+        if (methodSymbol.typeSignature.paramLists.isEmpty && methodSymbol.returnType <:< BeanDefTpe) {
           Opt(methodSymbol)
         } else {
           Opt.Empty
@@ -50,7 +50,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
         val name = m.name.toString
         q"($name, $holder.${m.name})"
     }
-    q"Map(..$beans)"
+    q"$BeansMapCC(scala.collection.immutable.Map(..$beans))"
   }
 
   def toListDef: Tree = {
@@ -96,7 +96,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
         q"$ReferencedCC($refNameStr, $something.this.$refName)"
       case q"scala.collection.immutable.List.apply[$_](..$items)" =>
         val argsTrees = items.asInstanceOf[List[Tree]].map(getArgValue)
-        q"$ListValueCC(..$argsTrees)"
+        q"$ListValueCC(scala.collection.immutable.Vector(..$argsTrees))"
       case q"""$listDef.as[$_]""" =>
         q"$listDef"
       case q"""$obj.$staticMethod(...$args)""" if obj.tpe.typeSymbol.isModuleClass => //strangely it works also for java static methods.

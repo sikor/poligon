@@ -1,10 +1,10 @@
 package poligon
 
 import com.avsystem.commons.concurrent.RunNowEC
+import poligon.parser.BeanDef
 import poligon.parser.BeanDef.{BeanDef, ListValue}
-import poligon.parser.MyMacros
 import somePackage.JavaClass
-import poligon.parser.MyMacros._
+import poligon.parser.BeanDef._
 
 import scala.concurrent.ExecutionContext
 
@@ -37,9 +37,9 @@ trait DefaultConfig {
 object CustomConfig extends DefaultConfig with PartialConfig {
   def par: BeanDef[ScalaNormalClass] = new ScalaNormalClass("pardef", 3)(RunNowEC.get).toBeanDef
 
-//  def some(arg: ListValue[Int, List]): BeanDef[TakesList] = new TakesList(List(1, 2).toListDef.amend(arg).as[Vector]).toBeanDef
+  def some(arg: ListValue[Int, List]): BeanDef[TakesList] = new TakesList(List(1, 2).toListDef.amend(arg).as[Vector]).toBeanDef
 
-//  def some: BeanDef[TakesList] = some(ListValue.empty)
+  def some: BeanDef[TakesList] = some(ListValue.empty)
 
   def javaFactoryBean: BeanDef[JavaClass] = JavaClass.javaFactory("javaFactoryArg").toBeanDef
 }
@@ -57,8 +57,8 @@ object Main {
         println(new JavaClass(s).toBeanDef)
     //    println(CustomConfig.bar)
     //    println(new HasListArg(List("pawel", "asia")).toBeanDef)
-    //    println(CustomConfig.some(List(1, 2, 3).toAppendDef))
-//    println(MyMacros.toBeanDefs(CustomConfig))
+        println(CustomConfig.some(List(1, 2, 3).toListDef))
+    println(BeanDef.toBeanDefs(CustomConfig))
   }
 }
 

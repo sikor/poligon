@@ -24,7 +24,7 @@ object BeanDef {
 
   case class Arg(name: String, value: BeanDef[_])
 
-  sealed trait BeanDef[T] {
+  sealed trait BeanDef[+T] {
     def toHocon: String
 
     @compileTimeOnly("ref method can be used only as constructor or setter argument in BeanDef.")
@@ -35,27 +35,23 @@ object BeanDef {
 
   case class Constructor[T](clsName: String, args: Vector[Arg]) extends BeanDef[T] {
     def toHocon: String =
-      s"""
-         |{
+      s"""{
          |  %class = $clsName
          |  %constructor-args = {
          |    ${argsToHocon(4, args)}
          |  }
-         |}
-           """.stripMargin
+         |}""".stripMargin
   }
 
   case class FactoryMethod[T](clsName: String, factoryMethod: String, args: Vector[Arg]) extends BeanDef[T] {
     def toHocon: String =
-      s"""
-         |{
+      s"""{
          |  %class = $clsName
          |  %factory-method = $factoryMethod
          |  %constructor-args = {
          |    ${argsToHocon(4, args)}
          |  }
-         |}
-           """.stripMargin
+         |}""".stripMargin
   }
 
   case class SimpleValue[T](value: T) extends BeanDef[T] {
@@ -92,9 +88,11 @@ object BeanDef {
     override def toHocon: String = s"{ %ref = $refName }"
   }
 
-}
-
-object MyMacros {
+  case class BeansMap(map: Map[String, BeanDef[_]]) {
+    def toHocon: String = {
+      map.toString()
+    }
+  }
 
   implicit final class ObjectOps[T](t: T) {
     def toBeanDef: BeanDef[T] = macro poligon.HoconConfigMacros.toBeanDef[T]
@@ -104,6 +102,6 @@ object MyMacros {
     def toListDef: ListValue[I, List] = macro poligon.HoconConfigMacros.toListDef
   }
 
-  def toBeanDefs[T](holder: T): Map[String, BeanDef[_]] = macro poligon.HoconConfigMacros.toHoconConfig[T]
+  def toBeanDefs[T](holder: T): BeansMap = macro poligon.HoconConfigMacros.toHoconConfig[T]
 
 }
