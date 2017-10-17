@@ -30,6 +30,9 @@ object BeanDef {
     @compileTimeOnly("ref method can be used only as constructor or setter argument in BeanDef.")
     def ref: T = throw new NotImplementedError()
 
+    @compileTimeOnly("inline method can be used only as constructor or setter argument in BeanDef.")
+    def inline: T = throw new NotImplementedError()
+
     override def toString: String = toHocon
   }
 
@@ -90,7 +93,10 @@ object BeanDef {
 
   case class BeansMap(map: Map[String, BeanDef[_]]) {
     def toHocon: String = {
-      map.toString()
+      map.map {
+        case (name, bean) =>
+          s"""$name = ${bean.toHocon}"""
+      }.mkString("\n")
     }
   }
 

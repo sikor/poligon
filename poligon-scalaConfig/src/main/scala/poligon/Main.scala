@@ -31,7 +31,7 @@ trait DefaultConfig {
 
   def foo: BeanDef[ScalaNormalClass] = new ScalaNormalClass(InheritsStaticMethod.factory(32), 2)(RunNowEC.get).toBeanDef
 
-  def bar: BeanDef[MainClass] = new MainClass(foo.ref, par.ref).toBeanDef
+  def bar: BeanDef[MainClass] = new MainClass(foo.ref, par.inline).toBeanDef
 }
 
 object CustomConfig extends DefaultConfig with PartialConfig {
@@ -53,12 +53,12 @@ object Main {
   final val map = Map(1 -> "String")
 
   def main(args: Array[String]): Unit = {
-//        println(new ScalaNormalClass("normal \" \\\" class \n", 23)(RunNowEC).toBeanDef)
-        println(new JavaClass(s).toBeanDef)
+    //        println(new ScalaNormalClass("normal \" \\\" class \n", 23)(RunNowEC).toBeanDef)
+    println(new JavaClass(s).toBeanDef)
     //    println(CustomConfig.bar)
     //    println(new HasListArg(List("pawel", "asia")).toBeanDef)
-        println(CustomConfig.some(List(1, 2, 3).toListDef))
-    println(BeanDef.toBeanDefs(CustomConfig))
+    println(CustomConfig.some(List(1, 2, 3).toListDef))
+    println(BeanDef.toBeanDefs(CustomConfig).toHocon)
   }
 }
 

@@ -94,6 +94,8 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
       case q"""$something.this.$refName.ref""" =>
         val refNameStr = refName.toString()
         q"$ReferencedCC($refNameStr, $something.this.$refName)"
+      case q"""$something.this.$refName.inline""" =>
+        q"$something.this.$refName"
       case q"scala.collection.immutable.List.apply[$_](..$items)" =>
         val argsTrees = items.asInstanceOf[List[Tree]].map(getArgValue)
         q"$ListValueCC(scala.collection.immutable.Vector(..$argsTrees))"
@@ -126,36 +128,6 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
 
   private def paramsTypes[T: c.WeakTypeTag](member: Symbol) = {
     member.asMethod.paramLists.flatMap(_.map(t => t.typeSignature))
-  }
-
-  def joinStringTrees(trees: List[Tree], separator: Tree): Tree = {
-    q"""$ListObj[String](..$trees).mkString($separator)"""
-  }
-
-  def joinStringTressToHoconList(trees: List[Tree]): Tree = {
-    q"""$ListObj[String](..$trees).mkString("[", ", ", "]")"""
-  }
-
-  implicit class TreeList(val sc: StringContext) {
-    def trees(args: Any*): Tree = {
-      val strings = sc.parts.iterator
-      val expressions = args.iterator
-      var buf = List.newBuilder[Tree]
-      while (strings.hasNext) {
-        buf += q"${strings.next}"
-        if (expressions.hasNext) {
-          buf += toTree(expressions.next())
-        }
-      }
-      joinStringTrees(buf.result(), EmptyStringTree)
-    }
-
-    private def toTree(value: Any): Tree = {
-      value match {
-        case t: Tree => t
-        case s => q"${s.toString}"
-      }
-    }
   }
 
 }
