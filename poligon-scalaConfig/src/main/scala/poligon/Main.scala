@@ -6,11 +6,18 @@ import poligon.parser.BeanDef.{BeanDef, ListValue}
 import somePackage.JavaClass
 import poligon.parser.BeanDef._
 
+import scala.beans.BeanProperty
 import scala.concurrent.ExecutionContext
 
 class TakesList(val vec: Vector[Int])
 
-class ScalaNormalClass(val arg1: String, arg2: Int)(implicit ec: ExecutionContext)
+class ScalaNormalClass(val arg1: String, arg2: Int)(implicit ec: ExecutionContext) {
+  @BeanProperty
+  var settableDouble: Double = 0
+  @BeanProperty
+  var someString: String = "aha"
+
+}
 
 class MainClass(val normalClass: ScalaNormalClass, val normalClazz: ScalaNormalClass)
 
@@ -53,7 +60,9 @@ object Main {
   final val map = Map(1 -> "String")
 
   def main(args: Array[String]): Unit = {
-    //        println(new ScalaNormalClass("normal \" \\\" class \n", 23)(RunNowEC).toBeanDef)
+    println(new ScalaNormalClass("normal \" \\\" class \n", 23)(RunNowEC.get).withSetters(
+      _.setSettableDouble(1.0),
+      _.setSomeString("setted string")))
     println(new JavaClass(s).toBeanDef)
     //    println(CustomConfig.bar)
     //    println(new HasListArg(List("pawel", "asia")).toBeanDef)

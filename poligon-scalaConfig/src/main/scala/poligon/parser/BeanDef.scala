@@ -22,6 +22,11 @@ object BeanDef {
 
   private def separator(num: Int): String = s"\n${" " * num}"
 
+  private def cleanHocon(hocon: String): String = {
+    hocon.replaceAll("""\s*%constructor-kargs = \{\s+\}""", "")
+      .lines.filter(l => !l.matches("""\s*""")).mkString("\n")
+  }
+
   case class Arg(name: String, value: BeanDef[_])
 
   sealed trait BeanDef[+T] {
@@ -36,25 +41,28 @@ object BeanDef {
     override def toString: String = toHocon
   }
 
-  case class Constructor[T](clsName: String, args: Vector[Arg]) extends BeanDef[T] {
+  case class Constructor[T](clsName: String, args: Vector[Arg], setters: Vector[Arg]) extends BeanDef[T] {
     def toHocon: String =
-      s"""{
-         |  %class = $clsName
-         |  %constructor-args = {
-         |    ${argsToHocon(4, args)}
-         |  }
-         |}""".stripMargin
+      cleanHocon(
+        s"""{
+           |  %class = $clsName
+           |  %constructor-args = {
+           |    ${argsToHocon(4, args)}
+           |  }
+           |  ${argsToHocon(2, setters)}
+           |}""".stripMargin)
   }
 
   case class FactoryMethod[T](clsName: String, factoryMethod: String, args: Vector[Arg]) extends BeanDef[T] {
     def toHocon: String =
-      s"""{
-         |  %class = $clsName
-         |  %factory-method = $factoryMethod
-         |  %constructor-args = {
-         |    ${argsToHocon(4, args)}
-         |  }
-         |}""".stripMargin
+      cleanHocon(
+        s"""{
+           |  %class = $clsName
+           |  %factory-method = $factoryMethod
+           |  %constructor-args = {
+           |    ${argsToHocon(4, args)}
+           |  }
+           |}""".stripMargin)
   }
 
   case class SimpleValue[T](value: T) extends BeanDef[T] {
@@ -102,6 +110,8 @@ object BeanDef {
 
   implicit final class ObjectOps[T](t: T) {
     def toBeanDef: BeanDef[T] = macro poligon.HoconConfigMacros.toBeanDef[T]
+
+    def withSetters(setters: (T => Unit)*): BeanDef[T] = macro poligon.HoconConfigMacros.withSetters[T]
   }
 
   implicit final class ListOps[I](t: List[I]) {

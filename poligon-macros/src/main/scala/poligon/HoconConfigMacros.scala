@@ -55,35 +55,58 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
 
   def toListDef: Tree = {
     val q"""$_($listDef)""" = c.prefix.tree
-    getArgValue(listDef)
+    convertToBean(listDef)
   }
 
   /**
     * @return Vector[Arg]
     */
-  private def getArgsVector(method: MethodSymbol, args: List[Tree]): Tree = {
+  private def toArgsVector(method: MethodSymbol, args: List[Tree]): Tree = {
     val argsNames = method.paramLists.flatten.map(p => p.asTerm.name.toString)
-    val argsVec = argsNames.zip(args.map(getArgValue)).map {
+    val argsVec = argsNames.zip(args.map(convertToBean)).map {
       case (name, value) =>
         q"$ArgCC($name, $value)"
     }
     q"Vector(..$argsVec)"
   }
 
-
-  def toBeanDef[T: c.WeakTypeTag]: Tree = {
+  private def getPrefixTree: Tree = {
     val q"$_($value)" = c.prefix.tree
-    getArgValue(value)
+    value.asInstanceOf[Tree]
   }
 
-  private def getArgValue(arg: Tree): Tree = {
-    arg match {
+  def toBeanDef[T: c.WeakTypeTag]: Tree =
+    convertToBean(getPrefixTree)
+
+  private def toBeanPropertyName(setterName: String): String = setterName.substring(3, 4).toLowerCase + setterName.substring(4)
+
+  def withSetters[T: c.WeakTypeTag](setters: Tree*): Tree = {
+    val settersArgVector = setters.map { setter =>
+      val q"_.$setterName($value)" = setter
+      val setterNameString = toBeanPropertyName(setterName.toString())
+      val valueBeanDef = convertToBean(value)
+      q"$ArgCC($setterNameString, $valueBeanDef)"
+    }
+    val Constructor(clsName, argsVector) = getPrefixTree
+    q"$ConstructorCC($clsName, $argsVector, Vector(..$settersArgVector))"
+  }
+
+  object Constructor {
+    def unapply(arg: Tree): Option[(String, Tree)] = arg match {
       case q"new $classIdent(...$args)" =>
         val clsName = classIdent.symbol.fullName
         val a = args.asInstanceOf[List[List[Tree]]].flatten
         val constructor = findMethodForArgs(classIdent.tpe, _.isConstructor, a)
-        val argsVector = getArgsVector(constructor, a)
-        q"$ConstructorCC($clsName, $argsVector)"
+        val argsVector = toArgsVector(constructor, a)
+        Option(clsName, argsVector)
+      case _ => None
+    }
+  }
+
+  private def convertToBean(arg: Tree): Tree = {
+    arg match {
+      case Constructor(clsName, argsVector) =>
+        q"$ConstructorCC($clsName, $argsVector, Vector.empty)"
       case l: Literal =>
         l.value.value match {
           case s: String =>
@@ -97,7 +120,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
       case q"""$something.this.$refName.inline""" =>
         q"$something.this.$refName"
       case q"scala.collection.immutable.List.apply[$_](..$items)" =>
-        val argsTrees = items.asInstanceOf[List[Tree]].map(getArgValue)
+        val argsTrees = items.asInstanceOf[List[Tree]].map(convertToBean)
         q"$ListValueCC(scala.collection.immutable.Vector(..$argsTrees))"
       case q"""$listDef.as[$_]""" =>
         q"$listDef"
@@ -106,7 +129,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
         val factoryMethodName = staticMethod.toString()
         val argsFlat = args.asInstanceOf[List[List[Tree]]].flatten
         val met = findMethodForArgs(obj.tpe, _.name.toString == staticMethod.toString(), argsFlat)
-        val argsVector = getArgsVector(met, argsFlat)
+        val argsVector = toArgsVector(met, argsFlat)
         q"$FactoryMethodCC($className, $factoryMethodName, $argsVector)"
       case _ => throw new IllegalArgumentException(s"${arg.toString()}, ${showRaw(arg)}")
     }
