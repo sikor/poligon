@@ -49,6 +49,8 @@ object CustomConfig extends DefaultConfig with PartialConfig {
   def some: BeanDef[TakesList] = some(ListValue.empty)
 
   def javaFactoryBean: BeanDef[JavaClass] = JavaClass.javaFactory("javaFactoryArg").toBeanDef
+
+  def mapValue: BeanDef[Map[Int, String]] = Map(10 -> "dziesiec", 23 -> "dwadziescia trzy").toBeanDef
 }
 
 class HasListArg(names: List[String])
