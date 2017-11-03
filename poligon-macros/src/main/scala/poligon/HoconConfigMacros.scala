@@ -109,7 +109,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
         q"$ConstructorCC($clsName, $argsVector, Vector.empty)"
       case l: Literal =>
         l.value.value match {
-          case s: String =>
+          case _: String =>
             val escaped = l.toString()
             q"$SimpleValueCC($escaped)"
           case _ => q"$SimpleValueCC($l)"

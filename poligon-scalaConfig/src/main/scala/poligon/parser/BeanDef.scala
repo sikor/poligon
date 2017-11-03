@@ -93,6 +93,14 @@ object BeanDef {
   case class MapValue[K, V, M[_, _]](value: Map[BeanDef[K], BeanDef[V]]) extends BeanDef[M[K, V]] {
     def toHocon: String =
       value.map(v => s"  ${move(2, v._1.toHocon)} = ${move(2, v._2.toHocon)}").mkString("{\n", "\n", "\n}")
+
+    def amend[X[_, _]](other: MapValue[K, V, X], amend: Boolean = true): MapValue[K, V, M] = {
+      if (amend) {
+        MapValue(value ++ other.value)
+      } else {
+        MapValue(other.value)
+      }
+    }
   }
 
   case class Referenced[T](refName: String, value: BeanDef[T]) extends BeanDef[T] {
