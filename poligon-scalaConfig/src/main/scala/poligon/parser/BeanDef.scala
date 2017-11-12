@@ -23,7 +23,7 @@ object BeanDef {
   private def separator(num: Int): String = s"\n${" " * num}"
 
   private def cleanHocon(hocon: String): String = {
-    hocon.replaceAll("""\s*%constructor-kargs = \{\s+\}""", "")
+    hocon.replaceAll("""\s*%constructor-args = \{\s+\}""", "")
       .lines.filter(l => !l.matches("""\s*""")).mkString("\n")
   }
 
@@ -94,6 +94,9 @@ object BeanDef {
     def toHocon: String =
       value.map(v => s"  ${move(2, v._1.toHocon)} = ${move(2, v._2.toHocon)}").mkString("{\n", "\n", "\n}")
 
+    @compileTimeOnly("as method can be used only as constructor or setter argument in BeadDef")
+    def as[C[_, _] <: scala.collection.Map[_, _]]: C[K, V] = throw new NotImplementedError()
+
     def amend[X[_, _]](other: MapValue[K, V, X], amend: Boolean = true): MapValue[K, V, M] = {
       if (amend) {
         MapValue(value ++ other.value)
@@ -123,7 +126,11 @@ object BeanDef {
   }
 
   implicit final class ListOps[I](t: List[I]) {
-    def toListDef: ListValue[I, List] = macro poligon.HoconConfigMacros.toListDef
+    def toListValue: ListValue[I, List] = macro poligon.HoconConfigMacros.toListDef
+  }
+
+  implicit final class MapOps[K, V](m: Map[K, V]) {
+    def toMapValue: MapValue[K, V, Map] = macro poligon.HoconConfigMacros.toBeanDef[Map[K, V]]
   }
 
   def toBeanDefs[T](holder: T): BeansMap = macro poligon.HoconConfigMacros.toHoconConfig[T]

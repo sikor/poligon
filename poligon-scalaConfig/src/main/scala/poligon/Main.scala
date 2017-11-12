@@ -44,13 +44,15 @@ trait DefaultConfig {
 object CustomConfig extends DefaultConfig with PartialConfig {
   def par: BeanDef[ScalaNormalClass] = new ScalaNormalClass("pardef", 3)(RunNowEC.get).toBeanDef
 
-  def some(arg: ListValue[Int, List]): BeanDef[TakesList] = new TakesList(List(1, 2).toListDef.amend(arg).as[Vector]).toBeanDef
+  def some(arg: ListValue[Int, List]): BeanDef[TakesList] = new TakesList(List(1, 2).toListValue.amend(arg).as[Vector]).toBeanDef
 
   def some: BeanDef[TakesList] = some(ListValue.empty)
 
   def javaFactoryBean: BeanDef[JavaClass] = JavaClass.javaFactory("javaFactoryArg").toBeanDef
 
-  def mapValue: BeanDef[Map[Int, String]] = Map(10 -> "dziesiec", 23 -> "dwadziescia trzy").toBeanDef
+  def mapValue(mod: MapValue[Int, String, Map]): BeanDef[Map[Int, String]] = Map(10 -> "dziesiec", 23 -> "dwadziescia trzy").toMapValue.amend(mod)
+
+  def mapValue: BeanDef[Map[Int, String]] = mapValue(Map(11 -> "jedynaście", 10 -> "dycha").toMapValue)
 }
 
 class HasListArg(names: List[String])
@@ -68,7 +70,7 @@ object Main {
     println(new JavaClass(s).toBeanDef)
     //    println(CustomConfig.bar)
     //    println(new HasListArg(List("pawel", "asia")).toBeanDef)
-    println(CustomConfig.some(List(1, 2, 3).toListDef))
+    println(CustomConfig.some(List(1, 2, 3).toListValue))
     println(BeanDef.toBeanDefs(CustomConfig).toHocon)
   }
 }
@@ -84,9 +86,10 @@ object Main {
   * * modify existing field in the bean, using existing value, for example append to list/string
   * * prototyping like hocon? - needs referencing, copying instead of overriding beans, special case for changing class
   * factory beans/methods (for scala singleton beans methods and classic java factory beans with arguments)
+  * handling setters - done
+  * Singleton objects refs - handled by factory bean
   * default arguments
-  * Singleton objects refs
-  * handling setters
+  * handling arguments by properties (.conf)
   *
   * Everything should be able to have a name: List, ClassDef, FactoryDef, Map - one macro that translates some scala code to hocon.
   *
