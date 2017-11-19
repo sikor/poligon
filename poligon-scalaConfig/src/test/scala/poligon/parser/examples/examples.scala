@@ -1,8 +1,6 @@
 package poligon.parser.examples
 
 
-
-
 sealed trait ProcessingType {
   def get: this.type = this
 }
@@ -13,4 +11,4 @@ case object PreciseProcessing extends ProcessingType
 
 case class Strategy(processingTpe: ProcessingType)
 
-class ImportantService(id: Int, name: String, strategy: Strategy)
+class ImportantService(id: Int, name: String, customerName: String, strategy: Strategy)

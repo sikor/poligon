@@ -107,7 +107,11 @@ object BeanDef {
   }
 
   case class Referenced[T](refName: String, value: BeanDef[T]) extends BeanDef[T] {
-    override def toHocon: String = s"{ %ref = $refName }"
+    def toHocon: String = s"{ %ref = $refName }"
+  }
+
+  case class PropertyValue(propName: String) extends BeanDef[String] {
+    def toHocon: String = s"$${$propName}"
   }
 
   case class BeansMap(map: Map[String, BeanDef[_]]) {
@@ -119,18 +123,22 @@ object BeanDef {
     }
   }
 
-  implicit final class ObjectOps[T](t: T) {
+  implicit final class ObjectOps[T](private val t: T) extends AnyVal {
     def toBeanDef: BeanDef[T] = macro poligon.HoconConfigMacros.toBeanDef[T]
 
     def withSetters(setters: (T => Unit)*): BeanDef[T] = macro poligon.HoconConfigMacros.withSetters[T]
   }
 
-  implicit final class ListOps[I](t: List[I]) {
+  implicit final class ListOps[I](private val t: List[I]) extends AnyVal {
     def toListValue: ListValue[I, List] = macro poligon.HoconConfigMacros.toListDef
   }
 
-  implicit final class MapOps[K, V](m: Map[K, V]) {
+  implicit final class MapOps[K, V](private val m: Map[K, V]) extends AnyVal {
     def toMapValue: MapValue[K, V, Map] = macro poligon.HoconConfigMacros.toBeanDef[Map[K, V]]
+  }
+
+  implicit final class StringOps(private val s: String) extends AnyVal {
+    def toProp: PropertyValue = PropertyValue(s)
   }
 
   def toBeanDefs[T](holder: T): BeansMap = macro poligon.HoconConfigMacros.toHoconConfig[T]

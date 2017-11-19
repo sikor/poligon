@@ -28,7 +28,8 @@ lazy val `poligon-macros` = project
   .settings(
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
     libraryDependencies += "com.avsystem.commons" %% "commons-macros" % "1.20.4",
-    libraryDependencies += "com.avsystem.commons" %% "commons-shared" % "1.20.4"
+    libraryDependencies += "com.avsystem.commons" %% "commons-shared" % "1.20.4",
+    libraryDependencies += "com.avsystem.commons" %% "commons-spring" % "1.20.4"
   )
 
 lazy val `poligon-scalaConfig` = project.dependsOn(`poligon-macros`)
