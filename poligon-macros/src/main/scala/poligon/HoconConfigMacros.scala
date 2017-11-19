@@ -95,6 +95,9 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
     def unapply(arg: Tree): Option[(String, Tree)] = arg match {
       case q"new $classIdent(...$args)" =>
         val clsName = classIdent.symbol.fullName
+        if (!classIdent.symbol.owner.isPackage) {
+          throw new IllegalArgumentException(s"Cannot create beans for classes not directly inside package, but got class inside: ${classIdent.symbol.owner.fullName}")
+        }
         val a = args.asInstanceOf[List[List[Tree]]].flatten
         val constructor = findMethodForArgs(classIdent.tpe, _.isConstructor, a)
         val argsVector = toArgsVector(constructor, a)
@@ -117,8 +120,8 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
       case q"""$something.this.$refName.ref""" =>
         val refNameStr = refName.toString()
         q"$ReferencedCC($refNameStr, $something.this.$refName)"
-      case q"""$something.this.$refName.inline""" =>
-        q"$something.this.$refName"
+      case q"""$refName.inline""" =>
+        q"$refName"
       case q"scala.collection.immutable.List.apply[$_](..$items)" =>
         val argsTrees = items.asInstanceOf[List[Tree]].map(convertToBean)
         q"$ListValueCC(scala.collection.immutable.Vector(..$argsTrees))"

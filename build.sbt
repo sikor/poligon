@@ -32,9 +32,10 @@ lazy val `poligon-macros` = project
   )
 
 lazy val `poligon-scalaConfig` = project.dependsOn(`poligon-macros`)
+  .settings(libraryDependencies += "org.scalatest" % "scalatest_2.12" % "3.0.4" % Test)
 
 lazy val `poligon-functional` = project.dependsOn(`poligon-macros`)
-  .settings(libraryDependencies += "org.scalatest" % "scalatest_2.12" % "3.0.4")
+  .settings(libraryDependencies += "org.scalatest" % "scalatest_2.12" % "3.0.4" % Test)
 
 lazy val poligon = project.in(file("."))
   .aggregate(`poligon-macros`, `poligon-scalaConfig`, `poligon-functional`)

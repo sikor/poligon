@@ -44,7 +44,7 @@ trait DefaultConfig {
 object CustomConfig extends DefaultConfig with PartialConfig {
   def par: BeanDef[ScalaNormalClass] = new ScalaNormalClass("pardef", 3)(RunNowEC.get).toBeanDef
 
-  def some(arg: ListValue[Int, List]): BeanDef[TakesList] = new TakesList(List(1, 2).toListValue.amend(arg).as[Vector]).toBeanDef
+  def some(arg: ListValue[Int, List]): BeanDef[TakesList] = new TakesList(vec = List(1, 2).toListValue.amend(arg).as[Vector]).toBeanDef
 
   def some: BeanDef[TakesList] = some(ListValue.empty)
 
@@ -87,7 +87,8 @@ object Main {
   * * prototyping like hocon? - needs referencing, copying instead of overriding beans, special case for changing class
   * factory beans/methods (for scala singleton beans methods and classic java factory beans with arguments)
   * handling setters - done
-  * Singleton objects refs - handled by factory bean
+  * Singleton objects refs - handled by factory bean (done)
+  * TODO
   * default arguments
   * handling arguments by properties (.conf)
   *
