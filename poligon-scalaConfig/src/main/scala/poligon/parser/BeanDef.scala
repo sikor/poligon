@@ -14,73 +14,42 @@ import scala.reflect.ClassTag
   */
 object BeanDef {
 
-  case class Arg(name: String, value: BeanDef[_])
-
   sealed trait BeanDef[T] {
-
     @compileTimeOnly("ref method can be used only as constructor or setter argument in BeanDef.")
     def ref: T = throw new NotImplementedError()
 
     @compileTimeOnly("inline method can be used only as constructor or setter argument in BeanDef.")
     def inline: T = throw new NotImplementedError()
-
-    def createInstance(context: BContainer): T = ???
-
-    def valueClass: Class[_]
   }
 
-  case class Constructor[T](clsName: String, args: Vector[Arg], setters: Vector[Arg]) extends BeanDef[T] {
+  case class Arg(name: String, value: BeanDef[_])
 
-    def createInstanceByReflection(context: BContainer): T = {
-      val cls = getClass.getClassLoader.loadClass(clsName)
-      cls.getConstructors.find { c =>
-        c.getParameterTypes.zip(args.map(_.value)).forall {
-          case (expected, beanDef) =>
-            expected.isAssignableFrom(???)
-            ???
-        }
-      }
-      ???
-    }
+  case class Constructor[T](clsName: String, args: Vector[Arg], setters: Vector[Arg]) extends BeanDef[T]
 
-    def valueClass: Class[_] = getClass.getClassLoader.loadClass(clsName)
-  }
+  case class FactoryMethod[T](clsName: String, factoryMethod: String, args: Vector[Arg]) extends BeanDef[T]
 
-  case class FactoryMethod[T](clsName: String, factoryMethod: String, args: Vector[Arg]) extends BeanDef[T] {
+  case class SimpleValue[T](value: T) extends BeanDef[T]
 
-    override def valueClass: Class[_] = {
-      getClass.getClassLoader.loadClass(clsName).getMethod(factoryMethod, args.map(_.value.valueClass): _*)
-        .getReturnType
-    }
-  }
-
-  case class SimpleValue[T](value: T) extends BeanDef[T] {
-    def toHocon: String = value.toString
-
-    override def valueClass: Class[_] = value.getClass
-  }
-
-  case class ListValue[I, L[_]](values: Vector[BeanDef[I]], valueClass: Class[_]) extends BeanDef[L[I]] {
+  case class ListValue[I, L[_]](values: Vector[BeanDef[I]]) extends BeanDef[L[I]] {
 
     //TODO: should return ListValue with adjusted valueClass
     @compileTimeOnly("as method can be used only as constructor or setter argument in BeadDef")
     def as[C[_] <: TraversableOnce[_]]: C[I] = throw new NotImplementedError()
 
-
     def amend[X[_]](other: ListValue[I, X], amend: Boolean = true): ListValue[I, L] = {
       if (amend) {
-        ListValue(values ++ other.values, valueClass)
+        ListValue(values ++ other.values)
       } else {
-        ListValue(other.values, valueClass)
+        ListValue(other.values)
       }
     }
   }
 
   object ListValue {
-    def empty[I, L[_]](implicit listCls: ClassTag[L[_]]): ListValue[I, L] = ListValue[I, L](Vector.empty, implicitly[ClassTag[L[_]]].runtimeClass)
+    def empty[I, L[_]](implicit listCls: ClassTag[L[_]]): ListValue[I, L] = ListValue[I, L](Vector.empty)
   }
 
-  case class MapValue[K, V, M[_, _]](value: Map[BeanDef[K], BeanDef[V]], valueClass: Class[_]) extends BeanDef[M[K, V]] {
+  case class MapValue[K, V, M[_, _]](value: Map[BeanDef[K], BeanDef[V]]) extends BeanDef[M[K, V]] {
 
     //TODO: should return MapValue with adjusted valueClass
     @compileTimeOnly("as method can be used only as constructor or setter argument in BeadDef")
@@ -88,23 +57,16 @@ object BeanDef {
 
     def amend[X[_, _]](other: MapValue[K, V, X], amend: Boolean = true): MapValue[K, V, M] = {
       if (amend) {
-        MapValue(value ++ other.value, valueClass)
+        MapValue(value ++ other.value)
       } else {
-        MapValue(other.value, valueClass)
+        MapValue(other.value)
       }
     }
   }
 
-  case class Referenced[T](refName: String, value: BeanDef[T]) extends BeanDef[T] {
+  case class Referenced[T](refName: String, value: BeanDef[T]) extends BeanDef[T]
 
-    def valueClass: Class[_] = value.valueClass
-  }
-
-  case class PropertyValue(propName: String) extends BeanDef[String] {
-    def toHocon: String = s"$${$propName}"
-
-    override def valueClass: Class[_] = classOf[String]
-  }
+  case class PropertyValue(propName: String) extends BeanDef[String]
 
   case class BeansMap(map: Map[String, BeanDef[_]])
 

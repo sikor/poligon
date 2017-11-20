@@ -37,9 +37,9 @@ object HoconPrinter {
            |}""".stripMargin)
     case SimpleValue(value) =>
       value.toString
-    case ListValue(values, _) =>
+    case ListValue(values) =>
       values.map(v => toHoconObject(v)).mkString("[", ", ", "]")
-    case MapValue(value, _) =>
+    case MapValue(value) =>
       value.map(v => s"  ${move(2, toHoconObject(v._1))} = ${move(2, toHoconObject(v._2))}")
         .mkString("{\n", "\n", "\n}")
     case Referenced(refName, _) =>
