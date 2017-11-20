@@ -7,7 +7,7 @@ import poligon.parser.examples.{FastProcessing, ImportantService, Strategy}
 /**
   * <pre>
   * TODO:
-  * - Handling .conf properties
+  * - Handling .conf properties - done for strings
   * - Factory for beans, without lazy vals, keep instances in Map referenced by name.
   * - Handling default arguments
   * - Compilation should fail for construction of inner classes - done

@@ -1,7 +1,7 @@
 package poligon
 
 import com.avsystem.commons.concurrent.RunNowEC
-import poligon.parser.BeanDef
+import poligon.parser.{BeanDef, HoconPrinter}
 import poligon.parser.BeanDef.{BeanDef, ListValue}
 import somePackage.JavaClass
 import poligon.parser.BeanDef._
@@ -71,7 +71,7 @@ object Main {
     //    println(CustomConfig.bar)
     //    println(new HasListArg(List("pawel", "asia")).toBeanDef)
     println(CustomConfig.some(List(1, 2, 3).toListValue))
-    println(BeanDef.toBeanDefs(CustomConfig).toHocon)
+    println(HoconPrinter.toHocon(BeanDef.toBeanDefs(CustomConfig)))
   }
 }
 
