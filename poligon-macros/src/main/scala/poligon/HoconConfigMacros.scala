@@ -111,12 +111,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
       case Constructor(clsName, argsVector) =>
         q"$ConstructorCC($clsName, $argsVector, Vector.empty)"
       case l: Literal =>
-        l.value.value match {
-          case _: String =>
-            val escaped = l.toString()
-            q"$SimpleValueCC($escaped)"
-          case _ => q"$SimpleValueCC($l)"
-        }
+        q"$SimpleValueCC($l)"
       case q"""$something.this.$refName.ref""" =>
         val refNameStr = refName.toString()
         q"$ReferencedCC($refNameStr, $something.this.$refName)"

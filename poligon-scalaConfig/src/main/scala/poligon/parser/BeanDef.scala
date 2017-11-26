@@ -3,15 +3,7 @@ package poligon.parser
 import scala.annotation.compileTimeOnly
 import scala.reflect.ClassTag
 
-/**
-  * Inline beans are that that can be referenced - rename ref method to something more general like extract
-  * Should data be related to some scala type? Or should it be just raw structure description? If related to type it also should
-  * take the code that evaluate to its value (by name argument?)
-  *
-  * BeanDef always represents some type. If this type is a list we should consider adding append method to it and converting
-  * it to other types of lists.
-  *
-  */
+
 object BeanDef {
 
   sealed trait BeanDef[T] {
@@ -27,6 +19,8 @@ object BeanDef {
   case class Constructor[T](clsName: String, args: Vector[Arg], setters: Vector[Arg]) extends BeanDef[T]
 
   case class FactoryMethod[T](clsName: String, factoryMethod: String, args: Vector[Arg]) extends BeanDef[T]
+
+  trait SimpleValueType[T]
 
   case class SimpleValue[T](value: T) extends BeanDef[T]
 

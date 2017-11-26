@@ -4,7 +4,7 @@ import poligon.parser.BeanDef.{Arg, BeanDef, Constructor, FactoryMethod, ListVal
 
 //TODO: Potrzebujemy wiecej informacji w BeanDef: Dokladnie jakiego typu jest lista, mapa, propertyValue, dokładnie, którego konstruktora użyć
 //TODO: Sprawdzić czy podczas konwersji do hocona nie są tracone informacje niezbędne do stworzenia beana. Kompilowalność powinna gwarantować
-//poprawność hocona.
+//poprawność hocona, np gdy wystepuje overloading constructora albo factory method to dokladnie adnotować typy.
 object BeanFactory {
 
   private def clsByName(name: String): Class[_] = this.getClass.getClassLoader.loadClass(name)
