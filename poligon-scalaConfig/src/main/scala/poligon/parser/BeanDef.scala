@@ -3,16 +3,15 @@ package poligon.parser
 import scala.annotation.compileTimeOnly
 import scala.reflect.ClassTag
 
+sealed trait BeanDef[T] {
+  @compileTimeOnly("ref method can be used only as constructor or setter argument in BeanDef.")
+  def ref: T = throw new NotImplementedError()
+
+  @compileTimeOnly("inline method can be used only as constructor or setter argument in BeanDef.")
+  def inline: T = throw new NotImplementedError()
+}
 
 object BeanDef {
-
-  sealed trait BeanDef[T] {
-    @compileTimeOnly("ref method can be used only as constructor or setter argument in BeanDef.")
-    def ref: T = throw new NotImplementedError()
-
-    @compileTimeOnly("inline method can be used only as constructor or setter argument in BeanDef.")
-    def inline: T = throw new NotImplementedError()
-  }
 
   case class Arg(name: String, value: BeanDef[_])
 
@@ -20,8 +19,9 @@ object BeanDef {
 
   case class FactoryMethod[T](clsName: String, factoryMethod: String, args: Vector[Arg]) extends BeanDef[T]
 
-  trait SimpleValueType[T]
+  trait SimpleValueDescription
 
+  //TODO: type class for allowed simple values serializable to hocon
   case class SimpleValue[T](value: T) extends BeanDef[T]
 
   case class ListValue[I, L[_]](values: Vector[BeanDef[I]]) extends BeanDef[L[I]] {

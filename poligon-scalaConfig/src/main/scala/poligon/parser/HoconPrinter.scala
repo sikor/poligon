@@ -1,6 +1,6 @@
 package poligon.parser
 
-import poligon.parser.BeanDef.{Arg, BeanDef, BeansMap, Constructor, FactoryMethod, ListValue, MapValue, PropertyValue, Referenced, SimpleValue}
+import poligon.parser.BeanDef.{Arg, BeansMap, Constructor, FactoryMethod, ListValue, MapValue, PropertyValue, Referenced, SimpleValue}
 
 import scala.annotation.switch
 

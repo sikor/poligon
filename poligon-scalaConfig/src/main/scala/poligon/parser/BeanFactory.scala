@@ -1,8 +1,9 @@
 package poligon.parser
 
-import poligon.parser.BeanDef.{Arg, BeanDef, Constructor, FactoryMethod, ListValue, MapValue, PropertyValue, Referenced, SimpleValue}
+import poligon.parser.BeanDef.{Arg, Constructor, FactoryMethod, ListValue, MapValue, PropertyValue, Referenced, SimpleValue}
 
 //TODO: Potrzebujemy wiecej informacji w BeanDef: Dokladnie jakiego typu jest lista, mapa, propertyValue, dokładnie, którego konstruktora użyć
+// - dodać informację o typie docelowym w argumentach factory i constructor beanów. Dodać tworzoną klasę do każdego bean'a - nie tylo factory i constructor
 //TODO: Sprawdzić czy podczas konwersji do hocona nie są tracone informacje niezbędne do stworzenia beana. Kompilowalność powinna gwarantować
 //poprawność hocona, np gdy wystepuje overloading constructora albo factory method to dokladnie adnotować typy.
 object BeanFactory {

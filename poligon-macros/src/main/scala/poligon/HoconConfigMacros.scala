@@ -15,7 +15,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
 
   val ParserPkg = q"_root_.poligon.parser"
   val BeanDefObj = q"$ParserPkg.BeanDef"
-  val BeanDefTpe: c.universe.Type = getType(tq"$BeanDefObj.BeanDef[_]")
+  val BeanDefTpe: c.universe.Type = getType(tq"$ParserPkg.BeanDef[_]")
   val ConstructorCC = q"$BeanDefObj.Constructor"
   val FactoryMethodCC = q"$BeanDefObj.FactoryMethod"
   val SimpleValueCC = q"$BeanDefObj.SimpleValue"

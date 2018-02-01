@@ -1,10 +1,9 @@
 package poligon
 
 import com.avsystem.commons.concurrent.RunNowEC
+import poligon.parser.BeanDef.{ListValue, _}
 import poligon.parser.{BeanDef, HoconPrinter}
-import poligon.parser.BeanDef.{BeanDef, ListValue}
 import somePackage.JavaClass
-import poligon.parser.BeanDef._
 
 import scala.beans.BeanProperty
 import scala.concurrent.ExecutionContext
