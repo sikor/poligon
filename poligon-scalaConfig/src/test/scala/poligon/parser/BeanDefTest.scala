@@ -24,11 +24,12 @@ class BeanDefTest extends FunSuite {
       10,
       "biedronka",
       "services.customerName".toProp.inline,
+      //not compiling because classOf[FastProcessing.type] is invalid
       Strategy(FastProcessing.get.toBeanDef.inline).toBeanDef.inline
     ).toBeanDef
     assert(importantServiceDef.isInstanceOf[Constructor[ImportantService]])
     val ConstructorDef = importantServiceDef.asInstanceOf[Constructor[ImportantService]]
-    assert(getClass.getClassLoader.loadClass(ConstructorDef.clsName) == classOf[ImportantService])
+    assert(ConstructorDef.cls == classOf[ImportantService])
   }
 
 }

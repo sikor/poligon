@@ -9,22 +9,24 @@ sealed trait BeanDef[T] {
 
   @compileTimeOnly("inline method can be used only as constructor or setter argument in BeanDef.")
   def inline: T = throw new NotImplementedError()
+
+  def cls: Class[T]
 }
 
 object BeanDef {
 
   case class Arg(name: String, value: BeanDef[_])
 
-  case class Constructor[T](clsName: String, args: Vector[Arg], setters: Vector[Arg]) extends BeanDef[T]
+  case class Constructor[T](cls: Class[T], args: Vector[Arg], setters: Vector[Arg]) extends BeanDef[T]
 
-  case class FactoryMethod[T](clsName: String, factoryMethod: String, args: Vector[Arg]) extends BeanDef[T]
+  case class FactoryMethod[T](cls: Class[T], factoryMethod: String, args: Vector[Arg]) extends BeanDef[T]
 
   trait SimpleValueDescription
 
   //TODO: type class for allowed simple values serializable to hocon
-  case class SimpleValue[T](value: T) extends BeanDef[T]
+  case class SimpleValue[T](cls: Class[T], value: T) extends BeanDef[T]
 
-  case class ListValue[I, L[_]](values: Vector[BeanDef[I]]) extends BeanDef[L[I]] {
+  case class ListValue[I, L[_]](cls: Class[L[I]], values: Vector[BeanDef[I]]) extends BeanDef[L[I]] {
 
     //TODO: should return ListValue with adjusted valueClass
     @compileTimeOnly("as method can be used only as constructor or setter argument in BeadDef")
@@ -32,18 +34,19 @@ object BeanDef {
 
     def amend[X[_]](other: ListValue[I, X], amend: Boolean = true): ListValue[I, L] = {
       if (amend) {
-        ListValue(values ++ other.values)
+        ListValue[I, L](cls, values ++ other.values)
       } else {
-        ListValue(other.values)
+        ListValue[I, L](cls, other.values)
       }
     }
   }
 
   object ListValue {
-    def empty[I, L[_]](implicit listCls: ClassTag[L[_]]): ListValue[I, L] = ListValue[I, L](Vector.empty)
+    def empty[I, L[_]](implicit listCls: ClassTag[L[I]]): ListValue[I, L] =
+      ListValue[I, L](listCls.runtimeClass.asInstanceOf[Class[L[I]]], Vector.empty)
   }
 
-  case class MapValue[K, V, M[_, _]](value: Map[BeanDef[K], BeanDef[V]]) extends BeanDef[M[K, V]] {
+  case class MapValue[K, V, M[_, _]](cls: Class[M[K, V]], value: Map[BeanDef[K], BeanDef[V]]) extends BeanDef[M[K, V]] {
 
     //TODO: should return MapValue with adjusted valueClass
     @compileTimeOnly("as method can be used only as constructor or setter argument in BeadDef")
@@ -51,16 +54,16 @@ object BeanDef {
 
     def amend[X[_, _]](other: MapValue[K, V, X], amend: Boolean = true): MapValue[K, V, M] = {
       if (amend) {
-        MapValue(value ++ other.value)
+        MapValue[K, V, M](cls, value ++ other.value)
       } else {
-        MapValue(other.value)
+        MapValue[K, V, M](cls, other.value)
       }
     }
   }
 
-  case class Referenced[T](refName: String, value: BeanDef[T]) extends BeanDef[T]
+  case class Referenced[T](cls: Class[T], refName: String, value: BeanDef[T]) extends BeanDef[T]
 
-  case class PropertyValue(propName: String) extends BeanDef[String]
+  case class PropertyValue[T](cls: Class[T], propName: String) extends BeanDef[T]
 
   case class BeansMap(map: Map[String, BeanDef[_]])
 
@@ -83,7 +86,7 @@ object BeanDef {
   }
 
   implicit final class StringOps(private val s: String) extends AnyVal {
-    def toProp: PropertyValue = PropertyValue(s)
+    def toProp[T](implicit ct: ClassTag[T]): PropertyValue[T] = PropertyValue(ct.runtimeClass.asInstanceOf[Class[T]], s)
   }
 
   def toBeanDefs[T](holder: T): BeansMap = macro poligon.HoconConfigMacros.toHoconConfig[T]

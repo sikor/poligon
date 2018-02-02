@@ -16,7 +16,6 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
   val ParserPkg = q"_root_.poligon.parser"
   val BeanDefObj = q"$ParserPkg.BeanDef"
   val BeanDefTpe: c.universe.Type = getType(tq"$ParserPkg.BeanDef[_]")
-  val InstantiableCC = q"$ParserPkg.Instantiable"
   val ConstructorCC = q"$BeanDefObj.Constructor"
   val FactoryMethodCC = q"$BeanDefObj.FactoryMethod"
   val SimpleValueCC = q"$BeanDefObj.SimpleValue"
@@ -88,55 +87,25 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
       val valueBeanDef = convertToBean(value)
       q"$ArgCC($setterNameString, $valueBeanDef)"
     }
-    val Constructor(clsName, argsVector) = getPrefixTree
-    q"$ConstructorCC($clsName, $argsVector, Vector(..$settersArgVector))"
+    val Constructor(cls, argsVector) = getPrefixTree
+    q"$ConstructorCC($cls, $argsVector, Vector(..$settersArgVector))"
   }
 
   object Constructor {
-    def unapply(arg: Tree): Option[(String, Tree)] = arg match {
+    def unapply(arg: Tree): Option[(Tree, Tree)] = arg match {
       case q"new $classIdent(...$args)" =>
-        val clsName = classIdent.symbol.fullName
         if (!classIdent.symbol.owner.isPackage) {
           throw new IllegalArgumentException(s"Cannot create beans for classes not directly inside package, but got class inside: ${classIdent.symbol.owner.fullName}")
         }
         val a = args.asInstanceOf[List[List[Tree]]].flatten
         val constructor = findMethodForArgs(classIdent.tpe, _.isConstructor, a)
         val argsVector = toArgsVector(constructor, a)
-        Option(clsName, argsVector)
+        Option(q"classOf[${arg.tpe}]", argsVector)
       case _ => None
     }
   }
 
   private def convertToBean(arg: Tree): Tree = {
-    val beanDef = arg match {
-      case Constructor(clsName, argsVector) =>
-        q"$ConstructorCC($clsName, $argsVector, Vector.empty)"
-      case l: Literal =>
-        q"$SimpleValueCC($l)"
-      case q"""$something.this.$refName.ref""" =>
-        val refNameStr = refName.toString()
-        q"$ReferencedCC($refNameStr, $something.this.$refName)"
-      case q"""$refName.inline""" =>
-        q"$refName"
-      case q"scala.collection.immutable.List.apply[$_](..$items)" =>
-        val argsTrees = items.asInstanceOf[List[Tree]].map(convertToBean)
-        q"$ListValueCC(scala.collection.immutable.Vector(..$argsTrees))"
-      case q"""$listDef.as[$_]""" =>
-        q"$listDef"
-      case q"scala.Predef.Map.apply[$_, $_](..$pairs)" =>
-        val convertedPairs = pairs.map {
-          case q"scala.Predef.ArrowAssoc[$_]($key).->[$_]($value)" => q"${convertToBean(key)} -> ${convertToBean(value)}"
-        }
-        q"$MapValueCC(scala.collection.immutable.Map.apply(..$convertedPairs))"
-      case q"""$obj.$staticMethod(...$args)""" if obj.tpe.typeSymbol.isModuleClass => //strangely it works also for java static methods.
-        val className = obj.tpe.toString.stripSuffix(".type")
-        val factoryMethodName = staticMethod.toString()
-        val argsFlat = args.asInstanceOf[List[List[Tree]]].flatten
-        val met = findMethodForArgs(obj.tpe, _.name.toString == staticMethod.toString(), argsFlat)
-        val argsVector = toArgsVector(met, argsFlat)
-        q"$FactoryMethodCC($className, $factoryMethodName, $argsVector)"
-      case _ => throw new IllegalArgumentException(s"${arg.toString()}, ${showRaw(arg)}")
-    }
     val cls: Tree = arg match {
       case l: Literal =>
         l.value.value match {
@@ -144,8 +113,37 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
           case _ => q"($arg).getClass"
         }
       case _ => q"classOf[${arg.tpe}]"
+        //check if tree is singleton object and handle it correctly
     }
-    q"$InstantiableCC($cls, $beanDef)"
+    arg match {
+      case Constructor(_, argsVector) =>
+        q"$ConstructorCC($cls, $argsVector, Vector.empty)"
+      case l: Literal =>
+        q"$SimpleValueCC($cls, $l)"
+      case q"""$something.this.$refName.ref""" =>
+        val refNameStr = refName.toString()
+        q"$ReferencedCC($cls, $refNameStr, $something.this.$refName)"
+      case q"""$refName.inline""" =>
+        q"$refName"
+      case q"scala.collection.immutable.List.apply[$_](..$items)" =>
+        val argsTrees = items.asInstanceOf[List[Tree]].map(convertToBean)
+        q"$ListValueCC($cls, scala.collection.immutable.Vector(..$argsTrees))"
+      case q"""$listDef.as[$_]""" =>
+        q"$listDef"
+      case q"scala.Predef.Map.apply[$_, $_](..$pairs)" =>
+        val convertedPairs = pairs.map {
+          case q"scala.Predef.ArrowAssoc[$_]($key).->[$_]($value)" => q"${convertToBean(key)} -> ${convertToBean(value)}"
+        }
+        q"$MapValueCC($cls, scala.collection.immutable.Map.apply(..$convertedPairs))"
+      case q"""$obj.$staticMethod(...$args)""" if obj.tpe.typeSymbol.isModuleClass => //strangely it works also for java static methods.
+        val className = obj.tpe.toString.stripSuffix(".type")
+        val factoryMethodName = staticMethod.toString()
+        val argsFlat = args.asInstanceOf[List[List[Tree]]].flatten
+        val met = findMethodForArgs(obj.tpe, _.name.toString == staticMethod.toString(), argsFlat)
+        val argsVector = toArgsVector(met, argsFlat)
+        q"$FactoryMethodCC($cls, $factoryMethodName, $argsVector)"
+      case _ => throw new IllegalArgumentException(s"${arg.toString()}, ${showRaw(arg)}")
+    }
   }
 
   private def findMethodForArgs(tpeOfClass: Type, filter: Symbol => Boolean, a: List[Tree]): MethodSymbol = {

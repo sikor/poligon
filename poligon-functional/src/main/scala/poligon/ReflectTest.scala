@@ -21,6 +21,8 @@ object ReflectTest {
     val st = tb.typecheck(s)
     println(st.tpe)
     println("ala".getClass)
+
+    println(ReflectTest.getClass)
   }
 
 }

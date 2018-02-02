@@ -59,7 +59,7 @@ object HoconPrinter {
            |    ${argsToHocon(4, args)}
            |  }
            |}""".stripMargin)
-    case SimpleValue(value) =>
+    case SimpleValue(_, value) =>
       value match {
         case s: String =>
           val builder = new StringBuilder
@@ -67,14 +67,14 @@ object HoconPrinter {
           builder.result()
         case _ => value.toString
       }
-    case ListValue(values) =>
+    case ListValue(_, values) =>
       values.map(v => toHoconObject(v)).mkString("[", ", ", "]")
-    case MapValue(value) =>
+    case MapValue(_, value) =>
       value.map(v => s"  ${move(2, toHoconObject(v._1))} = ${move(2, toHoconObject(v._2))}")
         .mkString("{\n", "\n", "\n}")
-    case Referenced(refName, _) =>
+    case Referenced(_, refName, _) =>
       s"{ %ref = $refName }"
-    case PropertyValue(propName) =>
+    case PropertyValue(_, propName) =>
       s"$${$propName}"
   }
 
