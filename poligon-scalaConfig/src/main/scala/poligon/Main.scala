@@ -2,7 +2,7 @@ package poligon
 
 import com.avsystem.commons.concurrent.RunNowEC
 import poligon.parser.BeanDef.{ListValue, _}
-import poligon.parser.{BeanDef, HoconPrinter, Instantiable}
+import poligon.parser.{BeanDef, HoconPrinter}
 import somePackage.JavaClass
 
 import scala.beans.BeanProperty
@@ -35,23 +35,23 @@ object InheritsStaticMethod extends HasStaticMethods {
 trait DefaultConfig {
   this: PartialConfig =>
 
-  def foo: Instantiable[ScalaNormalClass] = new ScalaNormalClass(InheritsStaticMethod.factory(32), 2)(RunNowEC.get).toBeanDef
+  def foo: BeanDef[ScalaNormalClass] = new ScalaNormalClass(InheritsStaticMethod.factory(32), 2)(RunNowEC.get).toBeanDef
 
-  def bar: Instantiable[MainClass] = new MainClass(foo.ref, par.inline).toBeanDef
+  def bar: BeanDef[MainClass] = new MainClass(foo.ref, par.inline).toBeanDef
 }
 
 object CustomConfig extends DefaultConfig with PartialConfig {
-  def par: Instantiable[ScalaNormalClass] = new ScalaNormalClass("pardef", 3)(RunNowEC.get).toBeanDef
+  def par: BeanDef[ScalaNormalClass] = new ScalaNormalClass("pardef", 3)(RunNowEC.get).toBeanDef
 
-  def some(arg: ListValue[Int, List]): Instantiable[TakesList] = new TakesList(vec = List(1, 2).toListValue.amend(arg).as[Vector]).toBeanDef
+  def some(arg: ListValue[Int, List]): BeanDef[TakesList] = new TakesList(vec = List(1, 2).toListValue.amend(arg).as[Vector]).toBeanDef
 
-  def some: Instantiable[TakesList] = some(ListValue.empty)
+  def some: BeanDef[TakesList] = some(ListValue.empty)
 
-  def javaFactoryBean: Instantiable[JavaClass] = JavaClass.javaFactory("javaFactoryArg").toBeanDef
+  def javaFactoryBean: BeanDef[JavaClass] = JavaClass.javaFactory("javaFactoryArg").toBeanDef
 
-  def mapValue(mod: MapValue[Int, String, Map]): Instantiable[Map[Int, String]] = Map(10 -> "dziesiec", 23 -> "dwadziescia trzy").toMapValue.amend(mod)
+  def mapValue(mod: MapValue[Int, String, Map]): BeanDef[Map[Int, String]] = Map(10 -> "dziesiec", 23 -> "dwadziescia trzy").toMapValue.amend(mod)
 
-  def mapValue: Instantiable[Map[Int, String]] = mapValue(Map(11 -> "jedynaście", 10 -> "dycha").toMapValue)
+  def mapValue: BeanDef[Map[Int, String]] = mapValue(Map(11 -> "jedynaście", 10 -> "dycha").toMapValue)
 }
 
 class HasListArg(names: List[String])
@@ -63,8 +63,6 @@ object Main {
   final val map = Map(1 -> "String")
 
   def main(args: Array[String]): Unit = {
-
-    Instantiable(classOf[Int], SimpleValue(1))
     println(new ScalaNormalClass("normal \" \\\" class \n", 23)(RunNowEC.get).withSetters(
       _.setSettableDouble(1.0),
       _.setSomeString("setted string")))

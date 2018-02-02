@@ -1,6 +1,5 @@
 package poligon.parser
 
-
 import scala.annotation.compileTimeOnly
 import scala.reflect.ClassTag
 
@@ -14,7 +13,7 @@ sealed trait BeanDef[T] {
 
 object BeanDef {
 
-  case class Arg(name: String, value: Instantiable[_])
+  case class Arg(name: String, value: BeanDef[_])
 
   case class Constructor[T](clsName: String, args: Vector[Arg], setters: Vector[Arg]) extends BeanDef[T]
 
@@ -25,7 +24,7 @@ object BeanDef {
   //TODO: type class for allowed simple values serializable to hocon
   case class SimpleValue[T](value: T) extends BeanDef[T]
 
-  case class ListValue[I, L[_]](values: Vector[Instantiable[I]]) extends BeanDef[L[I]] {
+  case class ListValue[I, L[_]](values: Vector[BeanDef[I]]) extends BeanDef[L[I]] {
 
     //TODO: should return ListValue with adjusted valueClass
     @compileTimeOnly("as method can be used only as constructor or setter argument in BeadDef")
@@ -44,7 +43,7 @@ object BeanDef {
     def empty[I, L[_]](implicit listCls: ClassTag[L[_]]): ListValue[I, L] = ListValue[I, L](Vector.empty)
   }
 
-  case class MapValue[K, V, M[_, _]](value: Map[Instantiable[K], Instantiable[V]]) extends BeanDef[M[K, V]] {
+  case class MapValue[K, V, M[_, _]](value: Map[BeanDef[K], BeanDef[V]]) extends BeanDef[M[K, V]] {
 
     //TODO: should return MapValue with adjusted valueClass
     @compileTimeOnly("as method can be used only as constructor or setter argument in BeadDef")
@@ -59,20 +58,20 @@ object BeanDef {
     }
   }
 
-  case class Referenced[T](refName: String, value: Instantiable[T]) extends BeanDef[T]
+  case class Referenced[T](refName: String, value: BeanDef[T]) extends BeanDef[T]
 
   case class PropertyValue(propName: String) extends BeanDef[String]
 
-  case class BeansMap(map: Map[String, Instantiable[_]])
+  case class BeansMap(map: Map[String, BeanDef[_]])
 
-  case class BInstance[T](beanDef: Instantiable[T], instance: T)
+  case class BInstance[T](beanDef: BeanDef[T], instance: T)
 
   case class BContainer(map: Map[String, BInstance[_]], properties: Map[String, String])
 
   implicit final class ObjectOps[T](private val t: T) extends AnyVal {
-    def toBeanDef: Instantiable[T] = macro poligon.HoconConfigMacros.toBeanDef[T]
+    def toBeanDef: BeanDef[T] = macro poligon.HoconConfigMacros.toBeanDef[T]
 
-    def withSetters(setters: (T => Unit)*): Instantiable[T] = macro poligon.HoconConfigMacros.withSetters[T]
+    def withSetters(setters: (T => Unit)*): BeanDef[T] = macro poligon.HoconConfigMacros.withSetters[T]
   }
 
   implicit final class ListOps[I](private val t: List[I]) extends AnyVal {
