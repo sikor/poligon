@@ -35,9 +35,15 @@ object CrossPatternMatch {
     }
   }
 
+  class TestCls(val i: Int)
+
   def main(args: Array[String]): Unit = {
     val w = Wrapper()(SubFamily2)
     patternMatch(w)
+    val c = classOf[TestCls].getConstructors.apply(0).getParameterTypes.apply(0)
+    println(c)
+    val c2 = classOf[Int]
+    println(c2)
   }
 
 }

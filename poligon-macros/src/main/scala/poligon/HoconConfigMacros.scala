@@ -16,6 +16,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
   val ParserPkg = q"_root_.poligon.parser"
   val BeanDefObj = q"$ParserPkg.BeanDef"
   val BeanDefTpe: c.universe.Type = getType(tq"$ParserPkg.BeanDef[_]")
+  val InstantiableCC = q"$ParserPkg.Instantiable"
   val ConstructorCC = q"$BeanDefObj.Constructor"
   val FactoryMethodCC = q"$BeanDefObj.FactoryMethod"
   val SimpleValueCC = q"$BeanDefObj.SimpleValue"
@@ -107,7 +108,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
   }
 
   private def convertToBean(arg: Tree): Tree = {
-    arg match {
+    val beanDef = arg match {
       case Constructor(clsName, argsVector) =>
         q"$ConstructorCC($clsName, $argsVector, Vector.empty)"
       case l: Literal =>
@@ -136,6 +137,15 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
         q"$FactoryMethodCC($className, $factoryMethodName, $argsVector)"
       case _ => throw new IllegalArgumentException(s"${arg.toString()}, ${showRaw(arg)}")
     }
+    val cls: Tree = arg match {
+      case l: Literal =>
+        l.value.value match {
+          case _: String => q"classOf[java.lang.String]"
+          case _ => q"($arg).getClass"
+        }
+      case _ => q"classOf[${arg.tpe}]"
+    }
+    q"$InstantiableCC($cls, $beanDef)"
   }
 
   private def findMethodForArgs(tpeOfClass: Type, filter: Symbol => Boolean, a: List[Tree]): MethodSymbol = {

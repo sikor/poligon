@@ -27,6 +27,7 @@ inThisBuild(Seq(
 lazy val `poligon-macros` = project
   .settings(
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
     libraryDependencies += "com.avsystem.commons" %% "commons-macros" % "1.20.4",
     libraryDependencies += "com.avsystem.commons" %% "commons-shared" % "1.20.4",
     libraryDependencies += "com.avsystem.commons" %% "commons-spring" % "1.20.4"
