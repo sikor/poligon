@@ -19,7 +19,7 @@ object BeanDef {
 
   case class Constructor[T](cls: Class[T], args: Vector[Arg], setters: Vector[Arg]) extends BeanDef[T]
 
-  case class FactoryMethod[T](cls: Class[T], factoryMethod: String, args: Vector[Arg]) extends BeanDef[T]
+  case class FactoryMethod[T](cls: Class[T], clsName: String, factoryMethod: String, args: Vector[Arg]) extends BeanDef[T]
 
   trait SimpleValueDescription
 

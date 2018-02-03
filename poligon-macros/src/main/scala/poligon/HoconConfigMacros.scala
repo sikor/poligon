@@ -112,8 +112,12 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
           case _: String => q"classOf[java.lang.String]"
           case _ => q"($arg).getClass"
         }
-      case _ => q"classOf[${arg.tpe}]"
+      case t if t.tpe.typeSymbol.isModuleClass =>
         //check if tree is singleton object and handle it correctly
+        val tpeName = singleValueFor(t.tpe)
+        q"$tpeName.get.getClass.asInstanceOf[java.lang.Class[${arg.tpe}]]"
+      case _ =>
+        q"classOf[${arg.tpe}]"
     }
     arg match {
       case Constructor(_, argsVector) =>
@@ -141,7 +145,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
         val argsFlat = args.asInstanceOf[List[List[Tree]]].flatten
         val met = findMethodForArgs(obj.tpe, _.name.toString == staticMethod.toString(), argsFlat)
         val argsVector = toArgsVector(met, argsFlat)
-        q"$FactoryMethodCC($cls, $factoryMethodName, $argsVector)"
+        q"$FactoryMethodCC($cls, $className, $factoryMethodName, $argsVector)"
       case _ => throw new IllegalArgumentException(s"${arg.toString()}, ${showRaw(arg)}")
     }
   }
@@ -154,7 +158,8 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
         params.size == argsTypes.size && params.zip(argsTypes).forall {
           case (t1, t2) => t2.erasure.<:<(t1.erasure)
         }
-      } else {
+      }
+      else {
         false
       }
     }.map(_.asMethod).getOrElse(c.abort(c.enclosingPosition, "Method for args not found"))

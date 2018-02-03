@@ -20,12 +20,15 @@ class BeanDefTest extends FunSuite {
 
 
   test("creates bean def based on constructor") {
+//    FastProcessing.getClass.showRawAst
     val importantServiceDef = new ImportantService(
       10,
       "biedronka",
-      "services.customerName".toProp.inline,
+      "services.customerName".toProp[String].inline,
       //not compiling because classOf[FastProcessing.type] is invalid
-      Strategy(FastProcessing.get.toBeanDef.inline).toBeanDef.inline
+      Strategy(
+        poligon.parser.examples.FastProcessing.get
+      )
     ).toBeanDef
     assert(importantServiceDef.isInstanceOf[Constructor[ImportantService]])
     val ConstructorDef = importantServiceDef.asInstanceOf[Constructor[ImportantService]]

@@ -28,7 +28,7 @@ object BeanFactory {
       clsObj.getConstructors.filter { c =>
         parametersMatch(c.getParameterTypes, args)
       }.head.newInstance(args.map(a => createInstance(a.value, context))).asInstanceOf[T]
-    case FactoryMethod(clsName, methodName, args) =>
+    case FactoryMethod(cls, clsName, methodName, args) =>
       ???
     case ListValue(_, values) =>
       ???

@@ -41,16 +41,16 @@ object HoconPrinter {
   }
 
   def toHoconObject(beanDef: BeanDef[_]): String = beanDef match {
-    case Constructor(clsName, args, setters) =>
+    case Constructor(cls, args, setters) =>
       cleanHocon(
         s"""{
-           |  %class = $clsName
+           |  %class = ${cls.getName}
            |  %constructor-args = {
            |    ${argsToHocon(4, args)}
            |  }
            |  ${argsToHocon(2, setters)}
            |}""".stripMargin)
-    case FactoryMethod(clsName, factoryMethod, args) =>
+    case FactoryMethod(cls, clsName, factoryMethod, args) =>
       cleanHocon(
         s"""{
            |  %class = $clsName
