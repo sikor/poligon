@@ -8,7 +8,6 @@ import poligon.parser.BeanDef.{Arg, Constructor, FactoryMethod, ListValue, MapVa
 //poprawność hocona, np gdy wystepuje overloading constructora albo factory method to dokladnie adnotować typy.
 object BeanFactory {
 
-  private def clsByName(name: String): Class[_] = this.getClass.getClassLoader.loadClass(name)
 
   private def parametersMatch(targetParameters: Array[Class[_]], args: Vector[Arg]): Boolean = {
     if (targetParameters.length == args.size) {
@@ -23,15 +22,22 @@ object BeanFactory {
   private def canBeAssignedFrom(targetTpe: Class[_], beanDef: BeanDef[_]): Boolean =
     targetTpe.isAssignableFrom(beanDef.cls)
 
-  def createInstance[T](beanDef: BeanDef[T], context: Map[String, Any]): T = beanDef match {
+  def getOrCreateInstance[T](beanDef: BeanDef[T], context: Map[String, Any]): T = beanDef match {
     case Constructor(clsObj, args, setters) =>
-      clsObj.getConstructors.filter { c =>
+      val instance = clsObj.getConstructors.filter { c =>
         parametersMatch(c.getParameterTypes, args)
-      }.head.newInstance(args.map(a => createInstance(a.value, context))).asInstanceOf[T]
+      }.head.newInstance(args.map(a => getOrCreateInstance(a.value, context))).asInstanceOf[T]
+      setters.foreach { s =>
+        clsObj.getMethods
+          .filter(m => m.getName == s.name && parametersMatch(m.getParameterTypes, Vector(s))).head
+          .invoke(instance, getOrCreateInstance(s.value, context))
+      }
+      instance
     case FactoryMethod(cls, clsName, methodName, args) =>
-      ???
-    case ListValue(_, values) =>
-      ???
+      cls.getMethods.filter(m => m.getName == methodName && parametersMatch(m.getParameterTypes, args)).head
+        .invoke(null, args.map(a => getOrCreateInstance(a.value, context))).asInstanceOf[T]
+    case ListValue(cls, values) =>
+      
     case MapValue(_, _) => ???
     case PropertyValue(_, _) => ???
     case Referenced(_, _, value) =>
