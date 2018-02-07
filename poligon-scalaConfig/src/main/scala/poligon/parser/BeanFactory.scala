@@ -40,7 +40,12 @@ object BeanFactory {
       val builder = l.canBuildFrom.apply()
       builder.++=(values.map(b => getOrCreateInstance(b, context)))
       builder.result().asInstanceOf[T]
-    case MapValue(_, _) => ???
+    case m@MapValue(_, values) =>
+      val builder = m.canBuildFrom.apply()
+      builder.++=(values.iterator.map { case (k, v) =>
+        (getOrCreateInstance(k, context), getOrCreateInstance(v, context))
+      })
+      builder.result().asInstanceOf[T]
     case PropertyValue(_, _) => ???
     case Referenced(_, name, _) =>
       context(name).asInstanceOf[T]

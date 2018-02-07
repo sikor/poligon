@@ -27,7 +27,6 @@ object BeanDef {
   //TODO: type class for allowed simple values serializable to hocon
   case class SimpleValue[T](cls: Class[T], value: T) extends BeanDef[T]
 
-  //TODO: add can build from any?
   case class ListValue[I, L[_]](cls: Class[L[I]],
                                 values: Vector[BeanDef[I]])(implicit val canBuildFrom: CanBuildFrom[Nothing, I, L[I]])
     extends BeanDef[L[I]] {
@@ -47,11 +46,9 @@ object BeanDef {
 
   }
 
-  case class MapValue[K, V, M[_, _]](cls: Class[M[K, V]], value: Map[BeanDef[K], BeanDef[V]]) extends BeanDef[M[K, V]] {
-
-    //TODO: should return MapValue with adjusted valueClass
-    @compileTimeOnly("as method can be used only as constructor or setter argument in BeadDef")
-    def as[C[_, _] <: scala.collection.Map[_, _]]: C[K, V] = throw new NotImplementedError()
+  case class MapValue[K, V, M[_, _]](cls: Class[M[K, V]], value: Map[BeanDef[K], BeanDef[V]])
+                                    (implicit val canBuildFrom: CanBuildFrom[Nothing, (K, V), M[K, V]])
+    extends BeanDef[M[K, V]] {
 
     def amend[X[_, _]](other: MapValue[K, V, X], amend: Boolean = true): MapValue[K, V, M] = {
       if (amend) {
