@@ -7,11 +7,21 @@ object ReflectTest {
 
   val universe: scala.reflect.runtime.universe.type = scala.reflect.runtime.universe
 
+  class IntInMethod {
+    var value: Int = 0
+
+    def setValue(i: Int): Unit = value = i
+  }
+
   import universe._
 
   import scala.tools.reflect.ToolBox
 
   def main(args: Array[String]): Unit = {
+    val c = new IntInMethod
+    c.getClass.getMethod("setValue", classOf[Int]).invoke(c, 12.asInstanceOf[AnyRef])
+    println(c.value)
+
 
     val tb = runtimeMirror(getClass.getClassLoader).mkToolBox()
 

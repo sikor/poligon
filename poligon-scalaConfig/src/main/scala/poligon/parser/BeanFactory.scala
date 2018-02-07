@@ -24,25 +24,27 @@ object BeanFactory {
 
   def getOrCreateInstance[T](beanDef: BeanDef[T], context: Map[String, Any]): T = beanDef match {
     case Constructor(clsObj, args, setters) =>
-      val instance = clsObj.getConstructors.filter { c =>
+      val instance: T = clsObj.getConstructors.filter { c =>
         parametersMatch(c.getParameterTypes, args)
       }.head.newInstance(args.map(a => getOrCreateInstance(a.value, context))).asInstanceOf[T]
       setters.foreach { s =>
         clsObj.getMethods
           .filter(m => m.getName == s.name && parametersMatch(m.getParameterTypes, Vector(s))).head
-          .invoke(instance, getOrCreateInstance(s.value, context))
+          .invoke(instance, getOrCreateInstance(s.value, context).asInstanceOf[AnyRef])
       }
       instance
     case FactoryMethod(cls, clsName, methodName, args) =>
       cls.getMethods.filter(m => m.getName == methodName && parametersMatch(m.getParameterTypes, args)).head
         .invoke(null, args.map(a => getOrCreateInstance(a.value, context))).asInstanceOf[T]
-    case ListValue(cls, values) =>
-      
+    case l@ListValue(cls, values) =>
+      val builder = l.canBuildFrom.apply()
+      builder.++=(values.map(b => getOrCreateInstance(b, context)))
+      builder.result().asInstanceOf[T]
     case MapValue(_, _) => ???
     case PropertyValue(_, _) => ???
-    case Referenced(_, _, value) =>
-      ???
+    case Referenced(_, name, _) =>
+      context(name).asInstanceOf[T]
     case SimpleValue(_, value) =>
-      ???
+      value
   }
 }

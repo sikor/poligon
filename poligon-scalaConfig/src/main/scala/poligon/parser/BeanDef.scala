@@ -1,6 +1,7 @@
 package poligon.parser
 
 import scala.annotation.compileTimeOnly
+import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
 
 sealed trait BeanDef[T] {
@@ -26,7 +27,10 @@ object BeanDef {
   //TODO: type class for allowed simple values serializable to hocon
   case class SimpleValue[T](cls: Class[T], value: T) extends BeanDef[T]
 
-  case class ListValue[I, L[_]](cls: Class[L[I]], values: Vector[BeanDef[I]]) extends BeanDef[L[I]] {
+  //TODO: add can build from any?
+  case class ListValue[I, L[_]](cls: Class[L[I]],
+                                values: Vector[BeanDef[I]])(implicit val canBuildFrom: CanBuildFrom[Nothing, I, L[I]])
+    extends BeanDef[L[I]] {
 
     //TODO: should return ListValue with adjusted valueClass
     @compileTimeOnly("as method can be used only as constructor or setter argument in BeadDef")
@@ -34,16 +38,17 @@ object BeanDef {
 
     def amend[X[_]](other: ListValue[I, X], amend: Boolean = true): ListValue[I, L] = {
       if (amend) {
-        ListValue[I, L](cls, values ++ other.values)
+        ListValue[I, L](cls, values ++ other.values)(canBuildFrom)
       } else {
-        ListValue[I, L](cls, other.values)
+        ListValue[I, L](cls, other.values)(canBuildFrom)
       }
     }
   }
 
   object ListValue {
-    def empty[I, L[_]](implicit listCls: ClassTag[L[I]]): ListValue[I, L] =
-      ListValue[I, L](listCls.runtimeClass.asInstanceOf[Class[L[I]]], Vector.empty)
+    def empty[I, L[_]](implicit listCls: ClassTag[L[I]], canBuildFrom: CanBuildFrom[Nothing, I, L[I]]): ListValue[I, L] =
+      ListValue[I, L](listCls.runtimeClass.asInstanceOf[Class[L[I]]], Vector.empty)(canBuildFrom)
+
   }
 
   case class MapValue[K, V, M[_, _]](cls: Class[M[K, V]], value: Map[BeanDef[K], BeanDef[V]]) extends BeanDef[M[K, V]] {

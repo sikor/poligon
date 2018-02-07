@@ -43,7 +43,8 @@ trait DefaultConfig {
 object CustomConfig extends DefaultConfig with PartialConfig {
   def par: BeanDef[ScalaNormalClass] = new ScalaNormalClass("pardef", 3)(RunNowEC.get).toBeanDef
 
-  def some(arg: ListValue[Int, List]): BeanDef[TakesList] = new TakesList(vec = List(1, 2).toListValue.amend(arg).as[Vector]).toBeanDef
+  def some(arg: ListValue[Int, List]): BeanDef[TakesList] =
+    new TakesList(vec = List(1, 2).toListValue.amend(arg).as[Vector]).toBeanDef
 
   def some: BeanDef[TakesList] = some(ListValue.empty)
 
