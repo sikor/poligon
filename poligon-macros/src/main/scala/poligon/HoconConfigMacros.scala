@@ -132,8 +132,6 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
       case q"scala.collection.immutable.List.apply[$_](..$items)" =>
         val argsTrees = items.asInstanceOf[List[Tree]].map(convertToBean)
         q"$ListValueCC($cls, scala.collection.immutable.Vector(..$argsTrees))"
-      case q"""$listDef.as[$_]""" =>
-        q"$listDef"
       case q"scala.Predef.Map.apply[$_, $_](..$pairs)" =>
         val convertedPairs = pairs.map {
           case q"scala.Predef.ArrowAssoc[$_]($key).->[$_]($value)" => q"${convertToBean(key)} -> ${convertToBean(value)}"

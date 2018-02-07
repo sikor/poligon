@@ -8,7 +8,7 @@ import somePackage.JavaClass
 import scala.beans.BeanProperty
 import scala.concurrent.ExecutionContext
 
-class TakesList(val vec: Vector[Int])
+class TakesList(val vec: List[Int])
 
 class ScalaNormalClass(val arg1: String, arg2: Int)(implicit ec: ExecutionContext) {
   @BeanProperty
@@ -44,7 +44,7 @@ object CustomConfig extends DefaultConfig with PartialConfig {
   def par: BeanDef[ScalaNormalClass] = new ScalaNormalClass("pardef", 3)(RunNowEC.get).toBeanDef
 
   def some(arg: ListValue[Int, List]): BeanDef[TakesList] =
-    new TakesList(vec = List(1, 2).toListValue.amend(arg).as[Vector]).toBeanDef
+    new TakesList(vec = List(1, 2).toListValue.amend(arg).inline).toBeanDef
 
   def some: BeanDef[TakesList] = some(ListValue.empty)
 

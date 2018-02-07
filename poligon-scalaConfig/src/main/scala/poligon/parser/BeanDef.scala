@@ -32,10 +32,6 @@ object BeanDef {
                                 values: Vector[BeanDef[I]])(implicit val canBuildFrom: CanBuildFrom[Nothing, I, L[I]])
     extends BeanDef[L[I]] {
 
-    //TODO: should return ListValue with adjusted valueClass
-    @compileTimeOnly("as method can be used only as constructor or setter argument in BeadDef")
-    def as[C[_] <: TraversableOnce[_]]: C[I] = throw new NotImplementedError()
-
     def amend[X[_]](other: ListValue[I, X], amend: Boolean = true): ListValue[I, L] = {
       if (amend) {
         ListValue[I, L](cls, values ++ other.values)(canBuildFrom)
