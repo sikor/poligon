@@ -61,7 +61,20 @@ object BeanDef {
 
   case class Referenced[T](cls: Class[T], refName: String, value: BeanDef[T]) extends BeanDef[T]
 
-  case class PropertyValue[T](cls: Class[T], propName: String) extends BeanDef[T]
+  trait PropertyConverter[T] {
+    def convert(propValue: String): T
+  }
+
+  object PropertyConverter {
+    implicit val StringConverter: PropertyConverter[String] = new PropertyConverter[String] {
+      def convert(propValue: String): String = propValue
+    }
+    implicit val IntConverter: PropertyConverter[Int] = new PropertyConverter[Int] {
+      def convert(propValue: String): Int = propValue.toInt
+    }
+  }
+
+  case class PropertyValue[T](cls: Class[T], propName: String)(implicit val converter: PropertyConverter[T]) extends BeanDef[T]
 
   case class BeansMap(map: Map[String, BeanDef[_]])
 
@@ -84,7 +97,7 @@ object BeanDef {
   }
 
   implicit final class StringOps(private val s: String) extends AnyVal {
-    def toProp[T](implicit ct: ClassTag[T]): PropertyValue[T] = PropertyValue(ct.runtimeClass.asInstanceOf[Class[T]], s)
+    def toProp[T](implicit ct: ClassTag[T], converter: PropertyConverter[T]): PropertyValue[T] = PropertyValue(ct.runtimeClass.asInstanceOf[Class[T]], s)
   }
 
   def toBeanDefs[T](holder: T): BeansMap = macro poligon.HoconConfigMacros.toHoconConfig[T]

@@ -2,6 +2,7 @@ package poligon.parser
 
 import org.scalatest.FunSuite
 import poligon.parser.BeanDef._
+import poligon.parser.BeanFactory.Context
 import poligon.parser.examples.{FastProcessing, ImportantService, Strategy}
 
 /**
@@ -20,12 +21,11 @@ class BeanDefTest extends FunSuite {
 
 
   test("creates bean def based on constructor") {
-//    FastProcessing.getClass.showRawAst
+    //    FastProcessing.getClass.showRawAst
     val importantServiceDef = new ImportantService(
       10,
       "biedronka",
       "services.customerName".toProp[String].inline,
-      //not compiling because classOf[FastProcessing.type] is invalid
       Strategy(
         poligon.parser.examples.FastProcessing.get
       )
@@ -33,6 +33,12 @@ class BeanDefTest extends FunSuite {
     assert(importantServiceDef.isInstanceOf[Constructor[ImportantService]])
     val ConstructorDef = importantServiceDef.asInstanceOf[Constructor[ImportantService]]
     assert(ConstructorDef.cls == classOf[ImportantService])
+    val impService = BeanFactory.getOrCreateInstance(importantServiceDef, Context(Map.empty, Map("services.customerName" -> "RRR")))
+    assert(impService.customerName == "RRR" &&
+      impService.id == 10 &&
+      impService.name == "biedronka" &&
+      impService.strategy == Strategy(FastProcessing)
+    )
   }
 
 }

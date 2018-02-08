@@ -22,7 +22,6 @@ object ReflectTest {
     c.getClass.getMethod("setValue", classOf[Int]).invoke(c, 12.asInstanceOf[AnyRef])
     println(c.value)
 
-
     val tb = runtimeMirror(getClass.getClassLoader).mkToolBox()
 
     val t = q"poligon.ReflectTest.get"

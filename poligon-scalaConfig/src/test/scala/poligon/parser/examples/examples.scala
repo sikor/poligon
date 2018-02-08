@@ -11,4 +11,4 @@ case object PreciseProcessing extends ProcessingType
 
 case class Strategy(processingTpe: ProcessingType)
 
-class ImportantService(id: Int, name: String, customerName: String, strategy: Strategy)
+class ImportantService(val id: Int, val name: String, val customerName: String, val strategy: Strategy)
