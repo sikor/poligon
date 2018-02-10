@@ -1,9 +1,11 @@
 package poligon.parser
 
-import poligon.parser.BeanDef.{Arg, BeansMap, Constructor, FactoryMethod, ListValue, MapValue, PropertyValue, Referenced, SimpleValue}
+import poligon.parser.BeanDef.{Arg, Constructor, FactoryMethod, ListValue, MapValue, PropertyValue, Referenced, SimpleValue}
 
 import scala.annotation.switch
 
+//TODO: Sprawdzić czy podczas konwersji do hocona nie są tracone informacje niezbędne do stworzenia beana. Kompilowalność powinna gwarantować
+//poprawność hocona, np gdy wystepuje overloading constructora albo factory method to dokladnie adnotować typy.
 object HoconPrinter {
 
   private def argsToHocon(num: Int, args: Vector[Arg]): String =
@@ -78,8 +80,8 @@ object HoconPrinter {
       s"$${$propName}"
   }
 
-  def toHocon(beansMap: BeansMap): String =
-    beansMap.map.map {
+  def toHocon(beansMap: Map[String, BeanDef[_]]): String =
+    beansMap.map {
       case (name, bean) =>
         s"""$name = ${toHoconObject(bean)}"""
     }.mkString("\n")

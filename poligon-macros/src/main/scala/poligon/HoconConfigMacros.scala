@@ -23,7 +23,6 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
   val MapValueCC = q"$BeanDefObj.MapValue"
   val ArgCC = q"$BeanDefObj.Arg"
   val ReferencedCC = q"$BeanDefObj.Referenced"
-  val BeansMapCC = q"$BeanDefObj.BeansMap"
 
   val ThisPkg = q"_root_.poligon"
 
@@ -50,7 +49,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
         val name = m.name.toString
         q"($name, $holder.${m.name})"
     }
-    q"$BeansMapCC(scala.collection.immutable.Map(..$beans))"
+    q"scala.collection.immutable.Map(..$beans)"
   }
 
   def toListDef: Tree = {

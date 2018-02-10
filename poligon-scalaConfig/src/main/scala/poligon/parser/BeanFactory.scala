@@ -4,12 +4,11 @@ import java.lang.reflect.Modifier
 
 import poligon.parser.BeanDef.{Arg, Constructor, FactoryMethod, ListValue, MapValue, PropertyValue, Referenced, SimpleValue}
 
+import scala.collection.mutable
 import scala.util.control.NonFatal
 
 //TODO: Potrzebujemy wiecej informacji w BeanDef: Dokladnie jakiego typu jest lista, mapa, propertyValue, dokładnie, którego konstruktora użyć
 // - dodać informację o typie docelowym w argumentach factory i constructor beanów. Dodać tworzoną klasę do każdego bean'a - nie tylo factory i constructor
-//TODO: Sprawdzić czy podczas konwersji do hocona nie są tracone informacje niezbędne do stworzenia beana. Kompilowalność powinna gwarantować
-//poprawność hocona, np gdy wystepuje overloading constructora albo factory method to dokladnie adnotować typy.
 object BeanFactory {
 
 
@@ -26,9 +25,30 @@ object BeanFactory {
   private def canBeAssignedFrom(targetTpe: Class[_], beanDef: BeanDef[_]): Boolean =
     targetTpe.isAssignableFrom(beanDef.cls)
 
-  case class Context(beans: Map[String, Any], properties: Map[String, String])
 
-  def getOrCreateInstance[T](beanDef: BeanDef[T], context: Context): T = try {
+  class CreationContext(val beanDefs: Map[String, BeanDef[_]],
+                        val properties: Map[String, String],
+                        val createdInstances: mutable.Map[String, Any],
+                        val instancesInProgress: mutable.Set[String])
+
+  def createBeans(beanDefs: Map[String, BeanDef[_]], properties: Map[String, String]): Map[String, Any] = {
+    val context = new CreationContext(beanDefs, properties, mutable.Map.empty, mutable.Set.empty)
+    beanDefs.foreach {
+      case (name, bdef) =>
+        if (!context.createdInstances.contains(name)) {
+          context.instancesInProgress += name
+          val i = getOrCreateInstance(bdef, context)
+          context.instancesInProgress -= name
+          context.createdInstances += name -> i
+        }
+    }
+    context.createdInstances.toMap
+  }
+
+  def createBean[T](beanDef: BeanDef[T], properties: Map[String, String]): T =
+    getOrCreateInstance(beanDef, new CreationContext(Map.empty, properties, mutable.Map.empty, mutable.Set.empty))
+
+  def getOrCreateInstance[T](beanDef: BeanDef[T], context: CreationContext): T = try {
     beanDef match {
       case Constructor(clsObj, args, setters) =>
         val instance: T = clsObj.getConstructors.filter { c =>
@@ -60,7 +80,17 @@ object BeanFactory {
       case p@PropertyValue(cls, name) =>
         p.converter.convert(context.properties(name))
       case Referenced(_, name, _) =>
-        context.beans(name).asInstanceOf[T]
+        if (context.createdInstances.contains(name)) {
+          context.createdInstances(name).asInstanceOf[T]
+        } else if (context.instancesInProgress.contains(name)) {
+          throw new Exception(s"Failed to create bean: $beanDef. It is already in progress: ${context.instancesInProgress}")
+        } else {
+          context.instancesInProgress += name
+          val i = getOrCreateInstance(context.beanDefs(name), context).asInstanceOf[T]
+          context.instancesInProgress -= name
+          context.createdInstances += name -> i
+          i
+        }
       case SimpleValue(_, value) =>
         value
     }
@@ -68,4 +98,6 @@ object BeanFactory {
     case NonFatal(e) =>
       throw new Exception(s"Failed to create bean: $beanDef", e)
   }
+
+
 }
