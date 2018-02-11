@@ -11,6 +11,8 @@ import scala.util.control.NonFatal
 // - dodać informację o typie docelowym w argumentach factory i constructor beanów. Dodać tworzoną klasę do każdego bean'a - nie tylo factory i constructor
 object BeanFactory {
 
+  case class BeanInstances(instances: Map[String, BeanDef[_]])
+
 
   private def parametersMatch(targetParameters: Array[Class[_]], args: Vector[Arg]): Boolean = {
     if (targetParameters.length == args.size) {

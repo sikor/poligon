@@ -2,7 +2,7 @@ package poligon.parser
 
 import org.scalatest.FunSuite
 import poligon.parser.BeanDef._
-import poligon.parser.examples.{FastProcessing, ImportantService, Strategy}
+import poligon.parser.examples.{ExampleConfig, FastProcessing, ImportantService, Strategy}
 
 /**
   * <pre>
@@ -37,6 +37,12 @@ class BeanDefTest extends FunSuite {
       impService.name == "biedronka" &&
       impService.strategy == Strategy(FastProcessing)
     )
+  }
+
+  test("Creates beans map based on object") {
+    val beanDefs = BeanDef.toBeanDefs(ExampleConfig)
+    val beans = BeanFactory.createBeans(beanDefs, Map.empty)
+    assert(beans.size == 5)
   }
 
 }
