@@ -79,7 +79,7 @@ object BeanDef {
   }
 
   implicit final class ListOps[I](private val t: List[I]) extends AnyVal {
-    def toListValue: ListValue[I, List] = macro poligon.HoconConfigMacros.toListDef
+    def toListValue: ListValue[I, List] = macro poligon.HoconConfigMacros.toBeanDef[List[I]]
   }
 
   implicit final class MapOps[K, V](private val m: Map[K, V]) extends AnyVal {

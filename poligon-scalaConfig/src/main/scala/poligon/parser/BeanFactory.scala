@@ -7,11 +7,21 @@ import poligon.parser.BeanDef.{Arg, Constructor, FactoryMethod, ListValue, MapVa
 import scala.collection.mutable
 import scala.util.control.NonFatal
 
-//TODO: Potrzebujemy wiecej informacji w BeanDef: Dokladnie jakiego typu jest lista, mapa, propertyValue, dokładnie, którego konstruktora użyć
-// - dodać informację o typie docelowym w argumentach factory i constructor beanów. Dodać tworzoną klasę do każdego bean'a - nie tylo factory i constructor
 object BeanFactory {
 
-  case class BeanInstances(instances: Map[String, BeanDef[_]])
+  /**
+    * Consider implementing helper that takes implicit beanInstances as argument and returns bean using macro and
+    * investigating called method name
+    *
+    * @param instances
+    */
+  case class BeanInstances(instances: Map[String, Any]) {
+    def apply[T](name: String): T = instances(name).asInstanceOf[T]
+  }
+
+  implicit class BeanImplExt[T](beanDef: BeanDef[T]) {
+    def instance(implicit instances: BeanInstances): T = macro poligon.HoconConfigMacros.getBeanInstance[T]
+  }
 
 
   private def parametersMatch(targetParameters: Array[Class[_]], args: Vector[Arg]): Boolean = {
@@ -50,7 +60,7 @@ object BeanFactory {
   def createBean[T](beanDef: BeanDef[T], properties: Map[String, String]): T =
     getOrCreateInstance(beanDef, new CreationContext(Map.empty, properties, mutable.Map.empty, mutable.Set.empty))
 
-  def getOrCreateInstance[T](beanDef: BeanDef[T], context: CreationContext): T = try {
+  private def getOrCreateInstance[T](beanDef: BeanDef[T], context: CreationContext): T = try {
     beanDef match {
       case Constructor(clsObj, args, setters) =>
         val instance: T = clsObj.getConstructors.filter { c =>

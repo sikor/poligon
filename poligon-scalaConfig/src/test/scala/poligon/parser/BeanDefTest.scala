@@ -18,7 +18,6 @@ import poligon.parser.examples.{ExampleConfig, FastProcessing, ImportantService,
   */
 class BeanDefTest extends FunSuite {
 
-
   test("creates bean def based on constructor") {
     val importantServiceDef = new ImportantService(
       10,
@@ -40,9 +39,16 @@ class BeanDefTest extends FunSuite {
   }
 
   test("Creates beans map based on object") {
+    import BeanFactory._
     val beanDefs = BeanDef.toBeanDefs(ExampleConfig)
     val beans = BeanFactory.createBeans(beanDefs, Map.empty)
+    implicit val instances: BeanInstances = BeanInstances(beans)
     assert(beans.size == 5)
+    val service1 = ExampleConfig.importantService1.instance
+    val strategy = ExampleConfig.strategy.instance
+    assert(service1.id == 10 && service1.name == "important"
+      && service1.customerName == "wlodek"
+      && (service1.strategy eq strategy))
   }
 
 }

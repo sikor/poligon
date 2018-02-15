@@ -52,9 +52,10 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
     q"scala.collection.immutable.Map(..$beans)"
   }
 
-  def toListDef: Tree = {
-    val q"""$_($listDef)""" = c.prefix.tree
-    convertToBean(listDef)
+  def getBeanInstance[T](instances: Tree): Tree = {
+    val q"""$_($prefix.$methodName)""" = c.prefix.tree
+    val methodNameString = methodName.toString()
+    q"$instances($methodNameString)"
   }
 
   /**
