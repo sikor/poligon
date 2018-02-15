@@ -43,12 +43,14 @@ class BeanDefTest extends FunSuite {
     val beanDefs = BeanDef.toBeanDefs(ExampleConfig)
     val beans = BeanFactory.createBeans(beanDefs, Map.empty)
     implicit val instances: BeanInstances = BeanInstances(beans)
-    assert(beans.size == 5)
     val service1 = ExampleConfig.importantService1.instance
     val strategy = ExampleConfig.strategy.instance
     assert(service1.id == 10 && service1.name == "important"
       && service1.customerName == "wlodek"
       && (service1.strategy eq strategy))
+
+    assert(ExampleConfig.namesList.instance == List("kate", "john"))
+    assert(ExampleConfig.intNames.instance == Map(1 -> "jeden", 2 -> "dwa"))
   }
 
 }

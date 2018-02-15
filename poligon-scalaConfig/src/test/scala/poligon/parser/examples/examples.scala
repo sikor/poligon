@@ -17,6 +17,11 @@ class ImportantService(val id: Int, val name: String, val customerName: String, 
 
 
 object ExampleConfig {
+
+  def intNames: MapValue[Int, String, Map] = Map(1 -> "jeden", 2 -> "dwa").toMapValue
+
+  def namesList: ListValue[String, List] = List("kate", "john").toListValue
+
   def importantService1: BeanDef[ImportantService] =
     new ImportantService(10, "important", "wlodek", strategy.ref).toBeanDef
 
