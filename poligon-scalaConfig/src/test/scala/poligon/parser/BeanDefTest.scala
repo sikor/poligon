@@ -43,7 +43,7 @@ class BeanDefTest extends FunSuite {
   test("Creates beans map based on object") {
     import BeanFactory._
     val beanDefs = BeanDef.toBeanDefs(ExampleConfig)
-    val beans = BeanFactory.createBeans(beanDefs, Map.empty)
+    val beans = BeanFactory.createBeans(beanDefs, Map("prop.service1CustomerName" -> "wlodek"))
     implicit val instances: BeanInstances = BeanInstances(beans)
     val service1 = ExampleConfig.importantService1.instance
     val strategy = ExampleConfig.strategy.instance

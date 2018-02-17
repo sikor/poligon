@@ -31,7 +31,8 @@ object ExampleConfig {
   def namesList: ListValue[String, List] = List("kate", "john").toListValue
 
   def importantService1: BeanDef[ImportantService] =
-    new ImportantService(10, "important", "wlodek", strategy.ref).toConstructorValue
+    new ImportantService(10, "important", "prop.service1CustomerName".toProp[String].inline, strategy.ref)
+      .toConstructorValue
       .withSetters(_.setDuration(Duration("10s")))
 
   def strategy: BeanDef[Strategy] =
