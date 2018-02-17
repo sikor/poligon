@@ -53,6 +53,10 @@ class BeanDefTest extends FunSuite {
 
     assert(ExampleConfig.namesList.instance == List("kate", "john"))
     assert(ExampleConfig.intNames.instance == Map(1 -> "jeden", 2 -> "dwa"))
+    val initDataInjector = ExampleConfig.initDataInjector.instance
+    assert(initDataInjector.service1 == ExampleConfig.importantService3.instance)
+    assert(initDataInjector.service2 == ExampleConfig.importantService4.instance)
+    assert(initDataInjector.menu == List("item1", "item2", "item3", "item4"))
 
   }
 
