@@ -24,10 +24,10 @@ object BeanFactory {
   }
 
 
-  private def parametersMatch(targetParameters: Array[Class[_]], args: Vector[Arg]): Boolean = {
+  private def parametersMatch(targetParameters: Array[Class[_]], args: Vector[BeanDef[_]]): Boolean = {
     if (targetParameters.length == args.size) {
       targetParameters.zip(args).forall {
-        case (constTpe, Arg(_, argBeanDef)) => canBeAssignedFrom(constTpe, argBeanDef)
+        case (constTpe, argBeanDef) => canBeAssignedFrom(constTpe, argBeanDef)
       }
     } else {
       false
@@ -64,17 +64,19 @@ object BeanFactory {
     beanDef match {
       case Constructor(clsObj, args, setters) =>
         val instance: T = clsObj.getConstructors.filter { c =>
-          parametersMatch(c.getParameterTypes, args)
+          parametersMatch(c.getParameterTypes, args.map(_.value))
         }.head.newInstance(args.map(a => getOrCreateInstance(a.value, context).asInstanceOf[AnyRef]): _*).asInstanceOf[T]
-        setters.foreach { s =>
+        setters.values.foreach { s =>
           clsObj.getMethods
-            .filter(m => m.getName == s.name && parametersMatch(m.getParameterTypes, Vector(s))).head
+            .find(m => m.getName == s.name && parametersMatch(m.getParameterTypes, Vector(s.value)))
+            .getOrElse(throw new Exception(s"Failed to find setter with name: ${s.name} in class: $clsObj. " +
+              s"Available methods: ${clsObj.getMethods.mkString(", ")}"))
             .invoke(instance, getOrCreateInstance(s.value, context).asInstanceOf[AnyRef])
         }
         instance
       case FactoryMethod(_, clsName, methodName, args) =>
         val cls = Class.forName(clsName)
-        val method = cls.getMethods.filter(m => m.getName == methodName && parametersMatch(m.getParameterTypes, args))
+        val method = cls.getMethods.filter(m => m.getName == methodName && parametersMatch(m.getParameterTypes, args.map(_.value)))
           .head
         require(Modifier.isStatic(method.getModifiers), s"Factory method must be static but got: $method")
         require(method.getParameterCount == args.size, s"Expected: $method, got $args")

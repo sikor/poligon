@@ -8,7 +8,10 @@ import scala.annotation.switch
 //poprawność hocona, np gdy wystepuje overloading constructora albo factory method to dokladnie adnotować typy.
 object HoconPrinter {
 
-  private def argsToHocon(num: Int, args: Vector[Arg]): String =
+  private def toBeanPropertyName(setterName: String): String =
+    setterName.substring(3, 4).toLowerCase + setterName.substring(4)
+
+  private def argsToHocon(num: Int, args: Iterable[Arg]): String =
     args.map(a => s"${a.name} = ${move(num, toHoconObject(a.value))}").mkString(separator(num))
 
   private def move(num: Int, value: String): String = value.lines.mkString(separator(num))
@@ -50,7 +53,7 @@ object HoconPrinter {
            |  %constructor-args = {
            |    ${argsToHocon(4, args)}
            |  }
-           |  ${argsToHocon(2, setters)}
+           |  ${argsToHocon(2, setters.values.map(s => Arg(toBeanPropertyName(s.name), s.value)))}
            |}""".stripMargin)
     case FactoryMethod(cls, clsName, factoryMethod, args) =>
       cleanHocon(

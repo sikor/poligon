@@ -4,6 +4,8 @@ import org.scalatest.FunSuite
 import poligon.parser.BeanDef._
 import poligon.parser.examples.{ExampleConfig, FastProcessing, ImportantService, Strategy}
 
+import scala.concurrent.duration.Duration
+
 /**
   * <pre>
   * TODO:
@@ -47,10 +49,11 @@ class BeanDefTest extends FunSuite {
     val strategy = ExampleConfig.strategy.instance
     assert(service1.id == 10 && service1.name == "important"
       && service1.customerName == "wlodek"
-      && (service1.strategy eq strategy))
+      && (service1.strategy eq strategy) && service1.duration == Duration("10s"))
 
     assert(ExampleConfig.namesList.instance == List("kate", "john"))
     assert(ExampleConfig.intNames.instance == Map(1 -> "jeden", 2 -> "dwa"))
+
   }
 
 }

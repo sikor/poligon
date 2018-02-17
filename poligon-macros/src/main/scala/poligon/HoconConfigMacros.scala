@@ -22,6 +22,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
   val ListValueCC = q"$BeanDefObj.ListValue"
   val MapValueCC = q"$BeanDefObj.MapValue"
   val ArgCC = q"$BeanDefObj.Arg"
+  val SetterCC = q"$BeanDefObj.Setter"
   val ReferencedCC = q"$BeanDefObj.Referenced"
 
   val ThisPkg = q"_root_.poligon"
@@ -78,17 +79,15 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
   def toBeanDef[T: c.WeakTypeTag]: Tree =
     convertToBean(getPrefixTree)
 
-  private def toBeanPropertyName(setterName: String): String = setterName.substring(3, 4).toLowerCase + setterName.substring(4)
-
   def withSetters[T: c.WeakTypeTag](setters: Tree*): Tree = {
     val settersArgVector = setters.map { setter =>
       val q"_.$setterName($value)" = setter
-      val setterNameString = toBeanPropertyName(setterName.toString())
+      val setterNameString = setterName.toString()
       val valueBeanDef = convertToBean(value)
-      q"$ArgCC($setterNameString, $valueBeanDef)"
+      q"$SetterCC($setterNameString, $valueBeanDef)"
     }
-    val Constructor(cls, argsVector) = getPrefixTree
-    q"$ConstructorCC($cls, $argsVector, Vector(..$settersArgVector))"
+    val prefix = c.prefix.tree
+    q"$prefix.addSetters(Vector(..$settersArgVector))"
   }
 
   object Constructor {
@@ -121,7 +120,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
     }
     arg match {
       case Constructor(_, argsVector) =>
-        q"$ConstructorCC($cls, $argsVector, Vector.empty)"
+        q"$ConstructorCC($cls, $argsVector, Map.empty)"
       case l: Literal =>
         q"$SimpleValueCC($cls, $l)"
       case q"""$something.this.$refName.ref""" =>
@@ -138,7 +137,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
         }
         q"$MapValueCC($cls, scala.collection.immutable.Map.apply(..$convertedPairs))"
       case q"""$obj.$staticMethod(...$args)""" if obj.tpe.typeSymbol.isModuleClass => //strangely it works also for java static methods.
-        val className = obj.tpe.toString.stripSuffix(".type")
+        val className = obj.tpe.typeSymbol.fullName.stripSuffix(".type")
         val factoryMethodName = staticMethod.toString()
         val argsFlat = args.asInstanceOf[List[List[Tree]]].flatten
         val met = findMethodForArgs(obj.tpe, _.name.toString == staticMethod.toString(), argsFlat)

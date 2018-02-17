@@ -11,16 +11,39 @@ sealed trait BeanDef[T] {
   @compileTimeOnly("inline method can be used only as constructor or setter argument in BeanDef.")
   def inline: T = throw new NotImplementedError()
 
+  /**
+    * Class of the object created by this bean def
+    */
   def cls: Class[T]
 }
 
+/**
+  * There should be ability to import trait to some configuration that will change existing beans in easy way, without
+  * additional lines of code. (i.e adding to list, set value of some constructor or setter). How to do that?
+  * - trait must require some type to be extended by it - we explicitly define extension points
+  * - trait must override the bean bean def that it extends, it must use super for it.
+  * - Two traits must be able to add something to the same bean
+  * - One have to define extension point on the bean -> extension point must be the list argument, map argument or setter
+  *
+  */
 object BeanDef {
 
   case class Arg(name: String, value: BeanDef[_])
 
-  case class Constructor[T](cls: Class[T], args: Vector[Arg], setters: Vector[Arg]) extends BeanDef[T]
+  case class Setter(name: String, value: BeanDef[_])
 
-  case class FactoryMethod[T](cls: Class[T], clsName: String, factoryMethod: String, args: Vector[Arg]) extends BeanDef[T]
+  case class Constructor[T](cls: Class[T], args: Vector[Arg], setters: Map[String, Setter]) extends BeanDef[T] {
+
+    /**
+      * used in macro
+      */
+    def addSetters(newSetters: Vector[Setter]): Constructor[T] =
+      copy(setters = setters ++ newSetters.map(s => s.name -> s).toMap)
+
+    def withSetters(setters: (T => Unit)*): Constructor[T] = macro poligon.HoconConfigMacros.withSetters[T]
+  }
+
+  case class FactoryMethod[T](cls: Class[T], factoryClsName: String, factoryMethod: String, args: Vector[Arg]) extends BeanDef[T]
 
   trait SimpleValueDescription
 
@@ -75,7 +98,7 @@ object BeanDef {
   implicit final class ObjectOps[T](private val t: T) extends AnyVal {
     def toBeanDef: BeanDef[T] = macro poligon.HoconConfigMacros.toBeanDef[T]
 
-    def withSetters(setters: (T => Unit)*): BeanDef[T] = macro poligon.HoconConfigMacros.withSetters[T]
+    def toConstructorValue: Constructor[T] = macro poligon.HoconConfigMacros.toBeanDef[Constructor[T]]
   }
 
   implicit final class ListOps[I](private val t: List[I]) extends AnyVal {

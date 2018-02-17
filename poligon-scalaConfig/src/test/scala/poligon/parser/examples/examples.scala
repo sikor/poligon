@@ -3,6 +3,9 @@ package poligon.parser.examples
 import poligon.parser.BeanDef
 import poligon.parser.BeanDef._
 
+import scala.beans.BeanProperty
+import scala.concurrent.duration.Duration
+
 sealed trait ProcessingType {
   def get: this.type = this
 }
@@ -13,7 +16,12 @@ case object PreciseProcessing extends ProcessingType
 
 case class Strategy(processingTpe: ProcessingType)
 
-class ImportantService(val id: Int, val name: String, val customerName: String, val strategy: Strategy)
+class ImportantService(val id: Int, val name: String, val customerName: String, val strategy: Strategy) {
+
+  @BeanProperty
+  var duration: Duration = _
+
+}
 
 
 object ExampleConfig {
@@ -23,7 +31,8 @@ object ExampleConfig {
   def namesList: ListValue[String, List] = List("kate", "john").toListValue
 
   def importantService1: BeanDef[ImportantService] =
-    new ImportantService(10, "important", "wlodek", strategy.ref).toBeanDef
+    new ImportantService(10, "important", "wlodek", strategy.ref).toConstructorValue
+      .withSetters(_.setDuration(Duration("10s")))
 
   def strategy: BeanDef[Strategy] =
     Strategy(FastProcessing.get).toBeanDef

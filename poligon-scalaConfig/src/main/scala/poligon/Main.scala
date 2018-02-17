@@ -32,16 +32,17 @@ object InheritsStaticMethod extends HasStaticMethods {
   override def factory(someArg: Int) = "StaticMethodFactory"
 }
 
-trait DefaultConfig {
-  this: PartialConfig =>
+trait DefaultConfig extends PartialConfig {
+  some: PartialConfig =>
 
   def foo: BeanDef[ScalaNormalClass] = new ScalaNormalClass(InheritsStaticMethod.factory(32), 2)(RunNowEC.get).toBeanDef
 
   def bar: BeanDef[MainClass] = new MainClass(foo.ref, par.inline).toBeanDef
+
 }
 
 object CustomConfig extends DefaultConfig with PartialConfig {
-  def par: BeanDef[ScalaNormalClass] = new ScalaNormalClass("pardef", 3)(RunNowEC.get).toBeanDef
+  override def par: BeanDef[ScalaNormalClass] = new ScalaNormalClass("pardef", 3)(RunNowEC.get).toBeanDef
 
   def some(arg: ListValue[Int, List]): BeanDef[TakesList] =
     new TakesList(vec = List(1, 2).toListValue.amend(arg).inline).toBeanDef
@@ -64,7 +65,7 @@ object Main {
   final val map = Map(1 -> "String")
 
   def main(args: Array[String]): Unit = {
-    println(new ScalaNormalClass("normal \" \\\" class \n", 23)(RunNowEC.get).withSetters(
+    println(new ScalaNormalClass("normal \" \\\" class \n", 23)(RunNowEC.get).toConstructorValue.withSetters(
       _.setSettableDouble(1.0),
       _.setSomeString("setted string")))
     println(new JavaClass(s).toBeanDef)
