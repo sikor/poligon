@@ -18,12 +18,11 @@ sealed trait BeanDef[T] {
 }
 
 /**
-  * There should be ability to import trait to some configuration that will change existing beans in easy way, without
-  * additional lines of code. (i.e adding to list, set value of some constructor or setter). How to do that?
-  * - trait must require some type to be extended by it - we explicitly define extension points
-  * - trait must override the bean bean def that it extends, it must use super for it.
-  * - Two traits must be able to add something to the same bean
-  * - One have to define extension point on the bean -> extension point must be the list argument, map argument or setter
+  * There should be possibility to change bean definitions in runtime, using hocon config:
+  * - there should be module that append hocon config to existing bean defs map.
+  * - there should be possibility to remove existing bean def by hocon config
+  * - there should be possibility to define brand new bean, completely override existing bean, override bean
+  * constructor parameters or setters.
   *
   */
 object BeanDef {

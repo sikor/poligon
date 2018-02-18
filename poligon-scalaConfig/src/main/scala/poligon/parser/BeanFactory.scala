@@ -9,12 +9,6 @@ import scala.util.control.NonFatal
 
 object BeanFactory {
 
-  /**
-    * Consider implementing helper that takes implicit beanInstances as argument and returns bean using macro and
-    * investigating called method name
-    *
-    * @param instances
-    */
   case class BeanInstances(instances: Map[String, Any]) {
     def apply[T](name: String): T = instances(name).asInstanceOf[T]
   }
