@@ -31,7 +31,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
     def unapply(s: Symbol): Opt[MethodSymbol] = {
       if (s.isMethod) {
         val methodSymbol = s.asMethod
-        if (methodSymbol.typeSignature.paramLists.isEmpty && methodSymbol.returnType <:< BeanDefTpe) {
+        if (methodSymbol.typeSignature.paramLists.isEmpty && methodSymbol.returnType <:< BeanDefTpe && methodSymbol.isPublic) {
           Opt(methodSymbol)
         } else {
           Opt.Empty
@@ -93,11 +93,11 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
   object Constructor {
     def unapply(arg: Tree): Option[(Tree, Tree)] = arg match {
       case q"new $classIdent(...$args)" =>
-        if (!classIdent.symbol.owner.isPackage) {
-          throw new IllegalArgumentException(s"Cannot create beans for classes not directly inside package, but got class inside: ${classIdent.symbol.owner.fullName}")
+        if (!classIdent.symbol.owner.isPackage && !classIdent.symbol.owner.isModuleClass) {
+          throw new IllegalArgumentException(s"Cannot create beans for classes not directly inside package or object, but got class inside: ${classIdent.symbol.owner.fullName}")
         }
         val a = args.asInstanceOf[List[List[Tree]]].flatten
-        val constructor = findMethodForArgs(classIdent.tpe, _.isConstructor, a)
+        val constructor = findMethodForArgs(classIdent, _.isConstructor, a)
         val argsVector = toArgsVector(constructor, a)
         Option(q"classOf[${arg.tpe}]", argsVector)
       case _ => None
@@ -140,16 +140,17 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
         val className = obj.tpe.typeSymbol.fullName.stripSuffix(".type")
         val factoryMethodName = staticMethod.toString()
         val argsFlat = args.asInstanceOf[List[List[Tree]]].flatten
-        val met = findMethodForArgs(obj.tpe, _.name.toString == staticMethod.toString(), argsFlat)
+        val met = findMethodForArgs(obj, _.name.toString == staticMethod.toString(), argsFlat)
         val argsVector = toArgsVector(met, argsFlat)
         q"$FactoryMethodCC($cls, $className, $factoryMethodName, $argsVector)"
       case _ => throw new IllegalArgumentException(s"${arg.toString()}, ${showRaw(arg)}")
     }
   }
 
-  private def findMethodForArgs(tpeOfClass: Type, filter: Symbol => Boolean, a: List[Tree]): MethodSymbol = {
+  private def findMethodForArgs(tpeOfClass: Tree, filter: Symbol => Boolean, a: List[Tree]): MethodSymbol = {
+    require(tpeOfClass.tpe != null, s"type of class not recognized, ident: $tpeOfClass, args: $a")
     val argsTypes = a.map(_.tpe)
-    tpeOfClass.members.find { member =>
+    tpeOfClass.tpe.members.find { member =>
       if (filter(member)) {
         val params = paramsTypes(member)
         params.size == argsTypes.size && params.zip(argsTypes).forall {

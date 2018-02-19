@@ -1,10 +1,14 @@
 package poligon.parser.examples
 
+import org.springframework.context.support.ConversionServiceFactoryBean
 import poligon.parser.BeanDef
 import poligon.parser.BeanDef._
+import poligon.parser.ScalaCollectionConverters.{JListToListConverter, ToMapConverter}
 
 import scala.beans.BeanProperty
 import scala.concurrent.duration.Duration
+import com.avsystem.commons.jiop.JavaInterop._
+import org.springframework.core.convert.converter.Converter
 
 sealed trait ProcessingType {
   def get: this.type = this
@@ -31,6 +35,15 @@ class InitDataInjector(val menu: List[String]) {
   var service2: ImportantService = _
 }
 
+
+trait SpringConversions {
+  def conversionService: BeanDef[ConversionServiceFactoryBean] =
+    new ConversionServiceFactoryBean().toConstructorValue.withSetters(_.setConverters(List(
+      new JListToListConverter()
+//      new ToMapConverter
+    ).toListValue.to[JSet].inline))
+}
+
 trait GuiModule {
 
   def initDataInjectorEP(initDataInjector: Constructor[InitDataInjector]): Constructor[InitDataInjector] =
@@ -38,7 +51,7 @@ trait GuiModule {
 
   def menuEP(menu: ListValue[String, List]): ListValue[String, List] = menu
 
-  def menu: ListValue[String, List] = menuEP(List("item1", "item2").toListValue)
+  private def menu: ListValue[String, List] = menuEP(List("item1", "item2").toListValue)
 
   def initDataInjector: Constructor[InitDataInjector] = initDataInjectorEP(new InitDataInjector(menu.inline).toConstructorValue)
 }
@@ -75,11 +88,15 @@ trait StrategyModule {
     Strategy(FastProcessing.get).toBeanDef
 }
 
-object ExampleConfig extends StrategyModule with GuiModule with OptionalServiceModule1 with OptionalServiceModule2 {
+class MapAndList(val intNames: Map[Int, String], val namesList: List[String])
 
-  def intNames: MapValue[Int, String, Map] = Map(1 -> "jeden", 2 -> "dwa").toMapValue
+object ExampleConfig extends SpringConversions with StrategyModule with GuiModule with OptionalServiceModule1 with OptionalServiceModule2 {
 
-  def namesList: ListValue[String, List] = List("kate", "john").toListValue
+  private def intNames: MapValue[Int, String, Map] = Map(1 -> "jeden", 2 -> "dwa").toMapValue
+
+  private def namesList: ListValue[String, List] = List("kate", "john").toListValue
+
+  def mapAndList: BeanDef[MapAndList] = new MapAndList(intNames.inline, namesList.inline).toBeanDef
 
   def importantService1: BeanDef[ImportantService] =
     new ImportantService(10, "important", "prop.service1CustomerName".toProp[String].inline, strategy.ref)

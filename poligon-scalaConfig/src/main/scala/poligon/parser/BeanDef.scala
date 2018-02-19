@@ -14,17 +14,9 @@ sealed trait BeanDef[T] {
   /**
     * Class of the object created by this bean def
     */
-  def cls: Class[T]
+  def cls: Class[_]
 }
 
-/**
-  * There should be possibility to change bean definitions in runtime, using hocon config:
-  * - there should be module that append hocon config to existing bean defs map.
-  * - there should be possibility to remove existing bean def by hocon config
-  * - there should be possibility to define brand new bean, completely override existing bean, override bean
-  * constructor parameters or setters.
-  *
-  */
 object BeanDef {
 
   case class Arg(name: String, value: BeanDef[_])
@@ -60,6 +52,9 @@ object BeanDef {
         ListValue[I, L](cls, other.values)(canBuildFrom)
       }
     }
+
+    def to[T[_]](implicit cls: ClassTag[T[I]], cbf: CanBuildFrom[Nothing, I, T[I]]): ListValue[I, T] =
+      ListValue[I, T](cls.runtimeClass.asInstanceOf[Class[T[I]]], values)(cbf)
   }
 
   object ListValue {

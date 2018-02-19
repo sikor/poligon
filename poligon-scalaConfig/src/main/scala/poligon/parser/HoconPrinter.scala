@@ -45,11 +45,15 @@ object HoconPrinter {
     sb.append('"')
   }
 
+  private def classNameToHocon(name: String): String = {
+    name.replace('$', '.')
+  }
+
   def toHoconObject(beanDef: BeanDef[_]): String = beanDef match {
     case Constructor(cls, args, setters) =>
       cleanHocon(
         s"""{
-           |  %class = ${cls.getName}
+           |  %class = ${classNameToHocon(cls.getName)}
            |  %constructor-args = {
            |    ${argsToHocon(4, args)}
            |  }
@@ -58,7 +62,7 @@ object HoconPrinter {
     case FactoryMethod(cls, clsName, factoryMethod, args) =>
       cleanHocon(
         s"""{
-           |  %class = $clsName
+           |  %class = ${classNameToHocon(clsName)}
            |  %factory-method = $factoryMethod
            |  %constructor-args = {
            |    ${argsToHocon(4, args)}
@@ -87,5 +91,5 @@ object HoconPrinter {
     beansMap.map {
       case (name, bean) =>
         s"""$name = ${toHoconObject(bean)}"""
-    }.mkString("\n")
+    }.mkString("beans {\n", "\n", "\n}")
 }
