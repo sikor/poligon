@@ -120,7 +120,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
     }
     arg match {
       case Constructor(_, argsVector) =>
-        q"$ConstructorCC($cls, $argsVector, Map.empty)"
+        q"$ConstructorCC[${arg.tpe}]($cls, $argsVector, Map.empty)"
       case l: Literal =>
         q"$SimpleValueCC($cls, $l)"
       case q"""$something.this.$refName.ref""" =>
@@ -128,9 +128,9 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
         q"$ReferencedCC($cls, $refNameStr, $something.this.$refName)"
       case q"""$refName.inline""" =>
         q"$refName"
-      case q"scala.collection.immutable.List.apply[$_](..$items)" =>
+      case q"scala.collection.immutable.List.apply[$itemTpe](..$items)" =>
         val argsTrees = items.asInstanceOf[List[Tree]].map(convertToBean)
-        q"$ListValueCC($cls, scala.collection.immutable.Vector(..$argsTrees))"
+        q"$ListValueCC[$itemTpe, scala.collection.immutable.List]($cls, scala.collection.immutable.Vector(..$argsTrees))"
       case q"scala.Predef.Map.apply[$_, $_](..$pairs)" =>
         val convertedPairs = pairs.map {
           case q"scala.Predef.ArrowAssoc[$_]($key).->[$_]($value)" => q"${convertToBean(key)} -> ${convertToBean(value)}"
@@ -142,7 +142,7 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
         val argsFlat = args.asInstanceOf[List[List[Tree]]].flatten
         val met = findMethodForArgs(obj, _.name.toString == staticMethod.toString(), argsFlat)
         val argsVector = toArgsVector(met, argsFlat)
-        q"$FactoryMethodCC($cls, $className, $factoryMethodName, $argsVector)"
+        q"$FactoryMethodCC[${arg.tpe}]($cls, $className, $factoryMethodName, $argsVector)"
       case _ => throw new IllegalArgumentException(s"${arg.toString()}, ${showRaw(arg)}")
     }
   }

@@ -38,9 +38,9 @@ class InitDataInjector(val menu: List[String]) {
 
 trait SpringConversions {
   def conversionService: BeanDef[ConversionServiceFactoryBean] =
-    new ConversionServiceFactoryBean().toConstructorValue.withSetters(_.setConverters(List(
-      new JListToListConverter()
-//      new ToMapConverter
+    new ConversionServiceFactoryBean().toConstructorValue.withSetters(_.setConverters(List[Converter[_, _]](
+      new JListToListConverter,
+      new ToMapConverter
     ).toListValue.to[JSet].inline))
 }
 

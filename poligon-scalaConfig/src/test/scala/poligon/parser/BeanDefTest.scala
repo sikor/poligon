@@ -86,7 +86,7 @@ class BeanDefTest extends FunSuite {
     context.refresh()
     println(context.getBeanDefinitionCount)
 
-    val s1 = context.getBean("service1").asInstanceOf[ImportantService]
+    val s1 = context.getBean("importantService1").asInstanceOf[ImportantService]
     assert(s1.id == 10 && s1.name == "important")
   }
 

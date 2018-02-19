@@ -4,7 +4,12 @@ import scala.annotation.compileTimeOnly
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
 
-sealed trait BeanDef[T] {
+/**
+  *
+  * @tparam T Made variant to support list of beans, perhaps can be done better and cls: Class[_] can be changed to
+  *           cls: Class[T]
+  */
+sealed trait BeanDef[+T] {
   @compileTimeOnly("ref method can be used only as constructor or setter argument in BeanDef.")
   def ref: T = throw new NotImplementedError()
 
@@ -23,7 +28,7 @@ object BeanDef {
 
   case class Setter(name: String, value: BeanDef[_])
 
-  case class Constructor[T](cls: Class[T], args: Vector[Arg], setters: Map[String, Setter]) extends BeanDef[T] {
+  case class Constructor[T](cls: Class[_], args: Vector[Arg], setters: Map[String, Setter]) extends BeanDef[T] {
 
     /**
       * used in macro
@@ -34,14 +39,14 @@ object BeanDef {
     def withSetters(setters: (T => Unit)*): Constructor[T] = macro poligon.HoconConfigMacros.withSetters[T]
   }
 
-  case class FactoryMethod[T](cls: Class[T], factoryClsName: String, factoryMethod: String, args: Vector[Arg]) extends BeanDef[T]
+  case class FactoryMethod[T](cls: Class[_], factoryClsName: String, factoryMethod: String, args: Vector[Arg]) extends BeanDef[T]
 
   trait SimpleValueDescription
 
   //TODO: type class for allowed simple values serializable to hocon
-  case class SimpleValue[T](cls: Class[T], value: T) extends BeanDef[T]
+  case class SimpleValue[T](cls: Class[_], value: T) extends BeanDef[T]
 
-  case class ListValue[I, L[_]](cls: Class[L[I]],
+  case class ListValue[I, L[_]](cls: Class[_],
                                 values: Vector[BeanDef[I]])(implicit val canBuildFrom: CanBuildFrom[Nothing, I, L[I]])
     extends BeanDef[L[I]] {
 
@@ -63,7 +68,7 @@ object BeanDef {
 
   }
 
-  case class MapValue[K, V, M[_, _]](cls: Class[M[K, V]], value: Map[BeanDef[K], BeanDef[V]])
+  case class MapValue[K, V, M[_, _]](cls: Class[_], value: Map[BeanDef[K], BeanDef[V]])
                                     (implicit val canBuildFrom: CanBuildFrom[Nothing, (K, V), M[K, V]])
     extends BeanDef[M[K, V]] {
 
@@ -76,7 +81,7 @@ object BeanDef {
     }
   }
 
-  case class Referenced[T](cls: Class[T], refName: String, value: BeanDef[T]) extends BeanDef[T]
+  case class Referenced[T](cls: Class[_], refName: String, value: BeanDef[T]) extends BeanDef[T]
 
   trait PropertyConverter[T] {
     def convert(propValue: String): T
@@ -87,7 +92,7 @@ object BeanDef {
     implicit val IntConverter: PropertyConverter[Int] = (propValue: String) => propValue.toInt
   }
 
-  case class PropertyValue[T](cls: Class[T], propName: String)(implicit val converter: PropertyConverter[T]) extends BeanDef[T]
+  case class PropertyValue[T](cls: Class[_], propName: String)(implicit val converter: PropertyConverter[T]) extends BeanDef[T]
 
   implicit final class ObjectOps[T](private val t: T) extends AnyVal {
     def toBeanDef: BeanDef[T] = macro poligon.HoconConfigMacros.toBeanDef[T]
