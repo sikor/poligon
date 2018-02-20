@@ -35,6 +35,16 @@ class InitDataInjector(val menu: List[String]) {
   var service2: ImportantService = _
 }
 
+object WTF {
+  val list = List(new JListToListConverter, new ToMapConverter)
+
+  case class Wrapper[T](item: T)
+
+  def toVector[I](list: List[I]): Vector[Wrapper[I]] = Vector(list.map(Wrapper(_)): _*)
+
+  private val vec = toVector(list)
+  println(vec)
+}
 
 trait SpringConversions {
   def conversionService: BeanDef[ConversionServiceFactoryBean] =
