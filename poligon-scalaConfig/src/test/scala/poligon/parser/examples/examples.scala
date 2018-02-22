@@ -78,8 +78,6 @@ trait OptionalServiceModule2 extends StrategyModule with GuiModule {
 
   override def menuEP(menu: ListValue[String, List]): ListValue[String, List] =
     super.menuEP(menu).amend(List("item4").toListValue)
-
-
 }
 
 trait StrategyModule {
@@ -89,8 +87,12 @@ trait StrategyModule {
 
 class MapAndList(val intNames: Map[Int, Converter[_, _]], val namesList: List[String])
 
-object ExampleConfig extends SpringConversions with StrategyModule with GuiModule with OptionalServiceModule1
-  with OptionalServiceModule2 {
+object ExampleConfig extends
+  SpringConversions with
+  StrategyModule with
+  GuiModule with
+  OptionalServiceModule1 with
+  OptionalServiceModule2 {
 
   private def hardMap: MapValue[Int, Converter[_, _], Map] =
     Map[Int, Converter[_, _]](

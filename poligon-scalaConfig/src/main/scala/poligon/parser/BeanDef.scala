@@ -38,7 +38,7 @@ object BeanDef {
 
   trait SimpleValueDescription
 
-  //TODO: type class for allowed simple values serializable to hocon
+  //TODO: type class for allowed simple values serializable to hocon, use the same converter as in property value
   case class SimpleValue[T](cls: Class[T], value: T) extends BeanDef[T]
 
   case class ListValue[I, L[_]](cls: Class[L[I]],

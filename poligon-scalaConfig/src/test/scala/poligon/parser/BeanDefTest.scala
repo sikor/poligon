@@ -14,6 +14,8 @@ import scala.concurrent.duration.Duration
 /**
   * <pre>
   * TODO:
+  * - Use %construct by default and fallback to %constructor-args if needed
+  * - type class for allowed simple values serializable to hocon, use the same converter as in property value
   * - Handling default arguments
   * - Compilation should fail for construction of inner classes - done
   * - Try to scope BeanDefs to single object using type members.
