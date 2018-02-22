@@ -35,17 +35,6 @@ class InitDataInjector(val menu: List[String]) {
   var service2: ImportantService = _
 }
 
-object WTF {
-  val list = List(new JListToListConverter, new ToMapConverter)
-
-  case class Wrapper[T](item: T)
-
-  def toVector[I](list: List[I]): Vector[Wrapper[I]] = Vector(list.map(Wrapper(_)): _*)
-
-  private val vec = toVector(list)
-  println(vec)
-}
-
 trait SpringConversions {
   def conversionService: BeanDef[ConversionServiceFactoryBean] =
     new ConversionServiceFactoryBean().toConstructorValue.withSetters(_.setConverters(List[Converter[_, _]](
@@ -98,15 +87,19 @@ trait StrategyModule {
     Strategy(FastProcessing.get).toBeanDef
 }
 
-class MapAndList(val intNames: Map[Int, String], val namesList: List[String])
+class MapAndList(val intNames: Map[Int, Converter[_, _]], val namesList: List[String])
 
-object ExampleConfig extends SpringConversions with StrategyModule with GuiModule with OptionalServiceModule1 with OptionalServiceModule2 {
+object ExampleConfig extends SpringConversions with StrategyModule with GuiModule with OptionalServiceModule1
+  with OptionalServiceModule2 {
 
-  private def intNames: MapValue[Int, String, Map] = Map(1 -> "jeden", 2 -> "dwa").toMapValue
+  private def hardMap: MapValue[Int, Converter[_, _], Map] =
+    Map[Int, Converter[_, _]](
+      1 -> new ToMapConverter,
+      2 -> new JListToListConverter).toMapValue
 
   private def namesList: ListValue[String, List] = List("kate", "john").toListValue
 
-  def mapAndList: BeanDef[MapAndList] = new MapAndList(intNames.inline, namesList.inline).toBeanDef
+  def mapAndList: BeanDef[MapAndList] = new MapAndList(hardMap.inline, namesList.inline).toBeanDef
 
   def importantService1: BeanDef[ImportantService] =
     new ImportantService(10, "important", "prop.service1CustomerName".toProp[String].inline, strategy.ref)

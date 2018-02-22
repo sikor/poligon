@@ -7,7 +7,7 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory
 import org.springframework.context.support.GenericApplicationContext
 import org.springframework.core.DefaultParameterNameDiscoverer
 import poligon.parser.BeanDef._
-import poligon.parser.examples.{ExampleConfig, FastProcessing, ImportantService, Strategy}
+import poligon.parser.examples._
 
 import scala.concurrent.duration.Duration
 
@@ -55,7 +55,7 @@ class BeanDefTest extends FunSuite {
       && (service1.strategy eq strategy) && service1.duration == Duration("10s"))
 
     assert(ExampleConfig.mapAndList.instance.namesList == List("kate", "john"))
-    assert(ExampleConfig.mapAndList.instance.intNames == Map(1 -> "jeden", 2 -> "dwa"))
+    assert(ExampleConfig.mapAndList.instance.intNames.keys == Set(1, 2))
     val initDataInjector = ExampleConfig.initDataInjector.instance
     assert(initDataInjector.service1 == ExampleConfig.importantService3.instance)
     assert(initDataInjector.service2 == ExampleConfig.importantService4.instance)

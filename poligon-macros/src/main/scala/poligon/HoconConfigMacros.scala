@@ -131,11 +131,11 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
       case q"scala.collection.immutable.List.apply[$itemTpe](..$items)" =>
         val argsTrees = items.asInstanceOf[List[Tree]].map(convertToBean)
         q"$ListValueCC[$itemTpe, scala.collection.immutable.List]($cls, scala.collection.immutable.Vector(..$argsTrees))"
-      case q"scala.Predef.Map.apply[$_, $_](..$pairs)" =>
+      case q"scala.Predef.Map.apply[$keyTpe, $valueTpe](..$pairs)" =>
         val convertedPairs = pairs.map {
           case q"scala.Predef.ArrowAssoc[$_]($key).->[$_]($value)" => q"${convertToBean(key)} -> ${convertToBean(value)}"
         }
-        q"$MapValueCC($cls, scala.collection.immutable.Map.apply(..$convertedPairs))"
+        q"$MapValueCC[$keyTpe, $valueTpe, scala.collection.immutable.Map]($cls, scala.collection.immutable.Vector(..$convertedPairs))"
       case q"""$obj.$staticMethod(...$args)""" if obj.tpe.typeSymbol.isModuleClass => //strangely it works also for java static methods.
         val className = obj.tpe.typeSymbol.fullName.stripSuffix(".type")
         val factoryMethodName = staticMethod.toString()

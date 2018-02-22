@@ -63,7 +63,7 @@ object BeanDef {
 
   }
 
-  case class MapValue[K, V, M[_, _]](cls: Class[M[K, V]], value: Map[BeanDef[K], BeanDef[V]])
+  case class MapValue[K, V, M[_, _]](cls: Class[M[K, V]], value: Vector[(BeanDef[_ <: K], BeanDef[_ <: V])])
                                     (implicit val canBuildFrom: CanBuildFrom[Nothing, (K, V), M[K, V]])
     extends BeanDef[M[K, V]] {
 
