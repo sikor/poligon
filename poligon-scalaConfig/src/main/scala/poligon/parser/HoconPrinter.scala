@@ -1,5 +1,6 @@
 package poligon.parser
 
+import com.typesafe.config.ConfigObject
 import poligon.parser.BeanDef.{Arg, Constructor, FactoryMethod, ListValue, MapValue, PropertyValue, Referenced, SimpleValue}
 
 import scala.annotation.switch
@@ -48,6 +49,10 @@ object HoconPrinter {
   private def classNameToHocon(name: String): String = {
     name.replace('$', '.')
   }
+
+  def toConfigObject(args: Iterable[Arg]): ConfigObject = ???
+
+  def toConfigObject(beanDef: BeanDef[_]): ConfigObject = ???
 
   def toHoconObject(beanDef: BeanDef[_]): String = beanDef match {
     case Constructor(cls, args, setters) =>

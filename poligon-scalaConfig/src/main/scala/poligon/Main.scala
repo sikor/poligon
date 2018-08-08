@@ -10,7 +10,7 @@ import scala.concurrent.ExecutionContext
 
 class TakesList(val vec: List[Int])
 
-class ScalaNormalClass(val arg1: String, arg2: Int)(implicit ec: ExecutionContext) {
+class ScalaNormalClass(val arg1: String, arg2: Int)(implicit val ec: ExecutionContext) {
   @BeanProperty
   var settableDouble: Double = 0
   @BeanProperty

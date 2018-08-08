@@ -1,6 +1,6 @@
 
 inThisBuild(Seq(
-  scalaVersion := "2.12.1",
+  scalaVersion := "2.12.6",
   organization := "com.poligon",
   compileOrder := CompileOrder.JavaThenScala,
   scalacOptions ++= Seq(

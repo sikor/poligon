@@ -2,7 +2,7 @@ package poligon.parser
 
 import java.lang.reflect.Modifier
 
-import poligon.parser.BeanDef.{Arg, Constructor, FactoryMethod, ListValue, MapValue, PropertyValue, Referenced, SimpleValue}
+import poligon.parser.BeanDef.{Constructor, FactoryMethod, ListValue, MapValue, PropertyValue, Referenced, SimpleValue}
 
 import scala.collection.mutable
 import scala.util.control.NonFatal

@@ -41,7 +41,6 @@ object ReflectTest {
 
     val t = q"poligon.ReflectTest.get"
     val tt = tb.typecheck(t)
-    val ttt = tt.tpe
     tt.symbol.isModuleClass
     println(tt.symbol.isModuleClass)
     println(tt.tpe.typeSymbol.isModuleClass)

@@ -20,7 +20,7 @@ object CrossPatternMatch {
 
   sealed trait Wrappers[+T]
 
-  case class Wrapper[+T](implicit val instance: T with SubFamily) extends Wrappers[T]
+  case class Wrapper[+T]()(implicit val instance: T with SubFamily) extends Wrappers[T]
 
   val w: Wrapper[SubFamily1.type] = Wrapper()(SubFamily1)
 
