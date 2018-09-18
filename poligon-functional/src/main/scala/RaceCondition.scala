@@ -15,13 +15,10 @@ object RaceCondition {
     }
   }
 
-  def addressToBytes(address: InetSocketAddress): Array[Byte] = {
-    val sAddress = address
+  def addressToBytes(sAddress: InetSocketAddress): Array[Byte] = {
     val result: Array[Byte] = new Array[Byte](sAddress.getAddress.getAddress.length + 1)
     val writer = new LimitedByteArrayOutputStream2(result, 0)
     val addressBytes = sAddress.getAddress.getAddress
-    //    result.update(0, addressBytes.length.toByte)
-    //    System.arraycopy(addressBytes, 0, result, 1, addressBytes.length)
     writer.write(addressBytes.length)
     writer.write(addressBytes)
     writer.data
@@ -29,16 +26,24 @@ object RaceCondition {
 
   def main(args: Array[String]): Unit = {
     var i = 0
-    val expected = Array[Byte](4, 127, 0, 0, 1)
-    val address = new InetSocketAddress("localhost", 1234)
+    val expected = Array[Byte](4, 10, 10, 10, 10)
+    val address = new InetSocketAddress("10.10.10.10", 1234)
     var count = 0
-    while (i < 10000000) {
+    var lastOk = true
+    while (i < 1000000) {
       i += 1
       val data = addressToBytes(address)
       if (!data.sameElements(expected)) {
         count += 1
-        //        println(i + data.mkString(" ", ", ", ""))
-        //        throw new IllegalArgumentException(data.mkString(", "))
+        if(lastOk){
+          println(s"\n\nBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD $i \n\n")
+        }
+        lastOk = false
+      } else {
+        if(!lastOk){
+          println(s"\n\nGOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOD $i\n\n")
+        }
+        lastOk = true
       }
     }
     println(s"Failures: $count")
