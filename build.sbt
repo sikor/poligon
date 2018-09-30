@@ -28,22 +28,19 @@ lazy val `poligon-macros` = project
   .settings(
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
     libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-    libraryDependencies += "com.avsystem.commons" %% "commons-macros" % "1.20.4",
-    libraryDependencies += "com.avsystem.commons" %% "commons-shared" % "1.20.4",
-    libraryDependencies += "com.avsystem.commons" %% "commons-spring" % "1.20.4"
+    libraryDependencies += "com.avsystem.commons" %% "commons-macros" % "1.29.0",
+    libraryDependencies += "com.avsystem.commons" %% "commons-core" % "1.29.0",
+    libraryDependencies += "com.avsystem.commons" %% "commons-spring" % "1.29.0",
+    libraryDependencies += "com.avsystem.commons" %% "commons-mongo" % "1.29.0"
   )
 
 lazy val `poligon-scalaConfig` = project.dependsOn(`poligon-macros`)
   .settings(libraryDependencies += "org.scalatest" % "scalatest_2.12" % "3.0.4" % Test)
 
 lazy val `poligon-functional` = project.dependsOn(`poligon-macros`)
+  .settings(libraryDependencies +=  "org.scalaj" %% "scalaj-http" % "2.4.1")
+  .settings(libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.4.2")
   .settings(libraryDependencies += "org.scalatest" % "scalatest_2.12" % "3.0.4" % Test)
 
 lazy val poligon = project.in(file("."))
   .aggregate(`poligon-macros`, `poligon-scalaConfig`, `poligon-functional`)
-  .settings(
-    publishArtifact := false,
-    publish := (),
-    publishLocal := (),
-    publishM2 := (),
-    doc := (target in doc).value)
