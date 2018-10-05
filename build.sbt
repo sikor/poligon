@@ -40,6 +40,8 @@ lazy val `poligon-scalaConfig` = project.dependsOn(`poligon-macros`)
 lazy val `poligon-functional` = project.dependsOn(`poligon-macros`)
   .settings(libraryDependencies +=  "org.scalaj" %% "scalaj-http" % "2.4.1")
   .settings(libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.4.2")
+  .settings(libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3")
+  .settings(libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0")
   .settings(libraryDependencies += "org.scalatest" % "scalatest_2.12" % "3.0.4" % Test)
 
 lazy val poligon = project.in(file("."))
