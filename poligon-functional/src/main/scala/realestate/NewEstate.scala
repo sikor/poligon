@@ -3,9 +3,11 @@ package realestate
 import com.avsystem.commons.misc.Timestamp
 import com.avsystem.commons.mongo._
 import com.avsystem.commons.mongo.scala.GenCodecCollection
-import com.avsystem.commons.serialization.HasGenCodec
+import com.avsystem.commons.serialization.{GenCodec, HasGenCodec}
+import com.avsystem.commons.serialization.json.JsonStringInput
 import com.mongodb.client.model.Filters
 import com.typesafe.scalalogging.StrictLogging
+import monix.eval.Task
 import monix.execution.Scheduler
 import monix.reactive.Observable
 import org.mongodb.scala.result.UpdateResult
@@ -21,7 +23,19 @@ object NewEstate extends StrictLogging {
 
   private implicit val Scheduler: Scheduler = monix.execution.Scheduler.Implicits.global
 
-  case class Investment(@mongoId url: String, xLoc: Double, yLoc: Double, meterPrice: Option[Int], street: Option[String], district: String)
+  case class Coordinates(x: Double, y: Double) {
+    def toLatLon: String = s"$y,$x"
+  }
+
+  object Coordinates extends HasGenCodec[Coordinates]
+
+  case class ImportantLocation(name: String, xLoc: Double, yLoc: Double) {
+    val coordinates = Coordinates(xLoc, yLoc)
+  }
+
+  case class Investment(@mongoId url: String, xLoc: Double, yLoc: Double, meterPrice: Option[Int], street: Option[String], district: String) {
+    val coordinates = Coordinates(xLoc, yLoc)
+  }
 
   object Investment extends HasGenCodec[Investment]
 
@@ -33,8 +47,26 @@ object NewEstate extends StrictLogging {
 
   object Config extends HasGenCodec[Config]
 
+  case class Distance(origin: Coordinates, destination: Coordinates, timeSecFromEpoch: Int, distanceKm: Int)
 
-  val UrlPrefix = "https://maps.googleapis.com/maps/api/distancematrix/json"
+  object Distance extends HasGenCodec[Distance]
+
+  case class GDuration(value: Int, text: String)
+
+  case class GDistance(value: Int, text: String)
+
+  case class GElement(status: String, duration: GDuration, distance: GDistance)
+
+  case class Column(elements: Vector[GElement])
+
+  case class DistanceMatrix(status: String, origin_addresses: Vector[String], destination_addresses: Vector[String],
+                            rows: Vector[Column])
+
+  object DistanceMatrix {
+    implicit val codec: GenCodec[DistanceMatrix] = GenCodec.materializeRecursively[DistanceMatrix]
+  }
+
+  val DistanceMatrixUrlPrefix = "https://maps.googleapis.com/maps/api/distancematrix/json"
 
   val TestMapsApiUrl = "https://maps.googleapis.com/maps/api/distancematrix/json?origins=Boston,MA|Charlestown,MA&destinations=Lexington,MA|Concord,MA&departure_time=now&key="
 
@@ -53,6 +85,11 @@ object NewEstate extends StrictLogging {
   private val dominiumCollection = GenCodecCollection.create[Dominium](realEstateDB, "Dominium")
   private val invesmentCollection = GenCodecCollection.create[Investment](realEstateDB, "Investment")
   private val configCollection = GenCodecCollection.create[Config](realEstateDB, "Config")
+  private val distanceCollection = GenCodecCollection.create[Distance](realEstateDB, "Distance")
+
+  private val AV = ImportantLocation("AV", 19.899028, 50.0834354)
+  private val GE = ImportantLocation("GE", 19.9926023, 50.0803362)
+  private val MARKET = ImportantLocation("Market", 19.9345619, 50.0619005)
 
   def setConfig(config: Config): Observable[Completed] = {
     configCollection.insertOne(config).asMonix
@@ -60,6 +97,45 @@ object NewEstate extends StrictLogging {
 
   def config(): Observable[Config] = {
     configCollection.find().asMonix
+  }
+
+
+  //https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=40.6655101,-73.89188969999998&destinations=40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.659569%2C-73.933783%7C40.729029%2C-73.851524%7C40.6860072%2C-73.6334271%7C40.598566%2C-73.7527626%7C40.659569%2C-73.933783%7C40.729029%2C-73.851524%7C40.6860072%2C-73.6334271%7C40.598566%2C-73.7527626&key=YOUR_API_KEY
+
+  def getDistanceWithCache(origin: Coordinates, dest: Coordinates): Task[Distance] = for {
+    config <- config().headL
+    cacheDist <- distanceCollection.find(Filters.and(
+      Filters.eq("origin.x", origin.x),
+      Filters.eq("origin.y", origin.y),
+      Filters.eq("destination.x", dest.x),
+      Filters.eq("destination.y", dest.y))).asMonix.headOptionL
+    dist <- cacheDist.map(d => Task.apply(d)).getOrElse {
+      val gDist = getDistances(origin, Vector(dest), config.googleMapApiKey).head
+      distanceCollection.insertOne(gDist).asMonix.headL.map(_ => gDist)
+    }
+  } yield dist
+
+  def getAllDistances(investments: Observable[Investment] = investmentsDetails()): Observable[Distance] = {
+    val destinations = Observable(AV, GE, MARKET)
+    for {
+      i <- investments
+      dest <- destinations
+      dist <- Observable.fromTask(getDistanceWithCache(i.coordinates, dest.coordinates))
+    } yield dist
+  }
+
+  def getDistances(origin: Coordinates, destinations: Vector[Coordinates], apiKey: String): Vector[Distance] = {
+    val res = Http(DistanceMatrixUrlPrefix).copy(params = Seq(
+      ("origins", origin.toLatLon),
+      ("destinations", destinations.map(_.toLatLon).mkString("|")),
+      ("key", apiKey)))
+      .asString.body
+    logger.info(res)
+    val matrix = JsonStringInput.read[DistanceMatrix](res)
+    val row = matrix.rows.head
+    row.elements.zip(destinations).map { case (e, dest) =>
+      Distance(origin, dest, e.duration.value, e.distance.value)
+    }
   }
 
   def getInvestmentsPage(i: Int): Vector[String] = {
@@ -140,7 +216,7 @@ object NewEstate extends StrictLogging {
     }
   } yield Completed()
 
-  def main(args: Array[String]): Unit = investmentsDetails().run()
+  def main(args: Array[String]): Unit = getAllDistances().run()
 
   def run[A](program: Observable[A]): Unit = {
     Await.result(program.foreach(println), Duration.Inf)
