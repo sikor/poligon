@@ -78,7 +78,7 @@ object NewEstate extends StrictLogging {
 
   case class GDistance(value: Int, text: String)
 
-  case class GElement(status: String, duration: GDuration, distance: GDistance)
+  case class GElement(status: String, duration: GDuration, distance: GDistance, duration_in_traffic: Option[GDuration] = None)
 
   case class Column(elements: Vector[GElement])
 
@@ -115,7 +115,7 @@ object NewEstate extends StrictLogging {
   private val MARKET = ImportantLocation("Market", 19.9345619, 50.0619005)
 
   private val DepartureTime = {
-    val calendar = Calendar.getInstance(TimeZone.getTimeZone(ZoneId.of("CEST")))
+    val calendar = Calendar.getInstance(TimeZone.getTimeZone(ZoneId.of("Europe/Warsaw")))
     calendar.set(2018, 10, 9, 8, 0, 0)
     calendar.getTime
   }
@@ -131,44 +131,67 @@ object NewEstate extends StrictLogging {
 
   //https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=40.6655101,-73.89188969999998&destinations=40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.659569%2C-73.933783%7C40.729029%2C-73.851524%7C40.6860072%2C-73.6334271%7C40.598566%2C-73.7527626%7C40.659569%2C-73.933783%7C40.729029%2C-73.851524%7C40.6860072%2C-73.6334271%7C40.598566%2C-73.7527626&key=YOUR_API_KEY
 
-  def getDistanceWithCache(origin: Coordinates, dest: Coordinates): Task[Distance] = for {
+  //lat - y
+  //lon - x
+  def getDistanceWithCache(origin: Coordinates, dests: Vector[Coordinates]): Task[Vector[Distance]] = for {
     config <- config().headL
-    cacheDist <- distanceCollection.find(Filters.and(
-      Filters.eq("origin.x", origin.x),
-      Filters.eq("origin.y", origin.y),
-      Filters.eq("destination.x", dest.x),
-      Filters.eq("destination.y", dest.y))).asMonix.headOptionL
-    dist <- cacheDist.map(d => Task.apply(d)).getOrElse {
-      val gDistBike = getDistances(origin, Vector(dest), Bicycling, config.googleMapApiKey).head
-      val gDistCar = getDistances(origin, Vector(dest), Driving, config.googleMapApiKey).head
-      val distance = Distance(origin, dest, Map(Bicycling -> gDistBike, Driving -> gDistCar))
-      distanceCollection.insertOne(distance).asMonix.headL.map(_ => distance)
+    coorWithOptDist <- getDistsFromCache(origin, dests)
+    toFind = coorWithOptDist.collect {
+      case (coor, None) => coor
     }
-  } yield dist
+    _ <- {
+      if (toFind.nonEmpty) {
+        val gDistBike = getDistances(origin, toFind, Bicycling, config.googleMapApiKey)
+        val gDistCar = getDistances(origin, toFind, Driving, config.googleMapApiKey)
+        val distance = toFind.zipWithIndex.map { case (d, i) =>
+          Distance(origin, d, Map(Bicycling -> gDistBike(i), Driving -> gDistCar(i)))
+        }
+        distanceCollection.insertMany(distance).asMonix.completedL
+      } else {
+        Task.unit
+      }
+    }
+    coorWithOptDist2 <- getDistsFromCache(origin, dests)
+    all = coorWithOptDist2.map {
+      case (coor, Some(dist)) => dist
+      case _ => throw new Exception
+    }
+  } yield all
+
+  private def getDistsFromCache(origin: Coordinates, dests: Vector[Coordinates]): Task[Vector[(Coordinates, Option[Distance])]] = {
+    Task.sequence(dests.map(dest =>
+      distanceCollection.find(Filters.and(
+        Filters.eq("origin.x", origin.x),
+        Filters.eq("origin.y", origin.y),
+        Filters.eq("destination.x", dest.x),
+        Filters.eq("destination.y", dest.y))).asMonix.headOptionL.map(i => (dest, i))
+    ))
+  }
 
   def getAllDistances(investments: Observable[Investment] = investmentsDetails()): Observable[Distance] = {
-    val destinations = Observable(AV, GE, MARKET)
+    val destinations = Vector(AV, GE, MARKET)
     for {
       i <- investments
-      dest <- destinations
-      dist <- Observable.fromTask(getDistanceWithCache(i.coordinates, dest.coordinates))
+      dists <- Observable.fromTask(getDistanceWithCache(i.coordinates, destinations.map(_.coordinates)))
+      dist <- Observable(dists: _*)
     } yield dist
   }
 
   def getDistances(origin: Coordinates, destinations: Vector[Coordinates], mode: TravelMode, apiKey: String): Vector[TimeAndDistance] = {
-    val res = Http(DistanceMatrixUrlPrefix).copy(params = Seq(
+    val params = Seq(
       ("origins", origin.toLatLon),
       ("destinations", destinations.map(_.toLatLon).mkString("|")),
       ("key", apiKey),
       ("mode", mode.name),
       ("traffic_model", "pessimistic"),
-      ("departure_time", DepartureTime.toInstant.getEpochSecond.toString)))
-      .asString.body
+      ("departure_time", DepartureTime.toInstant.getEpochSecond.toString))
+    logger.info(s"params: $params")
+    val res = Http(DistanceMatrixUrlPrefix).copy(params = params).asString.body
     logger.info(res)
     val matrix = JsonStringInput.read[DistanceMatrix](res)
     val row = matrix.rows.head
     row.elements.map { e =>
-      TimeAndDistance(e.duration.value, e.distance.value)
+      TimeAndDistance(e.duration_in_traffic.getOrElse(e.duration).value, e.distance.value)
     }
   }
 
@@ -253,9 +276,9 @@ object NewEstate extends StrictLogging {
   def investmentsWithDistances(): Observable[(Investment, Vector[(ImportantLocation, Distance)])] = {
     val destinations = Vector(AV, GE, MARKET)
     investmentsDetails().flatMap { i =>
-      val locationWithDistance = destinations
-        .map(d => getDistanceWithCache(i.coordinates, d.coordinates).map(dist => (d, dist)))
-      Observable.fromTask(Task.sequence(locationWithDistance)).map(v => (i, v))
+      val locationWithDistance = getDistanceWithCache(i.coordinates, destinations.map(_.coordinates))
+        .map(dist => destinations.zip(dist))
+      Observable.fromTask(locationWithDistance).map(v => (i, v))
     }
   }
 
@@ -263,7 +286,11 @@ object NewEstate extends StrictLogging {
     i match {
       case (investment, dists) =>
         s"${investment.street.getOrElse(investment.district)} (${investment.meterPrice.getOrElse("?")} zł/m): " +
-          s"${dists.map { case (loc, dist) => s"${loc.name}: ${dist.distances(Driving).distanceInMeter.toDouble / 1000} km" }.mkString(", ")}"
+          s"${
+            dists.map { case (loc, dist) => s"${loc.name}: ${dist.distances(Bicycling).distanceInMeter.toDouble / 1000} km, " +
+              s"${dist.distances(Driving).timeInSec.toDouble / 60} min"
+            }.mkString(", ")
+          }"
     }
   }
 
