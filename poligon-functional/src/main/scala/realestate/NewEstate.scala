@@ -1,9 +1,12 @@
 package realestate
 
-import com.avsystem.commons.misc.Timestamp
+import java.time.ZoneId
+import java.util.{Calendar, TimeZone}
+
+import com.avsystem.commons.misc.{NamedEnum, NamedEnumCompanion, Timestamp}
 import com.avsystem.commons.mongo._
 import com.avsystem.commons.mongo.scala.GenCodecCollection
-import com.avsystem.commons.serialization.{GenCodec, HasGenCodec}
+import com.avsystem.commons.serialization.{GenCodec, GenKeyCodec, HasGenCodec}
 import com.avsystem.commons.serialization.json.JsonStringInput
 import com.mongodb.client.model.Filters
 import com.typesafe.scalalogging.StrictLogging
@@ -12,6 +15,7 @@ import monix.execution.Scheduler
 import monix.reactive.Observable
 import org.mongodb.scala.result.UpdateResult
 import org.mongodb.scala.{Completed, MongoClient}
+import realestate.NewEstate.TravelMode.{Bicycling, Driving}
 import scalaj.http.Http
 
 import _root_.scala.annotation.tailrec
@@ -47,7 +51,26 @@ object NewEstate extends StrictLogging {
 
   object Config extends HasGenCodec[Config]
 
-  case class Distance(origin: Coordinates, destination: Coordinates, timeSecFromEpoch: Int, distanceKm: Int)
+  sealed abstract class TravelMode(val name: String) extends NamedEnum
+
+  object TravelMode extends NamedEnumCompanion[TravelMode] {
+
+    case object Bicycling extends TravelMode("bicycling")
+
+    case object Driving extends TravelMode("driving")
+
+
+    implicit val Codec: GenCodec[TravelMode] = GenCodec.materialize[TravelMode]
+
+    implicit val KeyCoec: GenKeyCodec[TravelMode] = GenKeyCodec.create(byName(_), _.name)
+    override val values: List[TravelMode] = caseObjects
+  }
+
+  case class TimeAndDistance(timeInSec: Int, distanceInMeter: Int)
+
+  object TimeAndDistance extends HasGenCodec[TimeAndDistance]
+
+  case class Distance(origin: Coordinates, destination: Coordinates, distances: Map[TravelMode, TimeAndDistance])
 
   object Distance extends HasGenCodec[Distance]
 
@@ -91,6 +114,12 @@ object NewEstate extends StrictLogging {
   private val GE = ImportantLocation("GE", 19.9926023, 50.0803362)
   private val MARKET = ImportantLocation("Market", 19.9345619, 50.0619005)
 
+  private val DepartureTime = {
+    val calendar = Calendar.getInstance(TimeZone.getTimeZone(ZoneId.of("CEST")))
+    calendar.set(2018, 10, 9, 8, 0, 0)
+    calendar.getTime
+  }
+
   def setConfig(config: Config): Observable[Completed] = {
     configCollection.insertOne(config).asMonix
   }
@@ -110,8 +139,10 @@ object NewEstate extends StrictLogging {
       Filters.eq("destination.x", dest.x),
       Filters.eq("destination.y", dest.y))).asMonix.headOptionL
     dist <- cacheDist.map(d => Task.apply(d)).getOrElse {
-      val gDist = getDistances(origin, Vector(dest), config.googleMapApiKey).head
-      distanceCollection.insertOne(gDist).asMonix.headL.map(_ => gDist)
+      val gDistBike = getDistances(origin, Vector(dest), Bicycling, config.googleMapApiKey).head
+      val gDistCar = getDistances(origin, Vector(dest), Driving, config.googleMapApiKey).head
+      val distance = Distance(origin, dest, Map(Bicycling -> gDistBike, Driving -> gDistCar))
+      distanceCollection.insertOne(distance).asMonix.headL.map(_ => distance)
     }
   } yield dist
 
@@ -124,17 +155,20 @@ object NewEstate extends StrictLogging {
     } yield dist
   }
 
-  def getDistances(origin: Coordinates, destinations: Vector[Coordinates], apiKey: String): Vector[Distance] = {
+  def getDistances(origin: Coordinates, destinations: Vector[Coordinates], mode: TravelMode, apiKey: String): Vector[TimeAndDistance] = {
     val res = Http(DistanceMatrixUrlPrefix).copy(params = Seq(
       ("origins", origin.toLatLon),
       ("destinations", destinations.map(_.toLatLon).mkString("|")),
-      ("key", apiKey)))
+      ("key", apiKey),
+      ("mode", mode.name),
+      ("traffic_model", "pessimistic"),
+      ("departure_time", DepartureTime.toInstant.getEpochSecond.toString)))
       .asString.body
     logger.info(res)
     val matrix = JsonStringInput.read[DistanceMatrix](res)
     val row = matrix.rows.head
-    row.elements.zip(destinations).map { case (e, dest) =>
-      Distance(origin, dest, e.duration.value, e.distance.value)
+    row.elements.map { e =>
+      TimeAndDistance(e.duration.value, e.distance.value)
     }
   }
 
@@ -216,10 +250,34 @@ object NewEstate extends StrictLogging {
     }
   } yield Completed()
 
-  def main(args: Array[String]): Unit = getAllDistances().run()
+  def investmentsWithDistances(): Observable[(Investment, Vector[(ImportantLocation, Distance)])] = {
+    val destinations = Vector(AV, GE, MARKET)
+    investmentsDetails().flatMap { i =>
+      val locationWithDistance = destinations
+        .map(d => getDistanceWithCache(i.coordinates, d.coordinates).map(dist => (d, dist)))
+      Observable.fromTask(Task.sequence(locationWithDistance)).map(v => (i, v))
+    }
+  }
 
-  def run[A](program: Observable[A]): Unit = {
-    Await.result(program.foreach(println), Duration.Inf)
+  def investmentWithDistancesPrinter(i: (Investment, Vector[(ImportantLocation, Distance)])): String = {
+    i match {
+      case (investment, dists) =>
+        s"${investment.street.getOrElse(investment.district)} (${investment.meterPrice.getOrElse("?")} zł/m): " +
+          s"${dists.map { case (loc, dist) => s"${loc.name}: ${dist.distances(Driving).distanceInMeter.toDouble / 1000} km" }.mkString(", ")}"
+    }
+  }
+
+  def main(args: Array[String]): Unit = investmentsWithDistances().run(printer = investmentWithDistancesPrinter)
+
+  def run[A](program: Observable[A], aggregate: Boolean = false, printer: A => String = (x: A) => x.toString): Vector[A] = {
+    val result = Vector.newBuilder[A]
+    Await.result(program.foreach { m =>
+      println(printer(m))
+      if (aggregate) {
+        result += m
+      }
+    }, Duration.Inf)
+    result.result()
   }
 
 

@@ -6,8 +6,8 @@ import scala.util.matching.Regex
 package object realestate extends MongoObservableExtensions {
 
   implicit class ObservableExt[T](val o: Observable[T]) extends AnyVal {
-    def run(): Unit = {
-      NewEstate.run(o)
+    def run(aggregate: Boolean = false, printer: T => String = x => x.toString): Unit = {
+      NewEstate.run(o, aggregate, printer)
     }
   }
 
