@@ -1,13 +1,15 @@
 package realestate
 
+import java.io.{File, FileOutputStream, OutputStreamWriter}
+import java.nio.charset.StandardCharsets
 import java.time.ZoneId
-import java.util.{Calendar, TimeZone}
+import java.util.{Calendar, Locale, TimeZone}
 
 import com.avsystem.commons.misc.{NamedEnum, NamedEnumCompanion, Timestamp}
 import com.avsystem.commons.mongo._
 import com.avsystem.commons.mongo.scala.GenCodecCollection
-import com.avsystem.commons.serialization.{GenCodec, GenKeyCodec, HasGenCodec}
 import com.avsystem.commons.serialization.json.JsonStringInput
+import com.avsystem.commons.serialization.{GenCodec, GenKeyCodec, HasGenCodec}
 import com.mongodb.client.model.Filters
 import com.typesafe.scalalogging.StrictLogging
 import monix.eval.Task
@@ -168,8 +170,10 @@ object NewEstate extends StrictLogging {
     ))
   }
 
+  val ImportantLocations = Vector(AV, GE, MARKET)
+
   def getAllDistances(investments: Observable[Investment] = investmentsDetails()): Observable[Distance] = {
-    val destinations = Vector(AV, GE, MARKET)
+    val destinations = ImportantLocations
     for {
       i <- investments
       dists <- Observable.fromTask(getDistanceWithCache(i.coordinates, destinations.map(_.coordinates)))
@@ -274,10 +278,9 @@ object NewEstate extends StrictLogging {
   } yield Completed()
 
   def investmentsWithDistances(): Observable[(Investment, Vector[(ImportantLocation, Distance)])] = {
-    val destinations = Vector(AV, GE, MARKET)
     investmentsDetails().flatMap { i =>
-      val locationWithDistance = getDistanceWithCache(i.coordinates, destinations.map(_.coordinates))
-        .map(dist => destinations.zip(dist))
+      val locationWithDistance = getDistanceWithCache(i.coordinates, ImportantLocations.map(_.coordinates))
+        .map(dist => ImportantLocations.zip(dist))
       Observable.fromTask(locationWithDistance).map(v => (i, v))
     }
   }
@@ -294,7 +297,44 @@ object NewEstate extends StrictLogging {
     }
   }
 
-  def main(args: Array[String]): Unit = investmentsWithDistances().run(printer = investmentWithDistancesPrinter)
+  def format(d: Double): String = {
+    String.format(Locale.FRANCE, "%.2f", d.asInstanceOf[AnyRef])
+  }
+
+
+  def csvInvestmentWithDistancesPrinter(i: (Investment, Vector[(ImportantLocation, Distance)])): String = i match {
+    case (investment, distances) =>
+      (Vector(investment.url, investment.street.getOrElse(""), investment.district, investment.meterPrice.getOrElse(0).toString) ++
+        distances.flatMap {
+          case (loc, distance) => TravelMode.values.flatMap { m =>
+            val mDistance = distance.distances(m)
+            Vector(mDistance.timeInSec / 60.0, mDistance.distanceInMeter / 1000.0).map(d => format(d))
+          }
+        }).map(s => s.replaceAllLiterally(";", ",")).mkString("; ")
+  }
+
+  def investmentWithDistancesTitleRow(locations: Vector[ImportantLocation]): String =
+    (Vector("url", "street", "district", "meter price") ++ (for {
+      loc <- locations
+      m <- TravelMode.values
+      t <- Vector("time [minutes]", "distance [km]")
+    } yield s"${loc.name} (${m.name}) - $t")).mkString("; ")
+
+  def generateCsvRaport(filePath: String = "/tmp/investmentsReport.csv"): Unit = {
+    val rest = investmentsWithDistances().run(aggregate = true)
+    val file = new File(filePath)
+    file.delete()
+    file.createNewFile()
+    val writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)
+
+    def writeln(l: String): Unit = writer.write(l + "\n")
+
+    writeln(investmentWithDistancesTitleRow(ImportantLocations))
+    rest.foreach(d => writeln(csvInvestmentWithDistancesPrinter(d)))
+    writer.close()
+  }
+
+  def main(args: Array[String]): Unit = generateCsvRaport()
 
   def run[A](program: Observable[A], aggregate: Boolean = false, printer: A => String = (x: A) => x.toString): Vector[A] = {
     val result = Vector.newBuilder[A]
