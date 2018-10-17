@@ -45,7 +45,11 @@ lazy val `poligon-functional` = project.dependsOn(`poligon-macros`)
   .settings(libraryDependencies += "org.scalatest" % "scalatest_2.12" % "3.0.4" % Test)
 
 lazy val `poligon-vaadin` = project.dependsOn(`poligon-macros`)
-  .settings(libraryDependencies += "com.vaadin" % "vaadin-root" % "8.5.2")
+  .settings(libraryDependencies += "com.vaadin" % "vaadin-server" % "7.7.15")
+  .settings(libraryDependencies += "com.vaadin" % "vaadin-client-compiled" % "7.7.15")
+  .settings(libraryDependencies += "com.vaadin" % "vaadin-themes" % "7.7.15")
+  .settings(libraryDependencies += "org.eclipse.jetty" % "jetty-server" % "9.4.12.v20180830")
+  .settings(libraryDependencies += "org.eclipse.jetty" % "jetty-servlet" % "9.4.12.v20180830")
 
 
 lazy val poligon = project.in(file("."))
