@@ -21,8 +21,16 @@ inThisBuild(Seq(
     "-target", "1.8",
     "-parameters"
   ),
-  autoAPIMappings := true
+  autoAPIMappings := true,
+  libraryDependencies ++= Seq(
+    compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),
+    "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided
+  )
 ))
+
+val silencerVersion = "1.2.1"
+
+
 
 lazy val `poligon-macros` = project
   .settings(
@@ -50,6 +58,8 @@ lazy val `poligon-vaadin` = project.dependsOn(`poligon-macros`)
   .settings(libraryDependencies += "com.vaadin" % "vaadin-themes" % "7.7.15")
   .settings(libraryDependencies += "org.eclipse.jetty" % "jetty-server" % "9.4.12.v20180830")
   .settings(libraryDependencies += "org.eclipse.jetty" % "jetty-servlet" % "9.4.12.v20180830")
+  .settings(libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3")
+  .settings(libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0")
 
 
 lazy val poligon = project.in(file("."))
