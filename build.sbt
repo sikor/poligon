@@ -60,6 +60,7 @@ lazy val `poligon-vaadin` = project.dependsOn(`poligon-macros`)
   .settings(libraryDependencies += "org.eclipse.jetty" % "jetty-servlet" % "9.4.12.v20180830")
   .settings(libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3")
   .settings(libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0")
+  .settings(libraryDependencies += "org.scalatest" % "scalatest_2.12" % "3.0.4" % Test)
 
 
 lazy val poligon = project.in(file("."))
