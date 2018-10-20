@@ -13,17 +13,17 @@ object ObjectsPanelPresenter {
 
   case class SingleResource(name: String, value: String) extends Resource
 
-//  object SingleResource extends HasModelPropertyCreator[SingleResource]
+  //  object SingleResource extends HasModelPropertyCreator[SingleResource]
 
   case class MultiResource(name: String, value: Map[Int, String]) extends Resource
 
-//  object MultiResource extends HasModelPropertyCreator[MultiResource]
+  //  object MultiResource extends HasModelPropertyCreator[MultiResource]
 
-  case class ObjectInstance(id: Int, resources: Vector[Resource])
+  case class ObjectInstance(id: Int, resources: Seq[Resource])
 
   object ObjectInstance extends HasModelPropertyCreator[ObjectInstance]
 
-  case class SomeObject(name: String, instances: Vector[ObjectInstance])
+  case class SomeObject(name: String, instances: Seq[ObjectInstance])
 
   object SomeObject extends HasModelPropertyCreator[SomeObject]
 
@@ -53,5 +53,20 @@ class ObjectsPanelPresenter {
     }
 
     resourceModel.set(newVal)
+  }
+
+  def addObject(o: String): Unit = {
+    model.append(SomeObject(o, Seq.empty))
+  }
+
+  def addInstance(o: String, i: Int): Unit = {
+    model.elemProperties.find(p => p.get.name == o).get.asModel
+      .subSeq(_.instances).append(ObjectInstance(i, Seq.empty))
+  }
+
+  def addResource(o: String, i: Int, r: String, value: String): Unit = {
+    model.elemProperties.find(p => p.get.name == o).get.asModel
+      .subSeq(_.instances).elemProperties.find(p => p.get.id == i).get.asModel
+      .subSeq(_.resources).append(SingleResource(r, value))
   }
 }

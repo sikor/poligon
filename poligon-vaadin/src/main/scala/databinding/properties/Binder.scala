@@ -1,14 +1,15 @@
 package databinding.properties
 
-import com.vaadin.ui.{AbstractOrderedLayout, Component, Label}
+import com.vaadin.ui.{AbstractOrderedLayout, Component}
 import io.udash.properties.seq.ReadableSeqProperty
-import io.udash.properties.single.{Property, ReadableProperty}
+import io.udash.properties.single.ReadableProperty
 
 object Binder {
-  def bind[T, P <: ReadableProperty[T]](
-                                         property: ReadableSeqProperty[T, P],
-                                         layout: AbstractOrderedLayout,
-                                         childFactory: P => Component): Unit = {
+  def bindLayoutStructure[L <: AbstractOrderedLayout, T, P <: ReadableProperty[T]](
+                                                                                    property: ReadableSeqProperty[T, P],
+                                                                                    layout: L)(
+                                                                                    childFactory: P => Component): L = {
+    val startIndex = layout.getComponentCount
     property.elemProperties.foreach { p =>
       layout.addComponent(childFactory(p))
     }
@@ -16,18 +17,20 @@ object Binder {
       if (patch.clearsProperty) {
         layout.removeAllComponents()
       } else {
+        patch.removed.foreach { _ =>
+          layout.removeComponent(layout.getComponent(startIndex + patch.idx))
+        }
         patch.added.reverse.foreach { a =>
           val c = childFactory(a)
-          layout.addComponent(c, patch.idx)
-        }
-        patch.removed.foreach { _ =>
-          layout.removeComponent(layout.getComponent(patch.idx))
+          layout.addComponent(c, startIndex + patch.idx)
         }
       }
     }
+    layout
   }
 
-  def bindLabel(property: Property[String], label: Label): Unit = {
+  def bindVaadinProperty[T, P <: com.vaadin.data.Property[T]](property: ReadableProperty[T], label: P): P = {
     property.listen(v => label.setValue(v), initUpdate = true)
+    label
   }
 }
