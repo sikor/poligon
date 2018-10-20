@@ -15,9 +15,12 @@ object Views {
     objects.addComponent(addObjectButton)
     Binder.bindLayoutStructure(presenter.getModel, objects) { p =>
       val instances = new VerticalLayout()
-      instances.addComponent(Binder.bindVaadinProperty(p.transform(_.name), new Label()))
+      val removeObjectButton = new Button("remove")
+      removeObjectButton.addClickListener(_ => presenter.removeObject(p.get.name))
       val instanceNum = new Slider("instance number")
       val addInstanceButton = new Button("add instance")
+      instances.addComponent(Binder.bindVaadinProperty(p.transform(_.name), new Label()))
+      instances.addComponent(removeObjectButton)
       addInstanceButton.addClickListener(_ => presenter.addInstance(p.get.name, instanceNum.getValue.toInt))
       instances.addComponent(instanceNum)
       instances.addComponent(addInstanceButton)

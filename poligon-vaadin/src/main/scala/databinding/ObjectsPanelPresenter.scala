@@ -69,4 +69,9 @@ class ObjectsPanelPresenter {
       .subSeq(_.instances).elemProperties.find(p => p.get.id == i).get.asModel
       .subSeq(_.resources).append(SingleResource(r, value))
   }
+
+  def removeObject(o: String): Unit = {
+    val idx = model.get.indexWhere(_.name == o)
+    model.remove(idx, 1)
+  }
 }

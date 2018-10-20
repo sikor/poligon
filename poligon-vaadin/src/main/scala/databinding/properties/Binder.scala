@@ -14,16 +14,12 @@ object Binder {
       layout.addComponent(childFactory(p))
     }
     property.listenStructure { patch =>
-      if (patch.clearsProperty) {
-        layout.removeAllComponents()
-      } else {
-        patch.removed.foreach { _ =>
-          layout.removeComponent(layout.getComponent(startIndex + patch.idx))
-        }
-        patch.added.reverse.foreach { a =>
-          val c = childFactory(a)
-          layout.addComponent(c, startIndex + patch.idx)
-        }
+      patch.removed.foreach { _ =>
+        layout.removeComponent(layout.getComponent(startIndex + patch.idx))
+      }
+      patch.added.reverse.foreach { a =>
+        val c = childFactory(a)
+        layout.addComponent(c, startIndex + patch.idx)
       }
     }
     layout
