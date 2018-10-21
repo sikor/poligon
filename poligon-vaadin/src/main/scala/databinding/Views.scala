@@ -19,14 +19,13 @@ object Views {
     }
   }
 
-
   private def createObjectTile(presenter: ObjectsPanelPresenter, p: CastableProperty[SomeObject]) = {
     val instances = new VerticalLayout()
     val removeObjectButton = new Button("remove")
     removeObjectButton.addClickListener(_ => presenter.removeObject(p.get.name))
     val instanceNum = new Slider("instance number")
     val addInstanceButton = new Button("add instance")
-    instances.addComponent(Binder.bindVaadinProperty(p.transform(_.name), new Label()))
+    instances.addComponent(Binder.bindVaadinProperty(p.transform(o => s"${o.name} (status: ${o.lastAction})"), new Label()))
     instances.addComponent(removeObjectButton)
     addInstanceButton.addClickListener(_ => presenter.addInstance(p.get.name, instanceNum.getValue.toInt))
     instances.addComponent(instanceNum)
@@ -57,10 +56,10 @@ object Views {
                                   i: ReadableProperty[ObjectInstance],
                                   r: ReadableProperty[Resource]) = {
     val prop = r.transform {
-      case SingleResource(name, value) =>
-        s"${p.get.name}/${i.get.id}/$name = $value"
-      case MultiResource(name, values) =>
-        s"${p.get.name}/${i.get.id}/$name = $values"
+      case SingleResource(name, value, status) =>
+        s"${p.get.name}/${i.get.id}/$name = $value (status: $status)"
+      case MultiResource(name, values, status) =>
+        s"${p.get.name}/${i.get.id}/$name = $values (status: $status)"
     }
     val label = Binder.bindVaadinProperty(prop, new Label())
     val field = new TextField("new value")

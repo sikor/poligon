@@ -1,31 +1,51 @@
 package databinding
 
-import databinding.ObjectsPanelPresenter.{MultiResource, ObjectInstance, SingleResource, SomeObject}
+import com.avsystem.commons.misc.Opt
+import databinding.ObjectsPanelPresenter._
 import io.udash.properties.HasModelPropertyCreator
 import io.udash.properties.seq.{ReadableSeqProperty, SeqProperty}
 import io.udash.properties.single.CastableProperty
 
+
+/**
+  * Why own properties:
+  * - Using GenCodes nice for rest RPC
+  * - Unable to use sealed hierarchy in Udash Properties
+  * - Adding HProperty functionality
+  */
 object ObjectsPanelPresenter {
+
+
+  sealed trait ActionStatus
+
+  case object Pending extends ActionStatus
+
+  case object Success extends ActionStatus
+
+  case object Failed extends ActionStatus
+
+  case class Action(status: ActionStatus, description: String)
 
   sealed trait Resource {
     def name: String
   }
 
-  case class SingleResource(name: String, value: String) extends Resource
+  case class SingleResource(name: String, value: String, lastAction: Opt[Action] = Opt.Empty) extends Resource
 
-  //  object SingleResource extends HasModelPropertyCreator[SingleResource]
+  case class MultiResource(name: String, value: Map[Int, String], lastAction: Opt[Action] = Opt.Empty) extends Resource
 
-  case class MultiResource(name: String, value: Map[Int, String]) extends Resource
+  case class ObjectInstance(id: Int, resources: Seq[Resource], lastAction: Opt[Action] = Opt.Empty)
 
-  //  object MultiResource extends HasModelPropertyCreator[MultiResource]
+  case class SomeObject(name: String, instances: Seq[ObjectInstance], lastAction: Opt[Action] = Opt.Empty)
 
-  case class ObjectInstance(id: Int, resources: Seq[Resource])
+  case class ObjectsPanelModel(objects: Seq[SomeObject])
+
 
   object ObjectInstance extends HasModelPropertyCreator[ObjectInstance]
 
-  case class SomeObject(name: String, instances: Seq[ObjectInstance])
-
   object SomeObject extends HasModelPropertyCreator[SomeObject]
+
+  object ObjectsPanelModel extends HasModelPropertyCreator[ObjectsPanelModel]
 
 }
 
@@ -46,10 +66,10 @@ class ObjectsPanelPresenter {
       .subSeq(_.resources).elemProperties.find(p => p.get.name == resource).get
 
     val newVal = resourceModel.get match {
-      case s: SingleResource => SingleResource(resource, value)
+      case s: SingleResource => SingleResource(resource, value, Opt(Action(Success, s"value set: $value")))
       case m: MultiResource =>
         val newMap = m.value + (resourceInstance.get -> value)
-        MultiResource(resource, newMap)
+        MultiResource(resource, newMap, Opt(Action(Success, s"value set: ${resourceInstance.get} -> $value")))
     }
 
     resourceModel.set(newVal)
@@ -60,8 +80,9 @@ class ObjectsPanelPresenter {
   }
 
   def addInstance(o: String, i: Int): Unit = {
-    model.elemProperties.find(p => p.get.name == o).get.asModel
-      .subSeq(_.instances).append(ObjectInstance(i, Seq.empty))
+    val objectModel = model.elemProperties.find(p => p.get.name == o).get.asModel
+    objectModel.subSeq(_.instances).append(ObjectInstance(i, Seq.empty))
+    objectModel.subProp(_.lastAction).set(Opt(Action(Success, s"instance added: $i")))
   }
 
   def addResource(o: String, i: Int, r: String, value: String): Unit = {

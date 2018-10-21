@@ -7,6 +7,12 @@ import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.session.{DefaultSessionIdManager, SessionHandler}
 import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
 
+/**
+  * Next:
+  * - two nested menus
+  * - refreshing all values without rebuilding panel, refresh button above the objects panel (parent of presenter calls it)
+  * - server push imitation using refresher
+  */
 object HttpServer {
 
   class VaadinUI extends UI {
