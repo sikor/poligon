@@ -1,0 +1,4 @@
+package databinding
+
+trait Presenter {
+}

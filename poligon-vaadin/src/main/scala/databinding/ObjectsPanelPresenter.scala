@@ -1,6 +1,7 @@
 package databinding
 
 import com.avsystem.commons.misc.Opt
+import databinding.ObjectsPanelPresenter.ActionStatus.Success
 import databinding.ObjectsPanelPresenter._
 import io.udash.properties.HasModelPropertyCreator
 import io.udash.properties.seq.{ReadableSeqProperty, SeqProperty}
@@ -18,11 +19,15 @@ object ObjectsPanelPresenter {
 
   sealed trait ActionStatus
 
-  case object Pending extends ActionStatus
+  object ActionStatus {
 
-  case object Success extends ActionStatus
+    case object Pending extends ActionStatus
 
-  case object Failed extends ActionStatus
+    case object Success extends ActionStatus
+
+    case object Failed extends ActionStatus
+
+  }
 
   case class Action(status: ActionStatus, description: String)
 
@@ -40,7 +45,6 @@ object ObjectsPanelPresenter {
 
   case class ObjectsPanelModel(objects: Seq[SomeObject])
 
-
   object ObjectInstance extends HasModelPropertyCreator[ObjectInstance]
 
   object SomeObject extends HasModelPropertyCreator[SomeObject]
@@ -49,7 +53,7 @@ object ObjectsPanelPresenter {
 
 }
 
-class ObjectsPanelPresenter {
+class ObjectsPanelPresenter extends Presenter {
   private val model: SeqProperty[SomeObject, CastableProperty[SomeObject]] = {
     SeqProperty(
       SomeObject("object 1", Vector(
