@@ -1,11 +1,14 @@
 package databinding
 
+import com.typesafe.scalalogging.StrictLogging
 import com.vaadin.server._
 import com.vaadin.ui.UI
 import javax.servlet.{ServletConfig, ServletException}
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.session.{DefaultSessionIdManager, SessionHandler}
 import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
+
+import scala.concurrent.ExecutionContextExecutor
 
 /**
   * Next:
@@ -15,7 +18,16 @@ import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
   */
 object HttpServer {
 
-  class VaadinUI(executeTasksService: ExecuteTasksService) extends UI {
+  class VaadinUI(executeTasksService: ExecuteTasksService) extends UI with StrictLogging {
+
+    implicit object UIExecutor extends ExecutionContextExecutor {
+      override def reportFailure(cause: Throwable): Unit = logger.error("Runnable failed", cause)
+
+      override def execute(command: Runnable): Unit = {
+        access(command)
+      }
+    }
+
     override def init(request: VaadinRequest): Unit = {
       val presenter = new MainViewPresenter(new ExecuteTasksPresenter(executeTasksService))
       val view = DefaultViewFactory.createView(presenter)
