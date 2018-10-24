@@ -17,8 +17,8 @@ object HttpServer {
 
   class VaadinUI extends UI {
     override def init(request: VaadinRequest): Unit = {
-      val presenter = new ObjectsPanelPresenter
-      val view = Views.createObjectPanelView(presenter)
+      val presenter = new MainViewPresenter
+      val view = DefaultViewFactory.createView(presenter)
       setContent(view)
     }
   }

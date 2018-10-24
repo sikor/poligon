@@ -5,7 +5,7 @@ import databinding.ObjectsPanelPresenter._
 import databinding.properties.Binder
 import io.udash.properties.single.{CastableProperty, ReadableProperty}
 
-object Views {
+object ObjectPanelView {
 
   def createObjectPanelView(presenter: ObjectsPanelPresenter): Component = {
     val objects = new VerticalLayout()

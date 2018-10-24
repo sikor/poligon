@@ -19,26 +19,13 @@ object MainViewPresenter {
 
   object Menu extends HasModelPropertyCreator[Menu]
 
-  sealed trait ExecuteTasksStatus
-
-  object ExecuteTasksStatus {
-
-    case object NotStarted extends ExecuteTasksStatus
-
-    case object InProgress extends ExecuteTasksStatus
-
-    case object Success extends ExecuteTasksStatus
-
-    case object Failed extends ExecuteTasksStatus
-
-  }
   case class MainViewModel(menu: Menu)
 
   object MainViewModel extends HasModelPropertyCreator[MainViewModel]
 
 }
 
-class MainViewPresenter {
+class MainViewPresenter extends Presenter {
   val model = ModelProperty(MainViewModel(Menu(Seq(MenuCategory("category 1", Seq(MenuItem("object panel")))))))
   val subPresenter: Property[Presenter] = Property(new ObjectsPanelPresenter)
 
