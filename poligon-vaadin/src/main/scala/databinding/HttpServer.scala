@@ -15,19 +15,20 @@ import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
   */
 object HttpServer {
 
-  class VaadinUI extends UI {
+  class VaadinUI(executeTasksService: ExecuteTasksService) extends UI {
     override def init(request: VaadinRequest): Unit = {
-      val presenter = new MainViewPresenter
+      val presenter = new MainViewPresenter(new ExecuteTasksPresenter(executeTasksService))
       val view = DefaultViewFactory.createView(presenter)
       setContent(view)
     }
   }
 
   def main(args: Array[String]): Unit = {
+    val executeTasksService = new ExecuteTasksService
     val server = new Server(8080)
     val servletContextHandler = new ServletContextHandler()
     servletContextHandler.setContextPath("/*")
-    servletContextHandler.addServlet(new ServletHolder(new HelloServlet(() => new VaadinUI, classOf[VaadinUI])), "/*")
+    servletContextHandler.addServlet(new ServletHolder(new HelloServlet(() => new VaadinUI(executeTasksService), classOf[VaadinUI])), "/*")
     val idManager = new DefaultSessionIdManager(server)
     server.setSessionIdManager(idManager)
     val sessionHandler = new SessionHandler

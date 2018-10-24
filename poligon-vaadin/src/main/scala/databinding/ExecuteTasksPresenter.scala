@@ -1,5 +1,13 @@
 package databinding
 
+import com.avsystem.commons.concurrent.RunNowEC
+import com.typesafe.scalalogging.StrictLogging
+import databinding.ExecuteTasksPresenter.ExecuteTasksStatus
+import databinding.ExecuteTasksPresenter.ExecuteTasksStatus.{InProgress, NotStarted}
+import io.udash.properties.single.Property
+
+import scala.util.{Failure, Success}
+
 
 object ExecuteTasksPresenter {
 
@@ -19,6 +27,24 @@ object ExecuteTasksPresenter {
 
 }
 
-class ExecuteTasksPresenter {
+class ExecuteTasksPresenter(service: ExecuteTasksService) extends Presenter with StrictLogging {
+  val model: Property[ExecuteTasksStatus] = Property(NotStarted)
+
+  def executeTasks(): Unit = {
+    model.set(InProgress)
+    service.executeTasks().onComplete {
+      case Success(b) =>
+        logger.info(s"Tasks executed success: $b")
+        if (b) {
+          model.set(ExecuteTasksStatus.Success)
+        } else {
+          model.set(ExecuteTasksStatus.Failed)
+        }
+      case Failure(ex) =>
+        logger.error("et failed", ex)
+        model.set(ExecuteTasksStatus.Failed)
+    }(RunNowEC)
+  }
+
 
 }

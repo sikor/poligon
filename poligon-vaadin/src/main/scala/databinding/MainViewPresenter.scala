@@ -25,7 +25,7 @@ object MainViewPresenter {
 
 }
 
-class MainViewPresenter extends Presenter {
+class MainViewPresenter(val executeTasksPresenter: ExecuteTasksPresenter) extends Presenter {
   val model = ModelProperty(MainViewModel(Menu(Seq(MenuCategory("category 1", Seq(MenuItem("object panel")))))))
   val subPresenter: Property[Presenter] = Property(new ObjectsPanelPresenter)
 

@@ -26,7 +26,9 @@ class MainView(presenter: MainViewPresenter, viewFactory: ViewFactory) extends V
     MainView.replaceOrAdd(this, 0, menuBar)
   }, initUpdate = true)
 
+  addComponent(viewFactory.createView(presenter.executeTasksPresenter))
+
   presenter.subPresenter.listen({ subPresenter =>
-    MainView.replaceOrAdd(this, 1, viewFactory.createView(subPresenter))
+    MainView.replaceOrAdd(this, 2, viewFactory.createView(subPresenter))
   }, initUpdate = true)
 }
