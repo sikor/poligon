@@ -1,6 +1,7 @@
 package databinding
 
 import com.typesafe.scalalogging.StrictLogging
+import com.vaadin.annotations.{Push, Theme}
 import com.vaadin.server._
 import com.vaadin.ui.UI
 import javax.servlet.{ServletConfig, ServletException}
@@ -18,7 +19,9 @@ import scala.concurrent.ExecutionContextExecutor
   */
 object HttpServer {
 
-  class VaadinUI(executeTasksService: ExecuteTasksService) extends UI with StrictLogging {
+  @Theme("valo")
+  @Push
+  class PoligonUI(executeTasksService: ExecuteTasksService) extends UI with StrictLogging {
 
     implicit object UIExecutor extends ExecutionContextExecutor {
       override def reportFailure(cause: Throwable): Unit = logger.error("Runnable failed", cause)
@@ -40,7 +43,7 @@ object HttpServer {
     val server = new Server(8080)
     val servletContextHandler = new ServletContextHandler()
     servletContextHandler.setContextPath("/*")
-    servletContextHandler.addServlet(new ServletHolder(new HelloServlet(() => new VaadinUI(executeTasksService), classOf[VaadinUI])), "/*")
+    servletContextHandler.addServlet(new ServletHolder(new PoligonServlet(() => new PoligonUI(executeTasksService), classOf[PoligonUI])), "/*")
     val idManager = new DefaultSessionIdManager(server)
     server.setSessionIdManager(idManager)
     val sessionHandler = new SessionHandler
@@ -50,7 +53,7 @@ object HttpServer {
     server.join()
   }
 
-  class HelloServlet(ui: () => UI, uiClass: Class[_ <: UI]) extends VaadinServlet {
+  class PoligonServlet(ui: () => UI, uiClass: Class[_ <: UI]) extends VaadinServlet {
 
     @throws[ServletException]
     override def init(servletConfig: ServletConfig): Unit = {
