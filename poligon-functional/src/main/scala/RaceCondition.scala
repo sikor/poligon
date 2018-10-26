@@ -3,7 +3,7 @@ import java.net.InetSocketAddress
 
 object RaceCondition {
 
-  class LimitedByteArrayOutputStream2(val data: Array[Byte], var currentIndex: Int) extends OutputStream {
+  class SomeOutputStream(val data: Array[Byte], var currentIndex: Int) extends OutputStream {
     override def write(bytes: Array[Byte], off: Int, len: Int): Unit = {
       System.arraycopy(bytes, off, data, currentIndex, len)
       currentIndex += bytes.length
@@ -17,7 +17,7 @@ object RaceCondition {
 
   def addressToBytes(sAddress: InetSocketAddress): Array[Byte] = {
     val result: Array[Byte] = new Array[Byte](sAddress.getAddress.getAddress.length + 1)
-    val writer = new LimitedByteArrayOutputStream2(result, 0)
+    val writer = new SomeOutputStream(result, 0)
     val addressBytes = sAddress.getAddress.getAddress
     writer.write(addressBytes.length)
     writer.write(addressBytes)
@@ -36,7 +36,7 @@ object RaceCondition {
       if (!data.sameElements(expected)) {
         count += 1
         if(lastOk){
-          println(s"\n\nBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD $i \n\n")
+          println(s"\n\nBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD $i\n\n")
         }
         lastOk = false
       } else {
