@@ -39,20 +39,19 @@ lazy val `poligon-macros` = project
     libraryDependencies += "com.avsystem.commons" %% "commons-macros" % "1.29.0",
     libraryDependencies += "com.avsystem.commons" %% "commons-core" % "1.29.0",
     libraryDependencies += "com.avsystem.commons" %% "commons-spring" % "1.29.0",
-    libraryDependencies += "com.avsystem.commons" %% "commons-mongo" % "1.29.0"
+    libraryDependencies += "com.avsystem.commons" %% "commons-mongo" % "1.29.0",
+    libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3",
+    libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0",
+    libraryDependencies += "org.scalatest" % "scalatest_2.12" % "3.0.4" % Test
   )
 
-lazy val `poligon-scalaConfig` = project.dependsOn(`poligon-macros`)
-  .settings(libraryDependencies += "org.scalatest" % "scalatest_2.12" % "3.0.4" % Test)
+lazy val `poligon-scalaConfig` = project.dependsOn(`poligon-macros`  % "compile->compile;test->test")
 
-lazy val `poligon-functional` = project.dependsOn(`poligon-macros`)
+lazy val `poligon-functional` = project.dependsOn(`poligon-macros`  % "compile->compile;test->test")
   .settings(libraryDependencies += "org.scalaj" %% "scalaj-http" % "2.4.1")
   .settings(libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.4.2")
-  .settings(libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3")
-  .settings(libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0")
-  .settings(libraryDependencies += "org.scalatest" % "scalatest_2.12" % "3.0.4" % Test)
 
-lazy val `poligon-vaadin` = project.dependsOn(`poligon-macros`)
+lazy val `poligon-vaadin` = project.dependsOn(`poligon-macros` % "compile->compile;test->test")
   .settings(libraryDependencies += "com.vaadin" % "vaadin-server" % "7.7.15")
   .settings(libraryDependencies += "com.vaadin" % "vaadin-client-compiled" % "7.7.15")
   .settings(libraryDependencies += "com.vaadin" % "vaadin-themes" % "7.7.15")
@@ -60,10 +59,8 @@ lazy val `poligon-vaadin` = project.dependsOn(`poligon-macros`)
   .settings(libraryDependencies += "org.eclipse.jetty" % "jetty-server" % "9.4.12.v20180830")
   .settings(libraryDependencies += "org.eclipse.jetty" % "jetty-servlet" % "9.4.12.v20180830")
   .settings(libraryDependencies += "org.eclipse.jetty" % "jetty-continuation" % "9.4.12.v20180830")
-  .settings(libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3")
-  .settings(libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0")
-  .settings(libraryDependencies += "org.scalatest" % "scalatest_2.12" % "3.0.4" % Test)
 
+lazy val `poligon-workout` = project.dependsOn(`poligon-macros` % "compile->compile;test->test")
 
 lazy val poligon = project.in(file("."))
   .aggregate(`poligon-macros`, `poligon-scalaConfig`, `poligon-functional`)
