@@ -29,17 +29,17 @@ inThisBuild(Seq(
 ))
 
 val silencerVersion = "1.2.1"
-
+val commonsVersion = "1.34.0"
 
 
 lazy val `poligon-macros` = project
   .settings(
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
     libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-    libraryDependencies += "com.avsystem.commons" %% "commons-macros" % "1.29.0",
-    libraryDependencies += "com.avsystem.commons" %% "commons-core" % "1.29.0",
-    libraryDependencies += "com.avsystem.commons" %% "commons-spring" % "1.29.0",
-    libraryDependencies += "com.avsystem.commons" %% "commons-mongo" % "1.29.0",
+    libraryDependencies += "com.avsystem.commons" %% "commons-macros" % commonsVersion,
+    libraryDependencies += "com.avsystem.commons" %% "commons-core" % commonsVersion,
+    libraryDependencies += "com.avsystem.commons" %% "commons-spring" % commonsVersion,
+    libraryDependencies += "com.avsystem.commons" %% "commons-mongo" % commonsVersion,
     libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3",
     libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0",
     libraryDependencies += "org.scalatest" % "scalatest_2.12" % "3.0.4" % Test
