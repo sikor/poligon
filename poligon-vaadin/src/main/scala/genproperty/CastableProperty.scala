@@ -13,4 +13,8 @@ class CastableProperty[T](private val value: PropertyValue, val parent: GenPrope
   def asListProperty[I: GenCodec](implicit seqEvidence: T =:= Seq[I]): ListProperty[I] = {
     new ListProperty[I](value.asListValue, Opt.Empty, Opt(parent))
   }
+
+  def asSimpleProperty(implicit codec: GenCodec[T]): SimpleProperty[T] = {
+    new SimpleProperty[T](value, Opt.Empty, Opt(parent))
+  }
 }

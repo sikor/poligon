@@ -47,7 +47,7 @@ class ObjectProperty[T: GenCodec : GenRef.Creator] private[genproperty](
 }
 
 class SimpleProperty[T: GenCodec] private[genproperty](
-                                                        private val property: Primitive,
+                                                        private val property: PropertyValue,
                                                         protected var lastValueCache: Opt[T],
                                                         val parent: Opt[GenProperty[_]]
                                                       ) extends GenProperty[T] {
