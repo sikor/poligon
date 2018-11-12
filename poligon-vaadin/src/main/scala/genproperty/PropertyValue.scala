@@ -1,57 +1,107 @@
 package genproperty
 
+import com.avsystem.commons.misc.Opt
+import com.avsystem.commons.serialization.GenRef.Creator
 import com.avsystem.commons.serialization.RawRef.Field
 import com.avsystem.commons.serialization._
-import genproperty.PropertyValue.{ListValue, ObjectValue, Primitive}
+import genproperty.PropertyValue._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.util.Try
 
 
-sealed trait PropertyValue {
-  def getSubValue(ref: String): PropertyValue = this match {
-    case o: ObjectValue => o.value(ref)
-    case _ => throw new IllegalArgumentException(s"Cannot take subvalue of $this")
+sealed abstract class PropertyValue[R](private val parent: Opt[AnyComplexProperty]) {
+  self =>
+
+  type RawType
+
+  protected def setValue(v: RawType): Unit
+
+  protected def getValue: RawType
+
+  protected def childValueChanged(): Unit = {
+    listeners.foreach(l => Try(l.valueChanged()))
   }
 
-  def getSubValue(ref: List[SimpleRawRef]): PropertyValue =
-    ref.foldLeft(this)((ac, r) => ac.getSubValue(r.asInstanceOf[Field].name))
+  private lazy val listeners: ArrayBuffer[ValueListener] = new ArrayBuffer[ValueListener]()
 
-  def asObjectValue: ObjectValue = {
-    this match {
-      case o: ObjectValue => o
-      case _ => throw new IllegalArgumentException
+  def listen(onValueChange: R => Unit)(implicit codec: GenCodec[R]): Unit = {
+    listeners += new ValueListener {
+      override def valueChanged(): Unit = onValueChange(codec.read(new PropertyInput(self)))
+
+      override def valueRemoved(): Unit = {}
     }
   }
 
-  def asListValue: ListValue = {
-    this match {
-      case o: ListValue => o
-      case _ => throw new IllegalArgumentException
-    }
-  }
+  def get(implicit codec: GenCodec[R]): R = GenCodec.read(new PropertyInput(self))
 
-  def asPrimitive: Primitive = {
-    this match {
-      case p: Primitive => p
-      case _ => throw new IllegalArgumentException
-    }
+  def set(newValue: R)(implicit codec: GenCodec[R]): Unit = {
+    val output = new PropertyOutput(v => setValue(v.asInstanceOf[RawType]), Opt.Empty)
+    codec.write(output, newValue)
+    parent.foreach(_.childValueChanged())
   }
 }
 
 object PropertyValue {
 
-  class Primitive(var value: Any) extends PropertyValue
+  type GenProperty[R] = PropertyValue[R]
+  type AnyProperty = PropertyValue[_]
+  type AnyComplexProperty = ComplexProperty[_]
+  type AnyObjectProperty = ObjectProperty[_]
+  type AnyListProperty = ListProperty[_, _]
+  private type ObjectType = mutable.LinkedHashMap[String, AnyProperty]
+  private type ListType = ArrayBuffer[AnyProperty]
 
-  class ObjectValue(val value: mutable.Map[String, PropertyValue]) extends PropertyValue
+  private trait ValueListener {
+    def valueChanged(): Unit
 
-  class ListValue(val value: ArrayBuffer[PropertyValue]) extends PropertyValue
+    def valueRemoved(): Unit
+  }
 
-  class PropertyInput(value: PropertyValue) extends Input {
+  abstract class ComplexProperty[R](parent: Opt[AnyComplexProperty]) extends PropertyValue[R](parent)
 
-    override def readNull(): Boolean = value == null
+  class ObjectProperty[R](private var value: ObjectType, parent: Opt[AnyComplexProperty]) extends ComplexProperty[R](parent) {
 
-    private def readPrimitive[T]: T = value.asInstanceOf[Primitive].value.asInstanceOf[T]
+    type RawType = ObjectType
+
+    def subProperty[S](creator: Creator[R] => GenRef[R, S])(implicit genRefCreator: GenRef.Creator[R]): GenProperty[S] = {
+      val genRef = creator(implicitly[Creator[R]])
+      val ref = genRef.rawRef.normalize.toList
+      getSubValue(ref).asInstanceOf[GenProperty[S]]
+    }
+
+    private def getSubValue(ref: String): AnyProperty = value.asInstanceOf[ObjectType](ref)
+
+    private def getSubValue(ref: List[SimpleRawRef]): AnyProperty =
+      ref.foldLeft[AnyProperty](this)((ac, r) => ac.asInstanceOf[AnyObjectProperty].getSubValue(r.asInstanceOf[Field].name))
+
+    protected def setValue(v: ObjectType): Unit = value = v
+
+    protected[genproperty] def getValue: ObjectType = value
+  }
+
+  class ListProperty[L[_] <: Seq[_], I](private var value: ListType, parent: Opt[AnyComplexProperty]) extends ComplexProperty[L[I]](parent) {
+    type RawType = ListType
+
+    protected def setValue(v: ListType): Unit = value = v
+
+    protected[genproperty] def getValue: ListType = value
+  }
+
+  class SimpleProperty[R](var value: Any, parent: Opt[AnyComplexProperty]) extends PropertyValue[R](parent) {
+    type RawType = Any
+
+    protected def setValue(v: Any): Unit = value = v
+
+    protected def getValue: Any = value
+  }
+
+  class PropertyInput(value: AnyProperty) extends Input {
+
+    override def readNull(): Boolean = value.getValue == null
+
+    private def readPrimitive[T]: T = value.getValue.asInstanceOf[T]
 
     override def readSimple(): SimpleInput = new SimpleInput {
       override def readString(): String = readPrimitive[String]
@@ -72,7 +122,7 @@ object PropertyValue {
     }
 
     override def readList(): ListInput = new ListInput {
-      private val it = value.asInstanceOf[ListValue].value.iterator
+      private val it = value.asInstanceOf[AnyListProperty].getValue.iterator
 
       override def nextElement(): Input = new PropertyInput(it.next())
 
@@ -80,7 +130,7 @@ object PropertyValue {
     }
 
     override def readObject(): ObjectInput = new ObjectInput {
-      private val fields = value.asInstanceOf[ObjectValue].value.iterator
+      private val fields = value.asInstanceOf[AnyObjectProperty].getValue.iterator
 
       override def nextField(): FieldInput = {
         val field = fields.next()
@@ -95,10 +145,10 @@ object PropertyValue {
     override def skip(): Unit = ()
   }
 
-  class PropertyOutput(consumer: PropertyValue => Unit) extends Output {
+  class PropertyOutput(consumer: AnyProperty => Unit, parent: Opt[AnyComplexProperty]) extends Output {
 
     private def writePrimitive(value: Any): Unit = {
-      consumer(new Primitive(value))
+      consumer(new SimpleProperty(value, parent))
     }
 
     override def writeNull(): Unit = writePrimitive(null)
@@ -123,19 +173,19 @@ object PropertyValue {
 
     override def writeList(): ListOutput = new ListOutput {
 
-      private val buffer = new ArrayBuffer[PropertyValue]()
+      private val listProp = new ListProperty(new ArrayBuffer[AnyProperty](), parent)
 
-      override def writeElement(): Output = new PropertyOutput(v => buffer += v)
+      override def writeElement(): Output = new PropertyOutput(v => listProp.getValue += v, Opt(listProp))
 
-      override def finish(): Unit = consumer(new ListValue(buffer))
+      override def finish(): Unit = consumer(listProp)
     }
 
     override def writeObject(): ObjectOutput = new ObjectOutput {
-      private val buffer = new mutable.LinkedHashMap[String, PropertyValue]
+      private val objectProp = new ObjectProperty(new mutable.LinkedHashMap[String, AnyProperty], parent)
 
-      override def writeField(key: String): Output = new PropertyOutput(v => buffer += (key -> v))
+      override def writeField(key: String): Output = new PropertyOutput(v => objectProp.getValue += (key -> v), Opt(objectProp))
 
-      override def finish(): Unit = consumer(new ObjectValue(buffer))
+      override def finish(): Unit = consumer(objectProp)
     }
   }
 
