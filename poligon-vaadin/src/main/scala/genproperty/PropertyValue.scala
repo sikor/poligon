@@ -20,18 +20,20 @@ sealed abstract class PropertyValue[R](private val parent: Opt[AnyComplexPropert
 
   protected def getValue: RawType
 
-  protected def childValueChanged(): Unit = {
-    listeners.foreach(l => Try(l.valueChanged()))
-  }
+  protected def addListener(listener: ValueListener): Unit
 
-  private lazy val listeners: ArrayBuffer[ValueListener] = new ArrayBuffer[ValueListener]()
+  protected def getListeners: Seq[ValueListener]
 
   def listen(onValueChange: R => Unit)(implicit codec: GenCodec[R]): Unit = {
-    listeners += new ValueListener {
+    addListener(new ValueListener {
       override def valueChanged(): Unit = onValueChange(codec.read(new PropertyInput(self)))
 
       override def valueRemoved(): Unit = {}
-    }
+    })
+  }
+
+  private[genproperty] def valueRemoved(): Unit = {
+    getListeners.foreach(_.valueRemoved())
   }
 
   def get(implicit codec: GenCodec[R]): R = GenCodec.read(new PropertyInput(self))
@@ -53,17 +55,28 @@ object PropertyValue {
   private type ObjectType = mutable.LinkedHashMap[String, AnyProperty]
   private type ListType = ArrayBuffer[AnyProperty]
 
-  private trait ValueListener {
+  private[genproperty] trait ValueListener {
     def valueChanged(): Unit
 
     def valueRemoved(): Unit
   }
 
-  abstract class ComplexProperty[R](parent: Opt[AnyComplexProperty]) extends PropertyValue[R](parent)
+  abstract class ComplexProperty[R](parent: Opt[AnyComplexProperty]) extends PropertyValue[R](parent) {
+    private[genproperty] def childValueChanged(): Unit = {
+      getListeners.foreach(l => Try(l.valueChanged()))
+      parent.foreach(_.childValueChanged())
+    }
+  }
 
   class ObjectProperty[R](private var value: ObjectType, parent: Opt[AnyComplexProperty]) extends ComplexProperty[R](parent) {
 
     type RawType = ObjectType
+
+    private lazy val listeners: ArrayBuffer[ValueListener] = new ArrayBuffer[ValueListener]()
+
+    protected def addListener(listener: ValueListener): Unit = listeners += listener
+
+    protected def getListeners: Seq[ValueListener] = listeners
 
     def subProperty[S](creator: Creator[R] => GenRef[R, S])(implicit genRefCreator: GenRef.Creator[R]): GenProperty[S] = {
       val genRef = creator(implicitly[Creator[R]])
@@ -84,6 +97,12 @@ object PropertyValue {
   class ListProperty[L[_] <: Seq[_], I](private var value: ListType, parent: Opt[AnyComplexProperty]) extends ComplexProperty[L[I]](parent) {
     type RawType = ListType
 
+    private lazy val listeners: ArrayBuffer[ValueListener] = new ArrayBuffer[ValueListener]()
+
+    protected def addListener(listener: ValueListener): Unit = listeners += listener
+
+    protected def getListeners: Seq[ValueListener] = listeners
+
     protected def setValue(v: ListType): Unit = value = v
 
     protected[genproperty] def getValue: ListType = value
@@ -91,6 +110,12 @@ object PropertyValue {
 
   class SimpleProperty[R](var value: Any, parent: Opt[AnyComplexProperty]) extends PropertyValue[R](parent) {
     type RawType = Any
+
+    private lazy val listeners: ArrayBuffer[ValueListener] = new ArrayBuffer[ValueListener]()
+
+    protected def addListener(listener: ValueListener): Unit = listeners += listener
+
+    protected def getListeners: Seq[ValueListener] = listeners
 
     protected def setValue(v: Any): Unit = value = v
 
