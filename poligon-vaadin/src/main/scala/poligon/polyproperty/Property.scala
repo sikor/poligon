@@ -9,12 +9,17 @@ object Property {
 
   class SimpleProperty[T](private var value: T) extends Property[T]
 
-  class CaseProperty[T](private val fields: mutable.Map[String, Property[_]]) extends Property[T]
+  class CaseProperty[T](private val fields: mutable.Map[String, PropertyWithCodec[_]]) extends Property[T]
 
-  class UnionProperty[T](private var caseName: String, private var value: Property[_ <: T]) extends Property[T]
+  class UnionProperty[T](var caseName: String, var value: PropertyWithCodec[_ <: T]) extends Property[T]
 
-  class ListProperty[T[_], E](private val value: ArrayBuffer[Property[E]]) extends Property[T[E]]
+  class ListProperty[T[_], E](private val value: ArrayBuffer[PropertyWithCodec[E]]) extends Property[T[E]]
 
-  class PropertyWithCodec[T](val property: Property[T], val codec: PropertyCodec[T], var lastValue: T)
+  class PropertyWithCodec[T](val property: Property[T], val codec: PropertyCodec[T], var lastValue: T) {
+    def update(newValue: T): Unit = {
+      codec.updateProperty(newValue, property.asInstanceOf[codec.PropertyType])
+      lastValue = newValue
+    }
+  }
 
 }
