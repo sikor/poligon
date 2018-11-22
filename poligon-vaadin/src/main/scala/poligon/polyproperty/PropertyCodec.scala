@@ -5,7 +5,7 @@ import java.time.Instant
 
 import com.avsystem.commons.annotation.positioned
 import com.avsystem.commons.meta._
-import com.avsystem.commons.misc.ApplierUnapplier
+import com.avsystem.commons.misc.{ApplierUnapplier, ValueOf}
 import poligon.polyproperty.Property._
 
 import scala.collection.mutable
@@ -116,18 +116,27 @@ sealed trait UnionPropertyCase[T] extends TypedMetadata[T] {
     classTag.runtimeClass.isInstance(value.asInstanceOf[AnyRef])
 }
 
-@positioned(positioned.here) class AutoUnionPropertyCase[T](
-                                                             @reifyName val name: String,
-                                                             @infer val classTag: ClassTag[T],
-                                                             @composite val propertyCodec: RecordPropertyCodec[T]
-                                                           ) extends UnionPropertyCase[T] {
+@positioned(positioned.here) class Predefined[T](
+                                                  @reifyName val name: String,
+                                                  @infer val classTag: ClassTag[T],
+                                                  @infer @checked val propertyCodec: PropertyCodec[T]
+                                                ) extends UnionPropertyCase[T]
+
+@positioned(positioned.here) class CaseClass[T](
+                                                 @reifyName val name: String,
+                                                 @infer val classTag: ClassTag[T],
+                                                 @composite val propertyCodec: RecordPropertyCodec[T]
+                                               ) extends UnionPropertyCase[T] {
 }
 
-@positioned(positioned.here) class PredefinedCase[T](
-                                                      @reifyName val name: String,
-                                                      @infer val classTag: ClassTag[T],
-                                                      @infer @checked val propertyCodec: PropertyCodec[T]
-                                                    ) extends UnionPropertyCase[T]
+@positioned(positioned.here) class CaseObject[T](
+                                                  @reifyName val name: String,
+                                                  @infer val classTag: ClassTag[T],
+                                                  @infer @checked val singletonValue: ValueOf[T],
+                                                  @composite val propertyCodec: SimplePropertyCodec[T]
+                                                ) extends UnionPropertyCase[T] {
+}
+
 
 @positioned(positioned.here) class RecordPropertyCodec[T](
                                                            @multi @adtParamMetadata val fields: List[RecordPropertyField[_]],
