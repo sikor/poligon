@@ -15,11 +15,12 @@ object Property {
 
   class SeqProperty[E](val value: ArrayBuffer[PropertyWithCodec[E]]) extends Property[Seq[E]]
 
-  class PropertyWithCodec[T](val property: Property[T], val codec: PropertyCodec[T], var lastValue: T) {
+  class PropertyWithCodec[T](private[Property] val property: Property[T], val codec: PropertyCodec[T]) {
     def update(newValue: T): Unit = {
       codec.updateProperty(newValue, property.asInstanceOf[codec.PropertyType])
-      lastValue = newValue
     }
+
+    def getValue: T = codec.readProperty(property.asInstanceOf[codec.PropertyType])
   }
 
 

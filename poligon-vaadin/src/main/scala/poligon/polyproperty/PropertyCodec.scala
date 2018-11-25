@@ -57,7 +57,7 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
   override def newProperty(value: Seq[E]): SeqProperty[E] = {
     val property = new SeqProperty[E](new ArrayBuffer)
     value.foreach { v =>
-      val pwc = new PropertyWithCodec[E](elementCodec.newProperty(v), elementCodec, v)
+      val pwc = new PropertyWithCodec[E](elementCodec.newProperty(v), elementCodec)
       property.value += pwc
     }
     property
@@ -66,13 +66,13 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
   override def updateProperty(value: Seq[E], property: SeqProperty[E]): Unit = {
     property.value.clear()
     value.foreach { v =>
-      val pwc = new PropertyWithCodec[E](elementCodec.newProperty(v), elementCodec, v)
+      val pwc = new PropertyWithCodec[E](elementCodec.newProperty(v), elementCodec)
       property.value += pwc
     }
   }
 
   override def readProperty(property: SeqProperty[E]): Seq[E] = {
-    property.value.map(_.lastValue)
+    property.value.map(_.getValue)
   }
 }
 
@@ -84,7 +84,7 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
   override def newProperty(value: T): UnionProperty[T] = {
     val thiCase = cases.findOpt(_.isInstance(value)).getOrElse(throw new Exception(s"Unknown case: $value"))
     val caseCodec = thiCase.propertyCodec.asInstanceOf[PropertyCodec[T]]
-    new UnionProperty[T](thiCase.name, new PropertyWithCodec[T](caseCodec.newProperty(value), caseCodec, value))
+    new UnionProperty[T](thiCase.name, new PropertyWithCodec[T](caseCodec.newProperty(value), caseCodec))
   }
 
   override def updateProperty(value: T, property: UnionProperty[T]): Unit = {
@@ -94,12 +94,12 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
       property.value.asInstanceOf[PropertyWithCodec[T]].update(value)
     } else {
       property.caseName = thiCase.name
-      property.value = new PropertyWithCodec[T](caseCodec.newProperty(value), caseCodec, value)
+      property.value = new PropertyWithCodec[T](caseCodec.newProperty(value), caseCodec)
     }
   }
 
   override def readProperty(property: UnionProperty[T]): T = {
-    property.value.lastValue
+    property.value.getValue
   }
 }
 
@@ -151,7 +151,7 @@ sealed trait UnionPropertyCase[T] extends TypedMetadata[T] {
       case (field, fieldValue) =>
         val castedField = field.asInstanceOf[RecordPropertyField[Any]]
         val subProperty = castedField.propertyCodec.newProperty(fieldValue)
-        map += (field.name -> new PropertyWithCodec(subProperty, castedField.propertyCodec, fieldValue))
+        map += (field.name -> new PropertyWithCodec(subProperty, castedField.propertyCodec))
     }
     property
   }
@@ -165,7 +165,7 @@ sealed trait UnionPropertyCase[T] extends TypedMetadata[T] {
   }
 
   override def readProperty(property: RecordProperty[T]): T = {
-    unapplier.apply(property.fields.values.map(p => p.lastValue).toSeq)
+    unapplier.apply(property.fields.values.map(p => p.getValue).toSeq)
   }
 }
 
