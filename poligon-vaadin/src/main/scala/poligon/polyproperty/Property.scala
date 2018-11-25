@@ -15,22 +15,4 @@ object Property {
 
   class SeqProperty[E](val value: ArrayBuffer[PropertyWithCodec[E]]) extends Property[Seq[E]]
 
-  class PropertyWithCodec[T](private[Property] val property: Property[T], val codec: PropertyCodec[T]) {
-    def update(newValue: T): Unit = {
-      codec.updateProperty(newValue, property.asInstanceOf[codec.PropertyType])
-    }
-
-    def getValue: T = codec.readProperty(property.asInstanceOf[codec.PropertyType])
-  }
-
-
-  def print(property: Property[_]): String = {
-    property match {
-      case s: SimpleProperty[_] => s.value.toString
-      case r: RecordProperty[_] => "(" + r.fields.map { case (name, value) => s"$name -> ${print(value.property)}" }.mkString(", ") + ")"
-      case u: UnionProperty[_] => s"${u.caseName}: ${print(u.value.property)}"
-      case s: SeqProperty[_] => "[" + s.value.map(p => print(p.property)).mkString(", ") + "]"
-    }
-  }
-
 }

@@ -1,7 +1,7 @@
 import java.time.Instant
 
 import org.scalatest.FunSuite
-import poligon.polyproperty.{HasRecordPropertyCodec, HasSimplePropertyCodec, HasUnionPropertyCodec, Property}
+import poligon.polyproperty._
 
 case class MalyModel(s: Short)
 
@@ -38,6 +38,6 @@ class PropertyCodecTest extends FunSuite {
 
   test("new property") {
     val prop = FajnyModel.propertyCodec.newProperty(m)
-    println(Property.print(prop))
+    println(PropertyWithCodec.print(prop))
   }
 }
