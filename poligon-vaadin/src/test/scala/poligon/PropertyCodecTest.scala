@@ -67,4 +67,27 @@ class PropertyCodecTest extends FunSuite {
     val sub = PropertyCodec.readProperty(subProp)
     assert(m.m == sub)
   }
+
+  test("get case") {
+    val prop: Property[FajnyModel] = PropertyCodec.newProperty(m)
+    val subProp = SubProperty.getField(prop)(_.ref(_.ios))
+    val intCase = SubProperty.getCase[IntOrString, Case1](subProp)
+    val strCase = SubProperty.getCase[IntOrString, Case2](subProp)
+    val noneCase = SubProperty.getCase[IntOrString, NoneOfThis.type](subProp)
+    assert(intCase.isEmpty)
+    assert(strCase.isDefined)
+    assert(noneCase.isEmpty)
+    println(Property.print(strCase.get))
+
+    val subProp2 = SubProperty.getField(prop)(_.ref(_.ios2))
+    val noneCase2 = SubProperty.getCase[IntOrString, NoneOfThis.type](subProp2)
+    assert(noneCase2.isDefined)
+  }
+
+  test("get seq") {
+    val prop = PropertyCodec.newProperty(Seq(1, 2, 3))
+    val seq = SubProperty.getSeq(prop)
+    assert(seq.length == 3)
+    assert(PropertyCodec.readProperty(seq.head) == 1)
+  }
 }

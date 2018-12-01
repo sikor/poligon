@@ -97,13 +97,17 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
   override type PropertyType = UnionProperty[T]
 
   override def newProperty(value: T): UnionProperty[T] = {
-    val thiCase = cases.findOpt(_.isInstance(value)).getOrElse(throw new Exception(s"Unknown case: $value"))
+    val thiCase = caseForValue(value)
     val caseCodec = thiCase.propertyCodec.asInstanceOf[PropertyCodec[T]]
     new UnionProperty[T](thiCase.name, caseCodec.newProperty(value))
   }
 
+  def caseForValue(value: T): UnionPropertyCase[_] = {
+    cases.findOpt(_.isInstance(value)).getOrElse(throw new Exception(s"Unknown case: $value"))
+  }
+
   override def updateProperty(value: T, property: UnionProperty[T]): Unit = {
-    val thiCase = cases.findOpt(_.isInstance(value)).getOrElse(throw new Exception(s"Unknown case: $value"))
+    val thiCase = caseForValue(value)
     val caseCodec = thiCase.propertyCodec.asInstanceOf[PropertyCodec[T]]
     if (property.caseName == thiCase.name) {
       caseCodec.updateProperty(value, property.value.asInstanceOf[caseCodec.PropertyType])
@@ -114,10 +118,14 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
   }
 
   override def readProperty(property: UnionProperty[T]): T = {
-    val thiCase = cases.findOpt(_.name == property.caseName)
-      .getOrElse(throw new Exception(s"Unknown case: ${property.caseName}"))
+    val thiCase = caseForName(property.caseName)
       .propertyCodec.asInstanceOf[PropertyCodec[T]]
     thiCase.readProperty(property.value.asInstanceOf[thiCase.PropertyType])
+  }
+
+  def caseForName(name: String): UnionPropertyCase[_] = {
+    cases.findOpt(_.name == name)
+      .getOrElse(throw new Exception(s"Unknown case: $name"))
   }
 }
 
