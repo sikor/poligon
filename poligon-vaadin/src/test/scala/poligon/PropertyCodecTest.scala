@@ -1,3 +1,5 @@
+package poligon
+
 import java.time.Instant
 
 import org.scalatest.FunSuite
@@ -57,5 +59,12 @@ class PropertyCodecTest extends FunSuite {
     val deser = FajnyModel.propertyCodec.readProperty(prop)
     println(Property.print(prop))
     assert(newValue == deser)
+  }
+
+  test("get sub property") {
+    val prop: Property[FajnyModel] = PropertyCodec.newProperty(m)
+    val subProp = SubProperty.getField(prop)(_.ref(_.m))
+    val sub = PropertyCodec.readProperty(subProp)
+    assert(m.m == sub)
   }
 }

@@ -6,6 +6,7 @@ import java.time.Instant
 import com.avsystem.commons.annotation.positioned
 import com.avsystem.commons.meta._
 import com.avsystem.commons.misc.{ApplierUnapplier, ValueOf}
+import com.avsystem.commons.serialization.GenRef
 import poligon.polyproperty.Property._
 
 import scala.collection.mutable
@@ -36,6 +37,19 @@ object PropertyCodec {
 
   implicit def seqCodec[E: PropertyCodec]: SeqPropertyCodec[E] = new SeqPropertyCodec[E]()
 
+  def apply[T](implicit v: PropertyCodec[T]): PropertyCodec[T] = v
+
+  def newProperty[T: PropertyCodec](value: T): Property[T] = PropertyCodec[T].newProperty(value)
+
+  def updateProperty[T: PropertyCodec](value: T, property: Property[T]): Unit = {
+    val codec = PropertyCodec[T]
+    codec.updateProperty(value, property.asInstanceOf[codec.PropertyType])
+  }
+
+  def readProperty[T: PropertyCodec](property: Property[T]): T = {
+    val codec = PropertyCodec[T]
+    codec.readProperty(property.asInstanceOf[codec.PropertyType])
+  }
 }
 
 class SimplePropertyCodec[T] extends PropertyCodec[T] {
@@ -148,6 +162,8 @@ sealed trait UnionPropertyCase[T] extends TypedMetadata[T] {
                                                          ) extends PropertyCodec[T] {
   type PropertyType = RecordProperty[T]
 
+  val rawRefCreator: GenRef.Creator[T] = GenRef.create[T]
+
   override def newProperty(value: T): RecordProperty[T] = {
     val property = new RecordProperty[T](new mutable.LinkedHashMap())
     val map = property.fields
@@ -204,6 +220,7 @@ trait RecordPropertyCodecImplicits[T] {
 abstract class HasRecordPropertyCodec[T](implicit unionCodec: MacroInstances[Unit, RecordPropertyCodecImplicits[T]]) {
   implicit lazy val propertyCodec: RecordPropertyCodec[T] = unionCodec((), this).propertyCodec
 }
+
 
 trait SimplePropertyCodecImplicits[T] {
   def propertyCodec: SimplePropertyCodec[T]
