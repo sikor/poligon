@@ -58,7 +58,7 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
   override def newProperty(value: Seq[E]): SeqProperty[E] = {
     val property = new SeqProperty[E](new ArrayBuffer)
     value.foreach { v =>
-      val pwc = new PropertyWithCodec[E](elementCodec.newProperty(v), elementCodec, ???)
+      val pwc = elementCodec.newProperty(v)
       property.value += pwc
     }
     property
@@ -67,13 +67,13 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
   override def updateProperty(value: Seq[E], property: SeqProperty[E]): Unit = {
     property.value.clear()
     value.foreach { v =>
-      val pwc = new PropertyWithCodec[E](elementCodec.newProperty(v), elementCodec, ???)
+      val pwc = elementCodec.newProperty(v)
       property.value += pwc
     }
   }
 
   override def readProperty(property: SeqProperty[E]): Seq[E] = {
-    property.value.map(_.getValue)
+    property.value.map(v => elementCodec.readProperty(v.asInstanceOf[elementCodec.PropertyType]))
   }
 }
 
@@ -85,22 +85,25 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
   override def newProperty(value: T): UnionProperty[T] = {
     val thiCase = cases.findOpt(_.isInstance(value)).getOrElse(throw new Exception(s"Unknown case: $value"))
     val caseCodec = thiCase.propertyCodec.asInstanceOf[PropertyCodec[T]]
-    new UnionProperty[T](thiCase.name, new PropertyWithCodec[T](caseCodec.newProperty(value), caseCodec, ???))
+    new UnionProperty[T](thiCase.name, caseCodec.newProperty(value))
   }
 
   override def updateProperty(value: T, property: UnionProperty[T]): Unit = {
     val thiCase = cases.findOpt(_.isInstance(value)).getOrElse(throw new Exception(s"Unknown case: $value"))
     val caseCodec = thiCase.propertyCodec.asInstanceOf[PropertyCodec[T]]
     if (property.caseName == thiCase.name) {
-      property.value.asInstanceOf[PropertyWithCodec[T]].update(value)
+      caseCodec.updateProperty(value, property.value.asInstanceOf[caseCodec.PropertyType])
     } else {
       property.caseName = thiCase.name
-      property.value = new PropertyWithCodec[T](caseCodec.newProperty(value), caseCodec, ???)
+      property.value = caseCodec.newProperty(value)
     }
   }
 
   override def readProperty(property: UnionProperty[T]): T = {
-    property.value.getValue
+    val thiCase = cases.findOpt(_.name == property.caseName)
+      .getOrElse(throw new Exception(s"Unknown case: ${property.caseName}"))
+      .propertyCodec.asInstanceOf[PropertyCodec[T]]
+    thiCase.readProperty(property.value.asInstanceOf[thiCase.PropertyType])
   }
 }
 
@@ -152,7 +155,7 @@ sealed trait UnionPropertyCase[T] extends TypedMetadata[T] {
       case (field, fieldValue) =>
         val castedField = field.asInstanceOf[RecordPropertyField[Any]]
         val subProperty = castedField.propertyCodec.newProperty(fieldValue)
-        map += (field.name -> new PropertyWithCodec(subProperty, castedField.propertyCodec, ???))
+        map += (field.name -> subProperty)
     }
     property
   }
@@ -160,13 +163,21 @@ sealed trait UnionPropertyCase[T] extends TypedMetadata[T] {
   override def updateProperty(value: T, property: RecordProperty[T]): Unit = {
     val map = property.fields
     fields.zip(unapplier.unapply(value)).foreach {
-      case (field, fieldValue) =>
-        map(field.name).asInstanceOf[PropertyWithCodec[Any]].update(fieldValue)
+      case (field, newFieldValue) =>
+        val fieldProperty = map(field.name)
+        val codec = field.propertyCodec.asInstanceOf[PropertyCodec[Any]]
+        codec.updateProperty(newFieldValue, fieldProperty.asInstanceOf[codec.PropertyType])
     }
   }
 
   override def readProperty(property: RecordProperty[T]): T = {
-    unapplier.apply(property.fields.values.map(p => p.getValue).toSeq)
+    val map = property.fields
+    val fieldValues = fields.zip(map.values).map {
+      case (field, fieldProperty) =>
+        val codec = field.propertyCodec
+        codec.readProperty(fieldProperty.asInstanceOf[codec.PropertyType])
+    }
+    unapplier.apply(fieldValues)
   }
 }
 

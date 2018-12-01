@@ -36,8 +36,26 @@ class PropertyCodecTest extends FunSuite {
     BardzoProsty("bardzo prosty"),
     NoneOfThis)
 
-  test("new property") {
+  test("ser deser") {
     val prop = FajnyModel.propertyCodec.newProperty(m)
-    println(PropertyWithCodec.print(prop))
+    val deser = FajnyModel.propertyCodec.readProperty(prop)
+    println(Property.print(prop))
+    assert(m == deser)
+  }
+
+  test("update") {
+    val prop = FajnyModel.propertyCodec.newProperty(m)
+    val newValue = FajnyModel(
+      2,
+      "string2",
+      2.4,
+      MalyModel(13),
+      Case1(32),
+      BardzoProsty("bardzo prosty 2"),
+      Case2("aaa2", Vector(Instant.now(), Instant.now().plusSeconds(10))))
+    FajnyModel.propertyCodec.updateProperty(newValue, prop)
+    val deser = FajnyModel.propertyCodec.readProperty(prop)
+    println(Property.print(prop))
+    assert(newValue == deser)
   }
 }
