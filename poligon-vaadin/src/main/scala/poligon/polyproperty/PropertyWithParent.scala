@@ -3,7 +3,7 @@ package polyproperty
 
 import com.avsystem.commons.serialization.GenRef
 
-class PropertyWithParent[S](property: Property[S], parent: Opt[PropertyWithParent[_]]) {
+class PropertyWithParent[S](val property: Property[S], val parent: Opt[PropertyWithParent[_]]) {
   def get[T](ref: GenRef.Creator[S] => GenRef[S, T])
             (implicit rpc: RecordPropertyCodec[S]): PropertyWithParent[T] =
     new PropertyWithParent(SubProperty.getField(property)(ref), this.opt)
