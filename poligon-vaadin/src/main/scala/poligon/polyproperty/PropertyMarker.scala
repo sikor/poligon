@@ -24,8 +24,13 @@ import scala.collection.mutable
   */
 object PropertyMarker {
 
-  class MarkedProperties(properties: mutable.HashSet[Property[_]]) {
+  class MarkedProperties(private val properties: mutable.HashSet[Property[_]] = new mutable.HashSet[Property[_]]()) extends AnyVal {
     def mark(p: Property[_]): Unit = properties += p
+
+    def clear(onProperty: Property[_] => Unit): Unit = {
+      properties.foreach(onProperty)
+      properties.clear()
+    }
   }
 
   def markProperty(p: PropertyWithParent[_])(implicit mp: MarkedProperties): Unit = {
