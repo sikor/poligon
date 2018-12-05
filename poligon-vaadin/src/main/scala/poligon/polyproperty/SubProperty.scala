@@ -27,7 +27,7 @@ object SubProperty {
     }
   }
 
-  def getSeq[E: SeqPropertyCodec](property: Property[Seq[E]]): Seq[Property[E]] = {
+  def getSeq[E](property: Property[Seq[E]]): Seq[Property[E]] = {
     property.asInstanceOf[SeqProperty[E]].value
   }
 
