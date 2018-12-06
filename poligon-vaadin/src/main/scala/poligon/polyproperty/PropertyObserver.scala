@@ -4,6 +4,8 @@ import scala.collection.mutable
 
 trait PropertyObserver[P[_] <: Property[_], T] {
   def propertyChanged(property: P[T]): Unit
+
+  def propertyRemoved(property: P[T]): Unit
 }
 
 object PropertyObserver {
@@ -17,6 +19,10 @@ object PropertyObserver {
 
     def propertyChanged(property: Property[_]): Unit = {
       observers.getOpt(property).foreach(_.foreach(l => l.propertyChanged(property.asInstanceOf[Property[Any]])))
+    }
+
+    def propertyRemoved(property: Property[_]): Unit = {
+      observers.getOpt(property).foreach(_.foreach(l => l.propertyRemoved(property.asInstanceOf[Property[Any]])))
     }
   }
 

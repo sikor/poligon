@@ -8,6 +8,7 @@ import com.avsystem.commons.meta._
 import com.avsystem.commons.misc.{ApplierUnapplier, ValueOf}
 import com.avsystem.commons.serialization.GenRef
 import poligon.polyproperty.Property._
+import poligon.polyproperty.PropertyCodec.PropertyLifetimeListener
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -18,12 +19,25 @@ sealed trait PropertyCodec[T] {
 
   def newProperty(value: T): PropertyType
 
-  def updateProperty(value: T, property: PropertyType): Unit
+  def updateProperty(value: T, property: PropertyType, onChildPropertyChanged: PropertyLifetimeListener): Unit
 
   def readProperty(property: PropertyType): T
 }
 
 object PropertyCodec {
+
+  trait PropertyLifetimeListener {
+    def onPropertyChanged(property: Property[_]): Unit
+
+    def onPropertyRemoved(property: Property[_]): Unit
+  }
+
+  object NoOpPropertyLifetimeListener extends PropertyLifetimeListener {
+    override def onPropertyChanged(property: Property[_]): Unit = {}
+
+    override def onPropertyRemoved(property: Property[_]): Unit = {}
+  }
+
   implicit val stringCodec: SimplePropertyCodec[String] = SimplePropertyCodec.materialize[String]
   implicit val byteCodec: SimplePropertyCodec[Byte] = SimplePropertyCodec.materialize[Byte]
   implicit val charCodec: SimplePropertyCodec[Char] = SimplePropertyCodec.materialize[Char]
@@ -41,9 +55,9 @@ object PropertyCodec {
 
   def newProperty[T: PropertyCodec](value: T): Property[T] = PropertyCodec[T].newProperty(value)
 
-  def updateProperty[T: PropertyCodec](value: T, property: Property[T]): Unit = {
+  def updateProperty[T: PropertyCodec](value: T, property: Property[T], onChildPropertyChanged: PropertyLifetimeListener = NoOpPropertyLifetimeListener): Unit = {
     val codec = PropertyCodec[T]
-    codec.updateProperty(value, property.asInstanceOf[codec.PropertyType])
+    codec.updateProperty(value, property.asInstanceOf[codec.PropertyType], onChildPropertyChanged)
   }
 
   def readProperty[T: PropertyCodec](property: Property[T]): T = {
@@ -55,11 +69,14 @@ object PropertyCodec {
 class SimplePropertyCodec[T] extends PropertyCodec[T] {
   override type PropertyType = SimpleProperty[T]
 
-  override def newProperty(value: T): SimpleProperty[T] = new SimpleProperty[T](value)
+  override def newProperty(value: T): SimpleProperty[T] =
+    new SimpleProperty[T](value)
 
-  override def updateProperty(value: T, property: SimpleProperty[T]): Unit = property.value = value
+  override def updateProperty(value: T, property: SimpleProperty[T], onChildPropertyChanged: PropertyLifetimeListener): Unit =
+    property.value = value
 
-  override def readProperty(property: SimpleProperty[T]): T = property.value
+  override def readProperty(property: SimpleProperty[T]): T =
+    property.value
 }
 
 object SimplePropertyCodec {
@@ -78,7 +95,10 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
     property
   }
 
-  override def updateProperty(value: Seq[E], property: SeqProperty[E]): Unit = {
+  override def updateProperty(value: Seq[E], property: SeqProperty[E], onChildPropertyChanged: PropertyLifetimeListener): Unit = {
+    property.value.foreach { p =>
+      PropertyMarker.traverseWithChildren(p, onChildPropertyChanged.onPropertyRemoved)
+    }
     property.value.clear()
     value.foreach { v =>
       val pwc = elementCodec.newProperty(v)
@@ -106,12 +126,14 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
     cases.findOpt(_.isInstance(value)).getOrElse(throw new Exception(s"Unknown case: $value"))
   }
 
-  override def updateProperty(value: T, property: UnionProperty[T]): Unit = {
+  override def updateProperty(value: T, property: UnionProperty[T], onChildPropertyChanged: PropertyLifetimeListener): Unit = {
     val thiCase = caseForValue(value)
     val caseCodec = thiCase.propertyCodec.asInstanceOf[PropertyCodec[T]]
     if (property.caseName == thiCase.name) {
-      caseCodec.updateProperty(value, property.value.asInstanceOf[caseCodec.PropertyType])
+      onChildPropertyChanged.onPropertyChanged(property.value)
+      caseCodec.updateProperty(value, property.value.asInstanceOf[caseCodec.PropertyType], onChildPropertyChanged)
     } else {
+      PropertyMarker.traverseWithChildren(property.value, onChildPropertyChanged.onPropertyRemoved)
       property.caseName = thiCase.name
       property.value = caseCodec.newProperty(value)
     }
@@ -184,13 +206,14 @@ sealed trait UnionPropertyCase[T] extends TypedMetadata[T] {
     property
   }
 
-  override def updateProperty(value: T, property: RecordProperty[T]): Unit = {
+  override def updateProperty(value: T, property: RecordProperty[T], onChildPropertyChanged: PropertyLifetimeListener): Unit = {
     val map = property.fields
     fields.zip(unapplier.unapply(value)).foreach {
       case (field, newFieldValue) =>
         val fieldProperty = map(field.name)
+        onChildPropertyChanged.onPropertyChanged(fieldProperty)
         val codec = field.propertyCodec.asInstanceOf[PropertyCodec[Any]]
-        codec.updateProperty(newFieldValue, fieldProperty.asInstanceOf[codec.PropertyType])
+        codec.updateProperty(newFieldValue, fieldProperty.asInstanceOf[codec.PropertyType], onChildPropertyChanged)
     }
   }
 

@@ -2,6 +2,7 @@ package poligon
 package polyproperty
 
 import poligon.polyproperty.Property.{RecordProperty, SeqProperty, SimpleProperty, UnionProperty}
+import poligon.polyproperty.PropertyCodec.PropertyLifetimeListener
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -24,47 +25,61 @@ import scala.collection.mutable
   */
 object PropertyMarker {
 
-  class MarkedProperties(private val properties: mutable.HashSet[Property[_]] = new mutable.HashSet[Property[_]]()) extends AnyVal {
-    def mark(p: Property[_]): Unit = properties += p
+  class MarkedProperties(private val changedProperties: mutable.HashSet[Property[_]] = new mutable.HashSet[Property[_]](),
+                         private val removedProperties: mutable.HashSet[Property[_]] = new mutable.HashSet[Property[_]]())
+    extends PropertyLifetimeListener {
 
-    def clear(onProperty: Property[_] => Unit): Unit = {
-      properties.foreach(onProperty)
-      properties.clear()
+    def clearChanged(onProperty: Property[_] => Unit): Unit = {
+      changedProperties.foreach(onProperty)
+      changedProperties.clear()
     }
-  }
 
-  def markProperty(p: PropertyWithParent[_])(implicit mp: MarkedProperties): Unit = {
-    mp.mark(p.property)
-    markParents(p)
-    markChildren(p.property)
-  }
-
-  @tailrec
-  private def markParents(p: PropertyWithParent[_])(implicit mp: MarkedProperties): Unit = {
-    p.parent match {
-      case Opt.Empty =>
-      case Opt(parent) =>
-        mp.mark(parent.property)
-        markParents(parent)
+    def clearRemoved(onProperty: Property[_] => Unit): Unit = {
+      removedProperties.foreach(onProperty)
+      removedProperties.clear()
     }
+
+    override def onPropertyChanged(property: Property[_]): Unit = changedProperties += property
+
+    override def onPropertyRemoved(property: Property[_]): Unit = removedProperties += property
   }
 
-  private def markChildren(p: Property[_])(implicit mp: MarkedProperties): Unit = {
+  def traverseWithParents(p: PropertyWithParent[_], onProperty: Property[_] => Unit): Unit = {
+    onProperty(p.property)
+    traverseParents(p, onProperty)
+  }
+
+  def traverseWithChildren(p: Property[_], onProperty: Property[_] => Unit): Unit = {
+    onProperty(p)
+    traverseChildren(p, onProperty)
+  }
+
+  def traverseChildren(p: Property[_], onChild: Property[_] => Unit): Unit = {
     p match {
       case _: SimpleProperty[_] =>
       case u: UnionProperty[_] =>
-        mp.mark(u.value)
-        markChildren(u.value)
+        onChild(u.value)
+        traverseChildren(u.value, onChild)
       case r: RecordProperty[_] =>
         r.fields.valuesIterator.foreach { f =>
-          mp.mark(f)
-          markChildren(f)
+          onChild(f)
+          traverseChildren(f, onChild)
         }
       case s: SeqProperty[_] =>
         s.value.foreach { e =>
-          mp.mark(e)
-          markChildren(e)
+          onChild(e)
+          traverseChildren(e, onChild)
         }
+    }
+  }
+
+  @tailrec
+  def traverseParents(p: PropertyWithParent[_], onParent: Property[_] => Unit): Unit = {
+    p.parent match {
+      case Opt.Empty =>
+      case Opt(parent) =>
+        onParent(parent.property)
+        traverseParents(parent, onParent)
     }
   }
 
