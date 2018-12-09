@@ -117,7 +117,7 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
     new SeqPatch(property, idx, newValues, Seq.empty)
   }
 
-  def remove(property: SeqProperty[E], idx: Int, count: Int, onChildPropertyChanged: PropertyLifetimeListener): SeqPatch[E] = {
+  def remove(property: SeqProperty[E], idx: Int, count: Int): SeqPatch[E] = {
     val removed = property.value.slice(idx, idx + count)
     property.value.remove(idx, count)
     new SeqPatch(property, idx, Seq.empty, removed)
