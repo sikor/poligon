@@ -34,19 +34,4 @@ object SubProperty {
   def asSeqProperty[E](property: Property[Seq[E]]): SeqProperty[E] = {
     property.asInstanceOf[SeqProperty[E]]
   }
-
-  class SubPropertyExt[S](private val property: Property[S]) extends AnyVal {
-    def get[T](ref: GenRef.Creator[S] => GenRef[S, T])(implicit rpc: RecordPropertyCodec[S]): Property[T] =
-      getField(property)(ref)
-
-    def getCase[T <: S : ClassTag](implicit upc: UnionPropertyCodec[S]): Opt[Property[T]] =
-      SubProperty.getCase[S, T](property)
-  }
-
-  trait Implicits {
-    implicit def subProp[S](property: Property[S]): SubPropertyExt[S] = new SubPropertyExt[S](property)
-  }
-
-  object Implicits extends Implicits
-
 }

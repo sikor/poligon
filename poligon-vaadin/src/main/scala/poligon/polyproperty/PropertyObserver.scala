@@ -6,16 +6,16 @@ import poligon.polyproperty.PropertyObserver.SeqPatch
 
 import scala.collection.mutable
 
-trait PropertyObserver[P[_] <: Property[_], T] {
-  def propertyChanged(property: P[T]): Unit
+trait PropertyObserver[T] {
+  def propertyChanged(property: Property[T]): Unit
 
-  def propertyRemoved(property: P[T]): Unit
+  def propertyRemoved(property: Property[T]): Unit
 
   def seqChanged(patch: SeqPatch[_]): Unit
 }
 
 object PropertyObserver {
-  type AnyPropertyObserver = PropertyObserver[Property, Any]
+  type AnyPropertyObserver = PropertyObserver[Any]
   type ObserversMapT = mutable.HashMap[Property[_], mutable.Set[AnyPropertyObserver]]
   type ObserversMultiMap = mutable.MultiMap[Property[_], AnyPropertyObserver]
   type OMM = ObserversMapT with ObserversMultiMap
@@ -24,7 +24,7 @@ object PropertyObserver {
 
   class ObserversMap(private val observers: OMM = new ObserversMapT with ObserversMultiMap) extends AnyVal {
 
-    def observe[P[_] <: Property[_], T](property: P[T], propertyObserver: PropertyObserver[P, T]): Unit = {
+    def observe[P[_] <: Property[_], T](property: P[T], propertyObserver: PropertyObserver[T]): Unit = {
       //perhaps mark property as removed after removal and throw exception if property arg is already removed
       observers.addBinding(property.asInstanceOf[Property[_]], propertyObserver.asInstanceOf[AnyPropertyObserver])
     }
@@ -63,7 +63,7 @@ object PropertyObserver {
       po.clearAllData()
     }
 
-    def observe[P[_] <: Property[_], T](property: P[T], propertyObserver: PropertyObserver[P, T]): Unit = {
+    def observe[T](property: Property[T], propertyObserver: PropertyObserver[T]): Unit = {
       map.observe(property, propertyObserver)
     }
 

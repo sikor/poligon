@@ -1,9 +1,34 @@
 package poligon.polyproperty
 
+import com.avsystem.commons.serialization.GenRef
+import poligon.polyproperty.PropertyObserver.{PropertyObservers, SeqPatch}
+import poligon.{ClassTag, Opt}
+
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-sealed trait Property[T]
+sealed trait Property[T] {
+  def get[R](ref: GenRef.Creator[T] => GenRef[T, R])(implicit rpc: RecordPropertyCodec[T]): Property[R] =
+    SubProperty.getField(this)(ref)
+
+  def getCase[R <: T : ClassTag](implicit upc: UnionPropertyCodec[T]): Opt[Property[R]] =
+    SubProperty.getCase[T, R](this)
+
+  def getSeq[E](implicit ev: Property[T] =:= Property[Seq[E]]): Seq[Property[E]] =
+    SubProperty.getSeq(ev.apply(this))
+
+  def listenStructure[E](listener: SeqPatch[E] => Unit)(implicit ev: Property[T] =:= Property[Seq[E]], o: PropertyObservers): Unit = {
+    o.observe(ev.apply(this), new PropertyObserver[Seq[E]] {
+      override def propertyChanged(property: Property[Seq[E]]): Unit = {}
+
+      override def propertyRemoved(property: Property[Seq[E]]): Unit = {}
+
+      override def seqChanged(patch: SeqPatch[_]): Unit = {
+        listener(patch.asInstanceOf[SeqPatch[E]])
+      }
+    })
+  }
+}
 
 object Property {
 
