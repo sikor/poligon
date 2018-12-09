@@ -1,12 +1,17 @@
 package poligon
 package polyproperty
 
+import poligon.polyproperty.Property.SeqProperty
+import poligon.polyproperty.PropertyObserver.SeqPatch
+
 import scala.collection.mutable
 
 trait PropertyObserver[P[_] <: Property[_], T] {
   def propertyChanged(property: P[T]): Unit
 
   def propertyRemoved(property: P[T]): Unit
+
+  def seqChanged(patch: SeqPatch[_]): Unit
 }
 
 object PropertyObserver {
@@ -14,6 +19,8 @@ object PropertyObserver {
   type ObserversMapT = mutable.HashMap[Property[_], mutable.Set[AnyPropertyObserver]]
   type ObserversMultiMap = mutable.MultiMap[Property[_], AnyPropertyObserver]
   type OMM = ObserversMapT with ObserversMultiMap
+
+  class SeqPatch[E](val property: SeqProperty[E], val idx: Int, val added: Seq[Property[E]], val removed: Seq[Property[E]])
 
   class ObserversMap(private val observers: OMM = new ObserversMapT with ObserversMultiMap) extends AnyVal {
 
@@ -28,6 +35,10 @@ object PropertyObserver {
 
     def propertyRemoved(property: Property[_]): Unit = {
       observers.remove(property).foreach(_.foreach(l => l.propertyRemoved(property.asInstanceOf[Property[Any]])))
+    }
+
+    def seqChanged(patch: SeqPatch[_]): Unit = {
+      observers.get(patch.property).foreach(_.foreach(l => l.seqChanged(patch)))
     }
 
     private[PropertyObserver] def clear(): Unit = {
@@ -62,6 +73,10 @@ object PropertyObserver {
 
     def propertyRemoved(property: Property[_]): Unit = {
       traverseAll(_.propertyRemoved(property))
+    }
+
+    def seqChanged(patch: SeqPatch[_]): Unit = {
+      traverseAll(_.seqChanged(patch))
     }
 
     private def traverseAll(onObserversMap: ObserversMap => Unit): Unit = {

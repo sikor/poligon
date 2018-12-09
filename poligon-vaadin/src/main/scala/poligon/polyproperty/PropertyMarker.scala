@@ -25,9 +25,10 @@ import scala.collection.mutable
   */
 object PropertyMarker {
 
-  class MarkedProperties(private val changedProperties: mutable.HashSet[Property[_]] = new mutable.HashSet[Property[_]](),
-                         private val removedProperties: mutable.HashSet[Property[_]] = new mutable.HashSet[Property[_]]())
-    extends PropertyLifetimeListener {
+  class MarkedProperties() extends PropertyLifetimeListener {
+
+    private val changedProperties: mutable.HashSet[Property[_]] = new mutable.HashSet[Property[_]]()
+    private val removedProperties: mutable.HashSet[Property[_]] = new mutable.HashSet[Property[_]]()
 
     def clearChanged(onProperty: Property[_] => Unit): Unit = {
       changedProperties.foreach(onProperty)

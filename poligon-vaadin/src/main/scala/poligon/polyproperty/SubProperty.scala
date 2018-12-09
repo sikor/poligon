@@ -28,7 +28,11 @@ object SubProperty {
   }
 
   def getSeq[E](property: Property[Seq[E]]): Seq[Property[E]] = {
-    property.asInstanceOf[SeqProperty[E]].value
+    asSeqProperty(property).value
+  }
+
+  def asSeqProperty[E](property: Property[Seq[E]]): SeqProperty[E] = {
+    property.asInstanceOf[SeqProperty[E]]
   }
 
   class SubPropertyExt[S](private val property: Property[S]) extends AnyVal {

@@ -9,6 +9,7 @@ import com.avsystem.commons.misc.{ApplierUnapplier, ValueOf}
 import com.avsystem.commons.serialization.GenRef
 import poligon.polyproperty.Property._
 import poligon.polyproperty.PropertyCodec.PropertyLifetimeListener
+import poligon.polyproperty.PropertyObserver.SeqPatch
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -109,6 +110,22 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
   override def readProperty(property: SeqProperty[E]): Seq[E] = {
     property.value.map(v => elementCodec.readProperty(v.asInstanceOf[elementCodec.PropertyType]))
   }
+
+  def insert(property: SeqProperty[E], idx: Int, value: Seq[E]): SeqPatch[E] = {
+    val newValues = value.map(e => elementCodec.newProperty(e))
+    property.value.insert(idx, newValues: _*)
+    new SeqPatch(property, idx, newValues, Seq.empty)
+  }
+
+  def remove(property: SeqProperty[E], idx: Int, count: Int, onChildPropertyChanged: PropertyLifetimeListener): SeqPatch[E] = {
+    val removed = property.value.slice(idx, idx + count)
+    property.value.remove(idx, count)
+    new SeqPatch(property, idx, Seq.empty, removed)
+  }
+}
+
+object SeqPropertyCodec {
+  def apply[E](implicit spc: SeqPropertyCodec[E]): SeqPropertyCodec[E] = spc
 }
 
 @positioned(positioned.here) class UnionPropertyCodec[T](
