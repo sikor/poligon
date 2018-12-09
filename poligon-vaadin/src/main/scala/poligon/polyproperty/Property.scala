@@ -28,6 +28,23 @@ sealed trait Property[T] {
       }
     })
   }
+
+  def listen(listener: T => Unit, init: Boolean = false)(implicit o: PropertyObservers, codec: PropertyCodec[T]): Unit = {
+    o.observe(this, new PropertyObserver[T] {
+      override def propertyChanged(property: Property[T]): Unit = {
+        listener(property.getValue)
+      }
+
+      override def propertyRemoved(property: Property[T]): Unit = {}
+
+      override def seqChanged(patch: SeqPatch[_]): Unit = {}
+    })
+    if (init) {
+      listener(getValue)
+    }
+  }
+
+  def getValue(implicit codec: PropertyCodec[T]): T = codec.readProperty(this.asInstanceOf[codec.PropertyType])
 }
 
 object Property {

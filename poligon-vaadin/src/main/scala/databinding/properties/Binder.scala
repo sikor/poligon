@@ -4,7 +4,7 @@ import com.vaadin.ui.{AbstractOrderedLayout, Component}
 import io.udash.properties.seq.ReadableSeqProperty
 import io.udash.properties.single.ReadableProperty
 import poligon.polyproperty.PropertyObserver.PropertyObservers
-import poligon.polyproperty.{Property, SubProperty}
+import poligon.polyproperty.{Property, PropertyCodec, SubProperty}
 
 object Binder {
   def bindLayoutStructure[L <: AbstractOrderedLayout, T, P <: ReadableProperty[T]](
@@ -52,8 +52,8 @@ object Binder {
     layout
   }
 
-  def bindSimple[T, P <: com.vaadin.data.Property[T]](property: ReadableProperty[T], label: P): P = {
-    property.listen(v => label.setValue(v), initUpdate = true)
+  def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T]](property: Property[T], label: P)(implicit o: PropertyObservers): P = {
+    property.listen(v => label.setValue(v), init = true)
     label
   }
 }
