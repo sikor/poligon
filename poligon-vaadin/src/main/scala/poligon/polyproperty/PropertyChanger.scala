@@ -1,13 +1,14 @@
 package poligon.polyproperty
 
 import poligon.polyproperty.PropertyMarker.MarkedProperties
-import poligon.polyproperty.PropertyObserver.ObservedProperties
+import poligon.polyproperty.PropertyObserver.ObserversMap
 
 /**
   * TODO:
   * 1. Add possibility to amend list without overwriting all values (method for add(index), remove(index)) + batching updates
-  * 2. Use polyproperty instead of io.udash in example vaadin project
-  * 3. Consider defining special property for Presenters -> Property that holds something that holds another property (flatMap?)
+  * 2. Allow to create listeners registry for subview - it should allow to remove easily all listeners from it
+  * 3. Optional: Allow marking properties as removed to disallow listening on removed property
+  * 4. Use polyproperty instead of io.udash in example vaadin project
   *
   * Problem: cleaning bindings, avoiding memory leaks:
   * - Map from property to listeners: allow to hold references on view side as normally
@@ -18,10 +19,11 @@ import poligon.polyproperty.PropertyObserver.ObservedProperties
   * Problem: sub presenters:
   * - When we change sub presenter, all views connected with it must be removed, and we must mark all its properties as removed (together with subpresenters)
   * - presenter should be referenced only from parents, and view hierarchies originating from one view.
-  * - special property is not needed - mechanism with keeping listeners in parent view should be enough.
+  * - some mechanism to remove presenter properties from listeners map
+  *   in case sublisteners map is not created for all usages of presenter
   **/
 object PropertyChanger {
-  def set[T: PropertyCodec](property: PropertyWithParent[T], value: T)(implicit observed: ObservedProperties): Unit = {
+  def set[T: PropertyCodec](property: PropertyWithParent[T], value: T)(implicit observed: ObserversMap): Unit = {
     val mp = new MarkedProperties()
     PropertyCodec.updateProperty(value, property.property, mp)
     PropertyMarker.traverseWithParents(property, mp.onPropertyChanged)
