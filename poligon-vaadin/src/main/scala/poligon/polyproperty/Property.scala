@@ -45,6 +45,7 @@ sealed trait Property[T] {
   }
 
   def getValue(implicit codec: PropertyCodec[T]): T = codec.readProperty(this.asInstanceOf[codec.PropertyType])
+
 }
 
 object Property {

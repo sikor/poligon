@@ -6,6 +6,15 @@ import io.udash.properties.single.ReadableProperty
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty.{Property, PropertyCodec, SubProperty}
 
+
+/**
+  * TODO:
+  * - we need destinction between replacable bindable and constant bindable. Lifetime of the constant bindable is the same
+  * as the parent component, whereas replacable bindable can be replaced or removed from parent component.
+  * Parent component can be: Layout/Panel. Each element of layout can be replacable or constant. In case of replacable we need
+  * placeholder that holds the slot. The problem is that we can't forbid usage of removeComponent or addComponent methods on layout.
+  * The risk is that someone will bind bindable and never clean it.
+  */
 object Binder {
   def bindLayoutStructure[L <: AbstractOrderedLayout, T, P <: ReadableProperty[T]](
                                                                                     property: ReadableSeqProperty[T, P],

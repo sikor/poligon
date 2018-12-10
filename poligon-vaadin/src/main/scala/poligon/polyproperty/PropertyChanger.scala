@@ -31,13 +31,23 @@ object PropertyChanger {
     mp.clearChanged(observed.propertyChanged)
   }
 
-  def insert[E: SeqPropertyCodec](property: PropertyWithParent[Seq[E]], index: Int, value: E*)(implicit observed: PropertyObservers): Unit = {
+  def insert[E: SeqPropertyCodec](
+                                   property: PropertyWithParent[Seq[E]],
+                                   index: Int,
+                                   value: E*)(
+                                   implicit
+                                   observed: PropertyObservers): Unit = {
     val seqProp = SubProperty.asSeqProperty(property.property)
     val patch = SeqPropertyCodec[E].insert(seqProp, index, value)
     observed.seqChanged(patch)
   }
 
-  def remove[E: SeqPropertyCodec](property: PropertyWithParent[Seq[E]], index: Int, count: Int)(implicit observed: PropertyObservers): Unit = {
+  def remove[E: SeqPropertyCodec](
+                                   property: PropertyWithParent[Seq[E]],
+                                   index: Int,
+                                   count: Int)(
+                                   implicit
+                                   observed: PropertyObservers): Unit = {
     val seqProp = SubProperty.asSeqProperty(property.property)
     val patch = SeqPropertyCodec[E].remove(seqProp, index, count)
     patch.removed.foreach(observed.propertyRemoved)

@@ -1,6 +1,7 @@
 package databinding
 
 import com.vaadin.ui.{Component, MenuBar, VerticalLayout}
+import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 object MainView {
   def replaceOrAdd(layout: VerticalLayout, index: Int, component: Component): Unit = {
@@ -13,7 +14,7 @@ object MainView {
   }
 }
 
-class MainView(presenter: MainViewPresenter, viewFactory: ViewFactory) extends VerticalLayout {
+class MainView(presenter: MainViewPresenter, viewFactory: ViewFactory, observed: PropertyObservers) extends VerticalLayout {
 
   presenter.model.listen({ menu =>
     val menuBar = new MenuBar()
@@ -26,9 +27,9 @@ class MainView(presenter: MainViewPresenter, viewFactory: ViewFactory) extends V
     MainView.replaceOrAdd(this, 0, menuBar)
   }, initUpdate = true)
 
-  addComponent(viewFactory.createView(presenter.executeTasksPresenter))
+  addComponent(viewFactory.createView(presenter.executeTasksPresenter, observed))
 
   presenter.subPresenter.listen({ subPresenter =>
-    MainView.replaceOrAdd(this, 2, viewFactory.createView(subPresenter))
+    MainView.replaceOrAdd(this, 2, viewFactory.createView(subPresenter, observed))
   }, initUpdate = true)
 }

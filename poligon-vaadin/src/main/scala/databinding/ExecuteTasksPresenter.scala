@@ -3,7 +3,8 @@ package databinding
 import com.typesafe.scalalogging.StrictLogging
 import databinding.ExecuteTasksPresenter.ExecuteTasksStatus
 import databinding.ExecuteTasksPresenter.ExecuteTasksStatus.{InProgress, NotStarted}
-import io.udash.properties.single.Property
+import poligon.polyproperty.PropertyObserver.PropertyObservers
+import poligon.polyproperty.{HasSimplePropertyCodec, Property, PropertyWithParent}
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
@@ -13,7 +14,7 @@ object ExecuteTasksPresenter {
 
   sealed trait ExecuteTasksStatus
 
-  object ExecuteTasksStatus {
+  object ExecuteTasksStatus extends HasSimplePropertyCodec[ExecuteTasksStatus] {
 
     case object NotStarted extends ExecuteTasksStatus
 
@@ -28,9 +29,11 @@ object ExecuteTasksPresenter {
 }
 
 class ExecuteTasksPresenter(service: ExecuteTasksService)(implicit ec: ExecutionContext) extends Presenter with StrictLogging {
-  val model: Property[ExecuteTasksStatus] = Property(NotStarted)
+  private val model: PropertyWithParent[ExecuteTasksStatus] = PropertyWithParent(NotStarted)
 
-  def executeTasks(): Unit = {
+  def getModel: Property[ExecuteTasksStatus] = model.property
+
+  def executeTasks(implicit observed: PropertyObservers): Unit = {
     model.set(InProgress)
     service.executeTasks().onComplete {
       case Success(b) =>
