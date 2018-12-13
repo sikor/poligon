@@ -1,6 +1,6 @@
 package databinding.properties
 
-import com.vaadin.ui.{AbstractOrderedLayout, Component}
+import com.vaadin.ui.{AbstractOrderedLayout, Component, VerticalLayout}
 import io.udash.properties.seq.ReadableSeqProperty
 import io.udash.properties.single.ReadableProperty
 import poligon.polyproperty.PropertyObserver.PropertyObservers
@@ -64,5 +64,23 @@ object Binder {
   def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T]](property: Property[T], label: P)(implicit o: PropertyObservers): P = {
     property.listen(v => label.setValue(v), init = true)
     label
+  }
+
+  trait Bindable[C] {
+    def bind(p: PropertyObservers): C
+  }
+
+  object Bindable {
+    def create[C](creator: PropertyObservers => C): Bindable[C] = (p: PropertyObservers) => creator(p)
+  }
+
+  def layout[T](property: Property[Seq[T]], childFactory: Property[T] => Bindable[Component]): Bindable[AbstractOrderedLayout] = Bindable.create { po =>
+    val l = new VerticalLayout
+    property.getSeq[T].foreach { p =>
+      val child = childFactory(p)
+      val childComponent = child.bind(po)
+      l.addComponent(childComponent)
+    }
+    l
   }
 }
