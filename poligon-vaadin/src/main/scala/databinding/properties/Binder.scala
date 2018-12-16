@@ -13,7 +13,23 @@ import poligon.polyproperty.{Property, PropertyCodec, SubProperty}
   * as the parent component, whereas replacable bindable can be replaced or removed from parent component.
   * Parent component can be: Layout/Panel. Each element of layout can be replacable or constant. In case of replacable we need
   * placeholder that holds the slot. The problem is that we can't forbid usage of removeComponent or addComponent methods on layout.
-  * The risk is that someone will bind bindable and never clean it.
+  *
+  * Problem: Someone can add listener and do not remove it when it is no longer needed.
+  * How to overcome that?
+  *
+  * 1. There might be listeners that are not related to any DOM element.
+  * 2. Listeners for components should be automatically removed when their components are detached from DOM:
+  * - Layout binder - bind layout to seq and handle cleaning listeners after removal
+  *                 - cleaning is needed only if childFactory takes PropertyObservers argument.
+  * - Slot binder - bind some slot (panel content, one layout or table cell) - clean listeners after component is replaced
+  * - component factory that does not take PropertyObservers does not listen to anything - checked in compile time
+  *
+  * Solution:
+  * - methods that create components with listeners (dynamic components) takes PropertyObservers in argument, otherwise not
+  * - To reuse bind* methods we need abstraction over Static and Dynamic components.
+  * - sometimes we don't have to create new PropertyObservers for sub dynamic component - only if we know that lifetime of the
+  *   sub dynamic component is shorter than parent lifetime.
+  * - in summary, the only interesting case is when we have dynamic child that we want to replace/remove (seq/union/subpresenter)
   */
 object Binder {
   def bindLayoutStructure[L <: AbstractOrderedLayout, T, P <: ReadableProperty[T]](
@@ -66,21 +82,4 @@ object Binder {
     label
   }
 
-  trait Bindable[C] {
-    def bind(p: PropertyObservers): C
-  }
-
-  object Bindable {
-    def create[C](creator: PropertyObservers => C): Bindable[C] = (p: PropertyObservers) => creator(p)
-  }
-
-  def layout[T](property: Property[Seq[T]], childFactory: Property[T] => Bindable[Component]): Bindable[AbstractOrderedLayout] = Bindable.create { po =>
-    val l = new VerticalLayout
-    property.getSeq[T].foreach { p =>
-      val child = childFactory(p)
-      val childComponent = child.bind(po)
-      l.addComponent(childComponent)
-    }
-    l
-  }
 }
