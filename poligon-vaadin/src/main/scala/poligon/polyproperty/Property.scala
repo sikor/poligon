@@ -17,7 +17,7 @@ sealed trait Property[T] {
   def getSeq[E](implicit ev: Property[T] =:= Property[Seq[E]]): Seq[Property[E]] =
     SubProperty.getSeq(ev.apply(this))
 
-  def listenStructure[E](listener: SeqPatch[E] => Unit)(implicit ev: Property[T] =:= Property[Seq[E]], o: PropertyObservers): Unit = {
+  def listenStructure[E](listener: SeqPatch[E] => Unit)(o: PropertyObservers)(implicit ev: Property[T] =:= Property[Seq[E]]): Unit = {
     o.observe(ev.apply(this), new PropertyObserver[Seq[E]] {
       override def propertyChanged(property: Property[Seq[E]]): Unit = {}
 
@@ -29,7 +29,7 @@ sealed trait Property[T] {
     })
   }
 
-  def listen(listener: T => Unit, init: Boolean = false)(implicit o: PropertyObservers, codec: PropertyCodec[T]): Unit = {
+  def listen(listener: T => Unit, init: Boolean = false)(o: PropertyObservers)(implicit codec: PropertyCodec[T]): Unit = {
     o.observe(this, new PropertyObserver[T] {
       override def propertyChanged(property: Property[T]): Unit = {
         listener(property.getValue)

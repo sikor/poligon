@@ -46,21 +46,21 @@ object PropertyObserver {
     }
   }
 
-  class PropertyObservers(rootOpt: Opt[PropertyObservers]) {
-    private val root = rootOpt.getOrElse(this)
+  class PropertyObservers(private val parent: Opt[PropertyObservers]) {
+    private val root: PropertyObservers = parent.map(_.root).getOrElse(this)
 
     private val map = new ObserversMap()
     private val subObservers: mutable.HashSet[PropertyObservers] = new mutable.HashSet()
 
     def createSubObservers(): PropertyObservers = {
-      val r = new PropertyObservers(root.opt)
+      val r = new PropertyObservers(this.opt)
       subObservers += r
       r
     }
 
-    def removeSubObservers(po: PropertyObservers): Unit = {
-      subObservers.remove(po)
-      po.clearAllData()
+    def dispose(): Unit = {
+      parent.foreach(_.subObservers.remove(this))
+      clearAllData()
     }
 
     def observe[T](property: Property[T], propertyObserver: PropertyObserver[T]): Unit = {

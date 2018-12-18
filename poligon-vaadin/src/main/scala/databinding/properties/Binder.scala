@@ -1,9 +1,8 @@
 package databinding.properties
 
-import com.vaadin.ui.{AbstractOrderedLayout, Component, VerticalLayout}
+import com.vaadin.ui.{AbstractOrderedLayout, Component}
 import io.udash.properties.seq.ReadableSeqProperty
 import io.udash.properties.single.ReadableProperty
-import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty.{Property, PropertyCodec, SubProperty}
 
 
@@ -28,7 +27,7 @@ import poligon.polyproperty.{Property, PropertyCodec, SubProperty}
   * - methods that create components with listeners (dynamic components) takes PropertyObservers in argument, otherwise not
   * - To reuse bind* methods we need abstraction over Static and Dynamic components.
   * - sometimes we don't have to create new PropertyObservers for sub dynamic component - only if we know that lifetime of the
-  *   sub dynamic component is shorter than parent lifetime.
+  * sub dynamic component is shorter than parent lifetime.
   * - in summary, the only interesting case is when we have dynamic child that we want to replace/remove (seq/union/subpresenter)
   */
 object Binder {
@@ -60,25 +59,27 @@ object Binder {
   def bindLayout[L <: AbstractOrderedLayout, E](
                                                  property: Property[Seq[E]],
                                                  layout: L)(
-                                                 childFactory: Property[E] => Component)(implicit o: PropertyObservers): L = {
-    val startIndex = layout.getComponentCount
+                                                 childFactory: Property[E] => Comp): Comp = Comp.dynamic { po =>
+    require(layout.getComponentCount == 0)
     SubProperty.getSeq(property).foreach { p =>
-      layout.addComponent(childFactory(p))
+      layout.addComponent(childFactory(p).bind(po.createSubObservers()))
     }
     property.listenStructure[E] { patch =>
       patch.removed.foreach { _ =>
-        layout.removeComponent(layout.getComponent(startIndex + patch.idx))
+        val removedComponent = layout.getComponent(patch.idx)
+        Comp.unbind(removedComponent)
+        layout.removeComponent(removedComponent)
       }
       patch.added.reverse.foreach { a =>
-        val c = childFactory(a)
-        layout.addComponent(c, startIndex + patch.idx)
+        val c = childFactory(a).bind(po.createSubObservers())
+        layout.addComponent(c, patch.idx)
       }
-    }
+    }(po)
     layout
   }
 
-  def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T]](property: Property[T], label: P)(implicit o: PropertyObservers): P = {
-    property.listen(v => label.setValue(v), init = true)
+  def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Property[T], label: P): Comp = Comp.dynamic { o =>
+    property.listen(v => label.setValue(v), init = true)(o)
     label
   }
 
