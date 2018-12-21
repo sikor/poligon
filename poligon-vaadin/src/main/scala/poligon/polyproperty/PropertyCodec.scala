@@ -117,6 +117,10 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
     new SeqPatch(property, idx, newValues, Seq.empty)
   }
 
+  def append(property: SeqProperty[E], value: Seq[E]): SeqPatch[E] = {
+    insert(property, property.value.size, value)
+  }
+
   def remove(property: SeqProperty[E], idx: Int, count: Int): SeqPatch[E] = {
     val removed = property.value.slice(idx, idx + count)
     property.value.remove(idx, count)
@@ -168,7 +172,10 @@ object SeqPropertyCodec {
   }
 }
 
-object UnionPropertyCodec extends AdtMetadataCompanion[UnionPropertyCodec]
+object UnionPropertyCodec extends AdtMetadataCompanion[UnionPropertyCodec] {
+
+
+}
 
 sealed trait UnionPropertyCase[T] extends TypedMetadata[T] {
   def name: String

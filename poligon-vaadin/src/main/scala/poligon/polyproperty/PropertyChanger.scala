@@ -42,6 +42,16 @@ object PropertyChanger {
     observed.seqChanged(patch)
   }
 
+  def append[E: SeqPropertyCodec](
+                                   property: PropertyWithParent[Seq[E]],
+                                   value: E*)(
+                                   implicit
+                                   observed: PropertyObservers): Unit = {
+    val seqProp = SubProperty.asSeqProperty(property.property)
+    val patch = SeqPropertyCodec[E].append(seqProp, value)
+    observed.seqChanged(patch)
+  }
+
   def remove[E: SeqPropertyCodec](
                                    property: PropertyWithParent[Seq[E]],
                                    index: Int,

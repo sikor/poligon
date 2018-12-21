@@ -8,7 +8,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 sealed trait Property[T] {
-  def get[R](ref: GenRef.Creator[T] => GenRef[T, R])(implicit rpc: RecordPropertyCodec[T]): Property[R] =
+  def getSubProperty[R](ref: GenRef.Creator[T] => GenRef[T, R])(implicit rpc: RecordPropertyCodec[T]): Property[R] =
     SubProperty.getField(this)(ref)
 
   def getCase[R <: T : ClassTag](implicit upc: UnionPropertyCodec[T]): Opt[Property[R]] =
@@ -32,7 +32,7 @@ sealed trait Property[T] {
   def listen(listener: T => Unit, init: Boolean = false)(o: PropertyObservers)(implicit codec: PropertyCodec[T]): Unit = {
     o.observe(this, new PropertyObserver[T] {
       override def propertyChanged(property: Property[T]): Unit = {
-        listener(property.getValue)
+        listener(property.get)
       }
 
       override def propertyRemoved(property: Property[T]): Unit = {}
@@ -40,11 +40,11 @@ sealed trait Property[T] {
       override def seqChanged(patch: SeqPatch[_]): Unit = {}
     })
     if (init) {
-      listener(getValue)
+      listener(get)
     }
   }
 
-  def getValue(implicit codec: PropertyCodec[T]): T = codec.readProperty(this.asInstanceOf[codec.PropertyType])
+  def get(implicit codec: PropertyCodec[T]): T = codec.readProperty(this.asInstanceOf[codec.PropertyType])
 
 }
 

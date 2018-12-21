@@ -3,9 +3,8 @@ package databinding
 import com.avsystem.commons.misc.Opt
 import databinding.ObjectsPanelPresenter.ActionStatus.Success
 import databinding.ObjectsPanelPresenter._
-import io.udash.properties.HasModelPropertyCreator
-import io.udash.properties.seq.{ReadableSeqProperty, SeqProperty}
-import io.udash.properties.single.CastableProperty
+import poligon.polyproperty.PropertyObserver.PropertyObservers
+import poligon.polyproperty._
 
 
 /**
@@ -31,6 +30,8 @@ object ObjectsPanelPresenter {
 
   case class Action(status: ActionStatus, description: String)
 
+  object Action extends HasSimplePropertyCodec[Action]
+
   sealed trait Resource {
     def name: String
   }
@@ -39,35 +40,33 @@ object ObjectsPanelPresenter {
 
   case class MultiResource(name: String, value: Map[Int, String], lastAction: Opt[Action] = Opt.Empty) extends Resource
 
+  object Resource extends HasUnionPropertyCodec[Resource]
+
   case class ObjectInstance(id: Int, resources: Seq[Resource], lastAction: Opt[Action] = Opt.Empty)
 
   case class SomeObject(name: String, instances: Seq[ObjectInstance], lastAction: Opt[Action] = Opt.Empty)
 
-  case class ObjectsPanelModel(objects: Seq[SomeObject])
+  object ObjectInstance extends HasRecordPropertyCodec[ObjectInstance]
 
-  object ObjectInstance extends HasModelPropertyCreator[ObjectInstance]
+  object SomeObject extends HasRecordPropertyCodec[SomeObject]
 
-  object SomeObject extends HasModelPropertyCreator[SomeObject]
-
-  object ObjectsPanelModel extends HasModelPropertyCreator[ObjectsPanelModel]
 
 }
 
 class ObjectsPanelPresenter extends Presenter {
-  private val model: SeqProperty[SomeObject, CastableProperty[SomeObject]] = {
-    SeqProperty(
-      SomeObject("object 1", Vector(
-        ObjectInstance(3, Vector(
-          SingleResource("resource 1", "value1"),
-          MultiResource("multi resource", Map(2 -> "value 2", 3 -> "value 3")))))))
+  private val model: PropertyWithParent[Seq[SomeObject]] = {
+    PropertyWithParent(
+      Seq(
+        SomeObject("object 1", Vector(
+          ObjectInstance(3, Vector(
+            SingleResource("resource 1", "value1"),
+            MultiResource("multi resource", Map(2 -> "value 2", 3 -> "value 3"))))))))
   }
 
-  def getModel: ReadableSeqProperty[SomeObject, CastableProperty[SomeObject]] = model
+  def getModel: Property[Seq[SomeObject]] = model.property
 
-  def setResourceValue(o: String, instance: Int, resource: String, resourceInstance: Option[Int], value: String): Unit = {
-    val resourceModel = model.elemProperties.find(p => p.get.name == o).get.asModel
-      .subSeq(_.instances).elemProperties.find(p => p.get.id == instance).get.asModel
-      .subSeq(_.resources).elemProperties.find(p => p.get.name == resource).get
+  def setResourceValue(o: String, instance: Int, resource: String, resourceInstance: Option[Int], value: String)(implicit po: PropertyObservers): Unit = {
+    val resourceModel = findResource(o, instance, resource)
 
     val newVal = resourceModel.get match {
       case s: SingleResource => SingleResource(resource, value, Opt(Action(Success, s"value set: $value")))
@@ -79,24 +78,37 @@ class ObjectsPanelPresenter extends Presenter {
     resourceModel.set(newVal)
   }
 
-  def addObject(o: String): Unit = {
+  def addObject(o: String)(implicit po: PropertyObservers): Unit = {
     model.append(SomeObject(o, Seq.empty))
   }
 
-  def addInstance(o: String, i: Int): Unit = {
-    val objectModel = model.elemProperties.find(p => p.get.name == o).get.asModel
-    objectModel.subSeq(_.instances).append(ObjectInstance(i, Seq.empty))
-    objectModel.subProp(_.lastAction).set(Opt(Action(Success, s"instance added: $i")))
+  def addInstance(o: String, i: Int)(implicit po: PropertyObservers): Unit = {
+    val objectModel = findObject(o)
+    objectModel.getSubProperty(_.ref(_.instances)).append(ObjectInstance(i, Seq.empty))
+    objectModel.getSubProperty(_.ref(_.lastAction)).set(Opt(Action(Success, s"instance added: $i")))
   }
 
-  def addResource(o: String, i: Int, r: String, value: String): Unit = {
-    model.elemProperties.find(p => p.get.name == o).get.asModel
-      .subSeq(_.instances).elemProperties.find(p => p.get.id == i).get.asModel
-      .subSeq(_.resources).append(SingleResource(r, value))
+  def addResource(o: String, i: Int, r: String, value: String)(implicit po: PropertyObservers): Unit = {
+    findObjectInstance(o, i)
+      .getSubProperty(_.ref(_.resources)).append[Resource](SingleResource(r, value))
   }
 
-  def removeObject(o: String): Unit = {
+  def removeObject(o: String)(implicit po: PropertyObservers): Unit = {
     val idx = model.get.indexWhere(_.name == o)
-    model.remove(idx, 1)
+    model.remove[SomeObject](idx, 1)
+  }
+
+  private def findResource(o: String, instance: Int, resource: String) = {
+    findObjectInstance(o, instance)
+      .getSubProperty(_.ref(_.resources)).getSeq[Resource].find(p => p.get.name == resource).get
+  }
+
+  private def findObjectInstance(o: String, instance: Int) = {
+    findObject(o)
+      .getSubProperty(_.ref(_.instances)).getSeq[ObjectInstance].find(p => p.get.id == instance).get
+  }
+
+  private def findObject(o: String) = {
+    model.getSeq[SomeObject].find(p => p.get.name == o).get
   }
 }
