@@ -1,6 +1,5 @@
 package databinding
 
-import com.avsystem.commons.misc.Opt
 import databinding.ObjectsPanelPresenter.ActionStatus.Success
 import databinding.ObjectsPanelPresenter._
 import poligon.polyproperty.PropertyObserver.PropertyObservers
@@ -36,15 +35,19 @@ object ObjectsPanelPresenter {
     def name: String
   }
 
-  case class SingleResource(name: String, value: String, lastAction: Opt[Action] = Opt.Empty) extends Resource
+  case class ResourceInstance(idx: Int, value: String)
 
-  case class MultiResource(name: String, value: Map[Int, String], lastAction: Opt[Action] = Opt.Empty) extends Resource
+  object ResourceInstance extends HasRecordPropertyCodec[ResourceInstance]
+
+  case class SingleResource(name: String, value: String, lastAction: Option[Action] = None) extends Resource
+
+  case class MultiResource(name: String, value: Seq[ResourceInstance], lastAction: Option[Action] = None) extends Resource
 
   object Resource extends HasUnionPropertyCodec[Resource]
 
-  case class ObjectInstance(id: Int, resources: Seq[Resource], lastAction: Opt[Action] = Opt.Empty)
+  case class ObjectInstance(id: Int, resources: Seq[Resource], lastAction: Option[Action] = None)
 
-  case class SomeObject(name: String, instances: Seq[ObjectInstance], lastAction: Opt[Action] = Opt.Empty)
+  case class SomeObject(name: String, instances: Seq[ObjectInstance], lastAction: Option[Action] = None)
 
   object ObjectInstance extends HasRecordPropertyCodec[ObjectInstance]
 
@@ -60,7 +63,7 @@ class ObjectsPanelPresenter extends Presenter {
         SomeObject("object 1", Vector(
           ObjectInstance(3, Vector(
             SingleResource("resource 1", "value1"),
-            MultiResource("multi resource", Map(2 -> "value 2", 3 -> "value 3"))))))))
+            MultiResource("multi resource", Seq(ResourceInstance(2, "value 2"), ResourceInstance(3, "value 3")))))))))
   }
 
   def getModel: Property[Seq[SomeObject]] = model.property
@@ -69,10 +72,10 @@ class ObjectsPanelPresenter extends Presenter {
     val resourceModel = findResource(o, instance, resource)
 
     val newVal = resourceModel.get match {
-      case s: SingleResource => SingleResource(resource, value, Opt(Action(Success, s"value set: $value")))
+      case s: SingleResource => SingleResource(resource, value, Some(Action(Success, s"value set: $value")))
       case m: MultiResource =>
-        val newMap = m.value + (resourceInstance.get -> value)
-        MultiResource(resource, newMap, Opt(Action(Success, s"value set: ${resourceInstance.get} -> $value")))
+        val newMap = m.value.map(v => (v.idx, v)).toMap + (resourceInstance.get -> ResourceInstance(resourceInstance.get, value))
+        MultiResource(resource, newMap.values.toSeq, Some(Action(Success, s"value set: ${resourceInstance.get} -> $value")))
     }
 
     resourceModel.set(newVal)
@@ -85,7 +88,7 @@ class ObjectsPanelPresenter extends Presenter {
   def addInstance(o: String, i: Int)(implicit po: PropertyObservers): Unit = {
     val objectModel = findObject(o)
     objectModel.getSubProperty(_.ref(_.instances)).append(ObjectInstance(i, Seq.empty))
-    objectModel.getSubProperty(_.ref(_.lastAction)).set(Opt(Action(Success, s"instance added: $i")))
+    objectModel.getSubProperty(_.ref(_.lastAction)).set(Some(Action(Success, s"instance added: $i")))
   }
 
   def addResource(o: String, i: Int, r: String, value: String)(implicit po: PropertyObservers): Unit = {

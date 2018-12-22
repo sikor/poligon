@@ -50,6 +50,15 @@ object PropertyCodec {
   implicit val dateCodec: SimplePropertyCodec[JDate] = SimplePropertyCodec.materialize[JDate]
   implicit val instanceCodec: SimplePropertyCodec[Instant] = SimplePropertyCodec.materialize[Instant]
 
+  private def someCodec[T: PropertyCodec]: RecordPropertyCodec[Some[T]] = RecordPropertyCodec.materialize[Some[T]]
+
+  private val noneCodec: SimplePropertyCodec[None.type] = SimplePropertyCodec.materialize[None.type]
+
+  implicit def optionCodec[T: PropertyCodec]: UnionPropertyCodec[Option[T]] = new UnionPropertyCodec[Option[T]](
+    List(new Predefined[Some[T]]("Some", implicitly[ClassTag[Some[T]]], someCodec[T]),
+      new Predefined[None.type]("None", implicitly[ClassTag[None.type]], noneCodec))
+  )
+
   implicit def seqCodec[E: PropertyCodec]: SeqPropertyCodec[E] = new SeqPropertyCodec[E]()
 
   def apply[T](implicit v: PropertyCodec[T]): PropertyCodec[T] = v

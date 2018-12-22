@@ -2,27 +2,30 @@ package databinding
 
 import com.vaadin.ui._
 import databinding.ObjectsPanelPresenter._
-import databinding.properties.Binder
+import databinding.properties.{Binder, Comp}
 import io.udash.properties.single.{CastableProperty, ReadableProperty}
+import poligon.polyproperty.Property
+import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 object ObjectPanelView {
 
-  def createObjectPanelView(presenter: ObjectsPanelPresenter): Component = {
+  def createObjectPanelView(presenter: ObjectsPanelPresenter): Comp = Comp.dynamic { po: PropertyObservers =>
     val objects = new VerticalLayout()
     val objectName = new TextField("object name")
     val addObjectButton = new Button("add object")
-    addObjectButton.addClickListener(_ => presenter.addObject(objectName.getValue))
+    addObjectButton.addClickListener(_ => presenter.addObject(objectName.getValue)(po))
     objects.addComponent(objectName)
     objects.addComponent(addObjectButton)
-    Binder.bindLayoutStructure(presenter.getModel, objects) { p =>
+    val objectsList = new VerticalLayout()
+    Binder.bindLayout(presenter.getModel, objectsList) { p =>
       createObjectTile(presenter, p)
-    }
+    }.bind(po)
   }
 
-  private def createObjectTile(presenter: ObjectsPanelPresenter, p: CastableProperty[SomeObject]) = {
+  private def createObjectTile(presenter: ObjectsPanelPresenter, p: Property[SomeObject]): Comp = Comp.dynamic { po: PropertyObservers =>
     val instances = new VerticalLayout()
     val removeObjectButton = new Button("remove")
-    removeObjectButton.addClickListener(_ => presenter.removeObject(p.get.name))
+    removeObjectButton.addClickListener(_ => presenter.removeObject(p.get.name)(po))
     val instanceNum = new Slider("instance number")
     val addInstanceButton = new Button("add instance")
     instances.addComponent(Binder.bindVaadinProperty(p.transform(o => s"${o.name} (status: ${o.lastAction})"), new Label()))
@@ -30,9 +33,9 @@ object ObjectPanelView {
     addInstanceButton.addClickListener(_ => presenter.addInstance(p.get.name, instanceNum.getValue.toInt))
     instances.addComponent(instanceNum)
     instances.addComponent(addInstanceButton)
-    Binder.bindLayoutStructure(p.transformToSeq((i: SomeObject) => i.instances), instances) { i =>
+    Binder.bindLayout(p.getSubProperty(_.ref(_.instances)), instances) { i =>
       createInstanceTile(presenter, p, i)
-    }
+    }.bind(po)
   }
 
   private def createInstanceTile(presenter: ObjectsPanelPresenter, p: CastableProperty[SomeObject], i: ReadableProperty[ObjectInstance]) = {
