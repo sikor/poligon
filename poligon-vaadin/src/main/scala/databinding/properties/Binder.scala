@@ -3,7 +3,7 @@ package databinding.properties
 import com.vaadin.ui.{AbstractOrderedLayout, Component}
 import io.udash.properties.seq.ReadableSeqProperty
 import io.udash.properties.single.ReadableProperty
-import poligon.polyproperty.{Property, PropertyCodec, SubProperty}
+import poligon.polyproperty.{Obs, Property, PropertyCodec, SubProperty}
 
 
 /**
@@ -78,7 +78,7 @@ object Binder {
     layout
   }
 
-  def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Property[T], label: P): Comp = Comp.dynamic { o =>
+  def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: P): Comp = Comp.dynamic { o =>
     property.listen(v => label.setValue(v), init = true)(o)
     label
   }

@@ -28,9 +28,9 @@ object ObjectPanelView {
     removeObjectButton.addClickListener(_ => presenter.removeObject(p.get.name)(po))
     val instanceNum = new Slider("instance number")
     val addInstanceButton = new Button("add instance")
-    instances.addComponent(Binder.bindVaadinProperty(p.transform(o => s"${o.name} (status: ${o.lastAction})"), new Label()))
+    instances.addComponent(Binder.bindSimple(p.map(o => s"${o.name} (status: ${o.lastAction})"), new Label()).bind(po))
     instances.addComponent(removeObjectButton)
-    addInstanceButton.addClickListener(_ => presenter.addInstance(p.get.name, instanceNum.getValue.toInt))
+    addInstanceButton.addClickListener(_ => presenter.addInstance(p.get.name, instanceNum.getValue.toInt)(po))
     instances.addComponent(instanceNum)
     instances.addComponent(addInstanceButton)
     Binder.bindLayout(p.getSubProperty(_.ref(_.instances)), instances) { i =>
@@ -38,9 +38,9 @@ object ObjectPanelView {
     }.bind(po)
   }
 
-  private def createInstanceTile(presenter: ObjectsPanelPresenter, p: CastableProperty[SomeObject], i: ReadableProperty[ObjectInstance]) = {
+  private def createInstanceTile(presenter: ObjectsPanelPresenter, p: Property[SomeObject], i: Property[ObjectInstance]): Comp = Comp.dynamic { po: PropertyObservers =>
     val resources = new VerticalLayout()
-    resources.addComponent(Binder.bindVaadinProperty(i.transform(_.id.toString), new Label()))
+    resources.addComponent(Binder.bindSimple(i.map(_.id.toString), new Label()).bind(po))
     val resourceName = new TextField("resource name")
     val resourceValue = new TextField("resource value")
     val addResourceButton = new Button("add resource")

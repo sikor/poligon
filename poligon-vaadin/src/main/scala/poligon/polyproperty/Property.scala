@@ -46,6 +46,9 @@ sealed trait Property[T] {
 
   def get(implicit codec: PropertyCodec[T]): T = codec.readProperty(this.asInstanceOf[codec.PropertyType])
 
+  def obs(implicit codec: PropertyCodec[T]): Obs[T] = new PropertyObs[T](this, codec)
+
+  def map[R](f: T => R)(implicit codec: PropertyCodec[T]): Obs[R] = obs.map(f)
 }
 
 object Property {
