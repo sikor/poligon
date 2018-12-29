@@ -3,7 +3,6 @@ package databinding
 import com.vaadin.ui._
 import databinding.ObjectsPanelPresenter._
 import databinding.properties.{Binder, Comp}
-import io.udash.properties.single.{CastableProperty, ReadableProperty}
 import poligon.polyproperty.Property
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
@@ -20,6 +19,8 @@ object ObjectPanelView {
     Binder.bindLayout(presenter.getModel, objectsList) { p =>
       createObjectTile(presenter, p)
     }.bind(po)
+    objects.addComponent(objectsList)
+    objects
   }
 
   private def createObjectTile(presenter: ObjectsPanelPresenter, p: Property[SomeObject]): Comp = Comp.dynamic { po: PropertyObservers =>
@@ -33,9 +34,12 @@ object ObjectPanelView {
     addInstanceButton.addClickListener(_ => presenter.addInstance(p.get.name, instanceNum.getValue.toInt)(po))
     instances.addComponent(instanceNum)
     instances.addComponent(addInstanceButton)
+    val instancesList = new VerticalLayout()
     Binder.bindLayout(p.getSubProperty(_.ref(_.instances)), instances) { i =>
       createInstanceTile(presenter, p, i)
     }.bind(po)
+    instances.addComponent(instancesList)
+    instances
   }
 
   private def createInstanceTile(presenter: ObjectsPanelPresenter, p: Property[SomeObject], i: Property[ObjectInstance]): Comp = Comp.dynamic { po: PropertyObservers =>
@@ -44,33 +48,41 @@ object ObjectPanelView {
     val resourceName = new TextField("resource name")
     val resourceValue = new TextField("resource value")
     val addResourceButton = new Button("add resource")
-    addResourceButton.addClickListener(_ => presenter.addResource(p.get.name, i.get.id, resourceName.getValue, resourceValue.getValue))
+    addResourceButton.addClickListener(_ => presenter.addResource(p.get.name, i.get.id, resourceName.getValue, resourceValue.getValue)(po))
     resources.addComponent(resourceName)
     resources.addComponent(resourceValue)
     resources.addComponent(addResourceButton)
-    Binder.bindLayoutStructure(i.transformToSeq((oi: ObjectInstance) => oi.resources), resources) { r =>
+    val resourcesList = new VerticalLayout()
+    Binder.bindLayout(i.getSubProperty(_.ref(_.resources)), resourcesList) { r =>
       createResourceTile(presenter, p, i, r)
     }
+    resources.addComponent(resourcesList)
+    resources
   }
 
   private def createResourceTile(
                                   presenter: ObjectsPanelPresenter,
-                                  p: CastableProperty[SomeObject],
-                                  i: ReadableProperty[ObjectInstance],
-                                  r: ReadableProperty[Resource]) = {
-    val prop = r.transform {
+                                  p: Property[SomeObject],
+                                  i: Property[ObjectInstance],
+                                  r: Property[Resource]): Comp = Comp.dynamic { po: PropertyObservers =>
+    val prop = r.map {
       case SingleResource(name, value, status) =>
         s"${p.get.name}/${i.get.id}/$name = $value (status: $status)"
       case MultiResource(name, values, status) =>
         s"${p.get.name}/${i.get.id}/$name = $values (status: $status)"
     }
-    val label = Binder.bindVaadinProperty(prop, new Label())
+    val label = Binder.bindSimple(prop, new Label()).bind(po)
     val field = new TextField("new value")
     val button = new Button("set")
-    button.addClickListener(_ => presenter.setResourceValue(p.get.name, i.get.id, r.get.name, r.get match {
-      case _: SingleResource => None
-      case m: MultiResource => Some(m.value.headOption.map(_._1).getOrElse(0))
-    }, field.getValue))
+
+    def resourceId: Option[Int] = {
+      r.get match {
+        case _: SingleResource => None
+        case m: MultiResource => Some(m.value.headOption.map(_.idx).getOrElse(0))
+      }
+    }
+
+    button.addClickListener(_ => presenter.setResourceValue(p.get.name, i.get.id, r.get.name, resourceId, field.getValue)(po))
     new HorizontalLayout(label, field, button)
   }
 }
