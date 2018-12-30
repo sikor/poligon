@@ -15,8 +15,7 @@ object ObjectPanelView {
     addObjectButton.addClickListener(_ => presenter.addObject(objectName.getValue)(po))
     objects.addComponent(objectName)
     objects.addComponent(addObjectButton)
-    val objectsList = new VerticalLayout()
-    Binder.bindLayout(presenter.getModel, objectsList) { p =>
+    val objectsList = Binder.layout(presenter.getModel) { p =>
       createObjectTile(presenter, p)
     }.bind(po)
     objects.addComponent(objectsList)
@@ -29,13 +28,12 @@ object ObjectPanelView {
     removeObjectButton.addClickListener(_ => presenter.removeObject(p.get.name)(po))
     val instanceNum = new Slider("instance number")
     val addInstanceButton = new Button("add instance")
-    instances.addComponent(Binder.bindSimple(p.map(o => s"${o.name} (status: ${o.lastAction})"), new Label()).bind(po))
+    instances.addComponent(Binder.label(p.map(o => s"${o.name} (status: ${o.lastAction})")).bind(po))
     instances.addComponent(removeObjectButton)
     addInstanceButton.addClickListener(_ => presenter.addInstance(p.get.name, instanceNum.getValue.toInt)(po))
     instances.addComponent(instanceNum)
     instances.addComponent(addInstanceButton)
-    val instancesList = new VerticalLayout()
-    Binder.bindLayout(p.getSubProperty(_.ref(_.instances)), instancesList) { i =>
+    val instancesList = Binder.layout(p.getSubProperty(_.ref(_.instances))) { i =>
       createInstanceTile(presenter, p, i)
     }.bind(po)
     instances.addComponent(instancesList)
@@ -44,7 +42,7 @@ object ObjectPanelView {
 
   private def createInstanceTile(presenter: ObjectsPanelPresenter, p: Property[SomeObject], i: Property[ObjectInstance]): Comp = Comp.dynamic { po: PropertyObservers =>
     val resources = new VerticalLayout()
-    resources.addComponent(Binder.bindSimple(i.map(_.id.toString), new Label()).bind(po))
+    resources.addComponent(Binder.label(i.map(_.id.toString)).bind(po))
     val resourceName = new TextField("resource name")
     val resourceValue = new TextField("resource value")
     val addResourceButton = new Button("add resource")
@@ -52,8 +50,7 @@ object ObjectPanelView {
     resources.addComponent(resourceName)
     resources.addComponent(resourceValue)
     resources.addComponent(addResourceButton)
-    val resourcesList = new VerticalLayout()
-    Binder.bindLayout(i.getSubProperty(_.ref(_.resources)), resourcesList) { r =>
+    val resourcesList = Binder.layout(i.getSubProperty(_.ref(_.resources))) { r =>
       createResourceTile(presenter, p, i, r)
     }.bind(po)
     resources.addComponent(resourcesList)
@@ -71,7 +68,7 @@ object ObjectPanelView {
       case MultiResource(name, values, status) =>
         s"${p.get.name}/${i.get.id}/$name = $values (status: $status)"
     }
-    val label = Binder.bindSimple(prop, new Label()).bind(po)
+    val label = Binder.label(prop).bind(po)
     val field = new TextField("new value")
     val button = new Button("set")
 

@@ -1,6 +1,6 @@
 package databinding.properties
 
-import com.vaadin.ui.{AbstractOrderedLayout, Component}
+import com.vaadin.ui._
 import poligon.polyproperty.{Obs, Property, PropertyCodec, SubProperty}
 
 
@@ -29,10 +29,22 @@ import poligon.polyproperty.{Obs, Property, PropertyCodec, SubProperty}
   * - in summary, the only interesting case is when we have dynamic child that we want to replace/remove (seq/union/subpresenter)
   */
 object Binder {
-  def bindLayout[L <: AbstractOrderedLayout, E](
-                                                 property: Property[Seq[E]],
-                                                 layout: L)(
-                                                 childFactory: Property[E] => Comp): Comp = Comp.dynamic { po =>
+
+  sealed trait LayoutDescription
+
+  case object Vertical extends LayoutDescription
+
+  case object Horizontal extends LayoutDescription
+
+  def layout[E](
+                     property: Property[Seq[E]],
+                     layoutDescription: LayoutDescription = Vertical)(
+                     childFactory: Property[E] => Comp): Comp = Comp.dynamic { po =>
+    val layout = layoutDescription match {
+      case Vertical => new VerticalLayout()
+      case Horizontal => new HorizontalLayout()
+    }
+
     require(layout.getComponentCount == 0)
 
     SubProperty.getSeq(property).foreach { p =>
@@ -52,7 +64,9 @@ object Binder {
     layout
   }
 
-  def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: P): Comp =
+  def label(property: Obs[String]): Comp = bindSimple(property, new Label())
+
+  private def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: P): Comp =
     Comp.dynamic { o =>
       property.listen(v => label.setValue(v), init = true)(o)
       label
