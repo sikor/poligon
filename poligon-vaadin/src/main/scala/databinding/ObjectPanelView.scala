@@ -55,7 +55,7 @@ object ObjectPanelView {
     val resourcesList = new VerticalLayout()
     Binder.bindLayout(i.getSubProperty(_.ref(_.resources)), resourcesList) { r =>
       createResourceTile(presenter, p, i, r)
-    }
+    }.bind(po)
     resources.addComponent(resourcesList)
     resources
   }
