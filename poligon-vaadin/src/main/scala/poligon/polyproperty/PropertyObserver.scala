@@ -50,17 +50,19 @@ object PropertyObserver {
     private val root: PropertyObservers = parent.map(_.root).getOrElse(this)
 
     private val map = new ObserversMap()
-    private val subObservers: mutable.HashSet[PropertyObservers] = new mutable.HashSet()
+    private val subObservers: mutable.HashMap[AnyRef, PropertyObservers] = new mutable.HashMap()
 
     def createSubObservers(): PropertyObservers = {
-      val r = new PropertyObservers(this.opt)
-      subObservers += r
-      r
+      new PropertyObservers(this.opt)
     }
 
-    def dispose(): Unit = {
-      parent.foreach(_.subObservers.remove(this))
-      clearAllData()
+    def registerSubObservers(key: AnyRef, po: PropertyObservers): Unit = {
+      require(!subObservers.contains(key))
+      subObservers.put(key, po)
+    }
+
+    def deregisterSubObservers(key: AnyRef): Unit = {
+      subObservers.remove(key)
     }
 
     def observe[T](property: Property[T], propertyObserver: PropertyObserver[T]): Unit = {
@@ -82,16 +84,10 @@ object PropertyObserver {
     private def traverseAll(onObserversMap: ObserversMap => Unit): Unit = {
       def visit(po: PropertyObservers): Unit = {
         onObserversMap(po.map)
-        po.subObservers.foreach(visit)
+        po.subObservers.values.foreach(visit)
       }
 
       visit(root)
-    }
-
-    private def clearAllData(): Unit = {
-      map.clear()
-      subObservers.foreach(_.clearAllData())
-      subObservers.clear()
     }
   }
 

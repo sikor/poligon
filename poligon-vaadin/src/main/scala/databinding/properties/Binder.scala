@@ -34,26 +34,28 @@ object Binder {
                                                  layout: L)(
                                                  childFactory: Property[E] => Comp): Comp = Comp.dynamic { po =>
     require(layout.getComponentCount == 0)
+
     SubProperty.getSeq(property).foreach { p =>
-      layout.addComponent(childFactory(p).bind(po.createSubObservers()))
+      layout.addComponent(childFactory(p).bind(po))
     }
     property.listenStructure[E] { patch =>
       patch.removed.foreach { _ =>
         val removedComponent = layout.getComponent(patch.idx)
-        Comp.unbind(removedComponent)
+        po.deregisterSubObservers(removedComponent)
         layout.removeComponent(removedComponent)
       }
       patch.added.reverse.foreach { a =>
-        val c = childFactory(a).bind(po.createSubObservers())
+        val c = childFactory(a).bind(po)
         layout.addComponent(c, patch.idx)
       }
     }(po)
     layout
   }
 
-  def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: P): Comp = Comp.dynamic { o =>
-    property.listen(v => label.setValue(v), init = true)(o)
-    label
-  }
+  def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: P): Comp =
+    Comp.dynamic { o =>
+      property.listen(v => label.setValue(v), init = true)(o)
+      label
+    }
 
 }
