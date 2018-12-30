@@ -7,7 +7,7 @@ import com.github.ghik.silencer.silent
 import com.vaadin.server._
 import com.vaadin.shared.communication.{ServerRpc, SharedState}
 import com.vaadin.ui.declarative.DesignContext
-import com.vaadin.ui.{Component, HasComponents, UI}
+import com.vaadin.ui.{AbstractComponent, Component, HasComponents, UI}
 import elemental.json.JsonObject
 import org.jsoup.nodes.Element
 import poligon.polyproperty.PropertyObserver.PropertyObservers
@@ -20,7 +20,7 @@ object DynamicComponent {
   }
 }
 
-class DynamicComponent(private val _wrapped: Component, private val listeners: PropertyObservers) extends Component {
+class DynamicComponent(private val _wrapped: Component, private val listeners: PropertyObservers) extends AbstractComponent {
 
   private def wrapped: Component = _wrapped
 

@@ -35,7 +35,7 @@ object ObjectPanelView {
     instances.addComponent(instanceNum)
     instances.addComponent(addInstanceButton)
     val instancesList = new VerticalLayout()
-    Binder.bindLayout(p.getSubProperty(_.ref(_.instances)), instances) { i =>
+    Binder.bindLayout(p.getSubProperty(_.ref(_.instances)), instancesList) { i =>
       createInstanceTile(presenter, p, i)
     }.bind(po)
     instances.addComponent(instancesList)
