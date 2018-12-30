@@ -5,7 +5,7 @@ import databinding.properties.Comp.{DynamicComp, StaticComp}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 sealed trait Comp {
-  def bind(parentPo: PropertyObservers): Component = {
+  def looseBind(parentPo: PropertyObservers): Component = {
     this match {
       case s: StaticComp => s.staticBind
       case d: DynamicComp =>
@@ -13,6 +13,13 @@ sealed trait Comp {
         val c = d.bindDynamic(po)
         parentPo.registerSubObservers(c, po)
         c
+    }
+  }
+
+  def bind(parentPo: PropertyObservers): Component = {
+    this match {
+      case s: StaticComp => s.staticBind
+      case d: DynamicComp => d.bindDynamic(parentPo)
     }
   }
 }

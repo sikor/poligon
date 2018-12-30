@@ -14,24 +14,24 @@ object MainView {
     }
   }
 
-  def create(presenter: MainViewPresenter, viewFactory: ViewFactory): Comp = Comp.dynamic { observed: PropertyObservers =>
+  def create(presenter: MainViewPresenter, viewFactory: ViewFactory): Comp = Comp.dynamic { po: PropertyObservers =>
     val layout = new VerticalLayout()
     presenter.getModel.listen({ menu =>
       val menuBar = new MenuBar()
       menu.menu.categories.foreach { c =>
         val category = menuBar.addItem(c.name, null)
         c.items.foreach { i =>
-          category.addItem(i.name, _ => presenter.menuItemSelected(c.name, i.name)(observed))
+          category.addItem(i.name, _ => presenter.menuItemSelected(c.name, i.name)(po))
         }
       }
       MainView.replaceOrAdd(layout, 0, menuBar)
-    }, init = true)(observed)
+    }, init = true)(po)
 
-    layout.addComponent(viewFactory.createView(presenter.executeTasksPresenter, observed))
+    layout.addComponent(viewFactory.createView(presenter.executeTasksPresenter).bind(po))
 
     presenter.getSubpresenter.listen({ subPresenter =>
-      MainView.replaceOrAdd(layout, 2, viewFactory.createView(subPresenter, observed))
-    }, init = true)(observed)
+      MainView.replaceOrAdd(layout, 2, viewFactory.createView(subPresenter).looseBind(po))
+    }, init = true)(po)
 
     layout
   }

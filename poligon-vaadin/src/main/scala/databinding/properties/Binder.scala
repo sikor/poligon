@@ -48,7 +48,7 @@ object Binder {
     require(layout.getComponentCount == 0)
 
     SubProperty.getSeq(property).foreach { p =>
-      layout.addComponent(childFactory(p).bind(po))
+      layout.addComponent(childFactory(p).looseBind(po))
     }
     property.listenStructure[E] { patch =>
       patch.removed.foreach { _ =>
@@ -57,7 +57,7 @@ object Binder {
         layout.removeComponent(removedComponent)
       }
       patch.added.reverse.foreach { a =>
-        val c = childFactory(a).bind(po)
+        val c = childFactory(a).looseBind(po)
         layout.addComponent(c, patch.idx)
       }
     }(po)

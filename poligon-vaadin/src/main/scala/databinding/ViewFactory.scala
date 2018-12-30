@@ -1,8 +1,7 @@
 package databinding
 
-import com.vaadin.ui.Component
-import poligon.polyproperty.PropertyObserver.PropertyObservers
+import databinding.properties.Comp
 
 trait ViewFactory {
-  def createView(presenter: Presenter, observed: PropertyObservers): Component
+  def createView(presenter: Presenter): Comp
 }

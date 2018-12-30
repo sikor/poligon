@@ -1,13 +1,13 @@
 package databinding
 
-import com.vaadin.ui.{Component, Label}
-import poligon.polyproperty.PropertyObserver.PropertyObservers
+import com.vaadin.ui.Label
+import databinding.properties.Comp
 
 object DefaultViewFactory extends ViewFactory {
-  override def createView(presenter: Presenter, observed: PropertyObservers): Component = presenter match {
-    case m: MainViewPresenter => MainView.create(m, this).bind(observed)
-    case o: ObjectsPanelPresenter => ObjectPanelView.createObjectPanelView(o).bind(observed)
-    case e: ExecuteTasksPresenter => ExecuteTasksButton.create(e).bind(observed)
-    case _ => new Label("view not found")
+  override def createView(presenter: Presenter): Comp = presenter match {
+    case m: MainViewPresenter => MainView.create(m, this)
+    case o: ObjectsPanelPresenter => ObjectPanelView.createObjectPanelView(o)
+    case e: ExecuteTasksPresenter => ExecuteTasksButton.create(e)
+    case _ => Comp.static(new Label("view not found"))
   }
 }
