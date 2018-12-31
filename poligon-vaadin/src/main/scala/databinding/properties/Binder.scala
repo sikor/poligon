@@ -37,9 +37,9 @@ object Binder {
   case object Horizontal extends LayoutDescription
 
   def layout[E](
-                     property: Property[Seq[E]],
-                     layoutDescription: LayoutDescription = Vertical)(
-                     childFactory: Property[E] => Comp): Comp = Comp.dynamic { po =>
+                 property: Property[Seq[E]],
+                 layoutDescription: LayoutDescription = Vertical)(
+                 childFactory: Property[E] => Comp): Comp = Comp.dynamic { po =>
     val layout = layoutDescription match {
       case Vertical => new VerticalLayout()
       case Horizontal => new HorizontalLayout()
@@ -72,4 +72,34 @@ object Binder {
       label
     }
 
+  sealed trait WrapperDescription
+
+  case object Panel extends WrapperDescription
+
+  case object Custom extends WrapperDescription
+
+  private class SimpleCustomComponent extends CustomComponent {
+    def setContent(component: Component): Unit = setCompositionRoot(component)
+
+    def getContent: Component = getCompositionRoot
+  }
+
+  def replaceable(property: Obs[Comp], wrapperDescription: WrapperDescription): Comp = Comp.dynamic { po =>
+    val wrapper = wrapperDescription match {
+      case Panel => new Panel()
+      case Custom => new SimpleCustomComponent()
+    }
+    property.listen({ c =>
+      val component = c.looseBind(po)
+      wrapper match {
+        case p: Panel =>
+          po.deregisterSubObservers(p.getContent)
+          p.setContent(component)
+        case s: SimpleCustomComponent =>
+          po.deregisterSubObservers(s.getContent)
+          s.setContent(component)
+      }
+    }, init = true)(po)
+    wrapper
+  }
 }
