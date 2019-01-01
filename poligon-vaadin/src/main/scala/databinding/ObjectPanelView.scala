@@ -12,7 +12,7 @@ import poligon.polyproperty.PropertyObserver.PropertyObservers
 //TODO: styling: https://github.com/vaadin/framework/tree/master/uitest/src/main/java/com/vaadin/tests/themes/valo
 /*
 Plan:
-0. Handle forms
+0. Handle forms - use case: form divided to many components, submit button is in one of them
 1. Use Union property for single/multi resources
 2. Update action statuses after callback from backend (show memory leaks handling)
 3. Move propertyobservers to presenters constructors
