@@ -1,20 +1,25 @@
 package databinding
 
 import com.vaadin.ui._
+import com.vaadin.ui.themes.ValoTheme
 import databinding.ObjectsPanelPresenter._
 import databinding.properties.{Binder, Comp}
 import poligon.polyproperty.Property
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
+//TODO: styling: https://github.com/vaadin/framework/tree/master/uitest/src/main/java/com/vaadin/tests/themes/valo
 object ObjectPanelView {
 
   def createObjectPanelView(presenter: ObjectsPanelPresenter): Comp = Comp.dynamic { po: PropertyObservers =>
     val objects = new VerticalLayout()
+    objects.setSpacing(true)
     val objectName = new TextField("object name")
     val addObjectButton = new Button("add object")
     addObjectButton.addClickListener(_ => presenter.addObject(objectName.getValue)(po))
-    objects.addComponent(objectName)
-    objects.addComponent(addObjectButton)
+    val objectsLabel = new Label("Objects")
+    objectsLabel.addStyleName(ValoTheme.LABEL_H1)
+    objects.addComponent(objectsLabel)
+    objects.addComponent(new HorizontalLayout(objectName, addObjectButton))
     val objectsList = Binder.layout(presenter.getModel) { p =>
       createObjectTile(presenter, p)
     }.bind(po)
@@ -23,33 +28,32 @@ object ObjectPanelView {
   }
 
   private def createObjectTile(presenter: ObjectsPanelPresenter, p: Property[SomeObject]): Comp = Comp.dynamic { po: PropertyObservers =>
-    val instances = new VerticalLayout()
+    val objectTile = new VerticalLayout()
+    objectTile.setSpacing(true)
     val removeObjectButton = new Button("remove")
     removeObjectButton.addClickListener(_ => presenter.removeObject(p.get.name)(po))
     val instanceNum = new Slider("instance number")
     val addInstanceButton = new Button("add instance")
-    instances.addComponent(Binder.label(p.map(o => s"${o.name} (status: ${o.lastAction})")).bind(po))
-    instances.addComponent(removeObjectButton)
+    val objectName = Binder.label(p.map(o => s"Object ${o.name} (status: ${o.lastAction})"), ValoTheme.LABEL_H2).bind(po)
+    objectTile.addComponent(new HorizontalLayout(objectName, removeObjectButton))
     addInstanceButton.addClickListener(_ => presenter.addInstance(p.get.name, instanceNum.getValue.toInt)(po))
-    instances.addComponent(instanceNum)
-    instances.addComponent(addInstanceButton)
+    objectTile.addComponent(new HorizontalLayout(instanceNum, addInstanceButton))
     val instancesList = Binder.layout(p.getSubProperty(_.ref(_.instances))) { i =>
       createInstanceTile(presenter, p, i)
     }.bind(po)
-    instances.addComponent(instancesList)
-    instances
+    objectTile.addComponent(instancesList)
+    objectTile
   }
 
   private def createInstanceTile(presenter: ObjectsPanelPresenter, p: Property[SomeObject], i: Property[ObjectInstance]): Comp = Comp.dynamic { po: PropertyObservers =>
     val resources = new VerticalLayout()
-    resources.addComponent(Binder.label(i.map(_.id.toString)).bind(po))
+    resources.setSpacing(true)
+    resources.addComponent(Binder.label(i.map(instance => s"Instance ${instance.id}"), ValoTheme.LABEL_H3).bind(po))
     val resourceName = new TextField("resource name")
     val resourceValue = new TextField("resource value")
     val addResourceButton = new Button("add resource")
     addResourceButton.addClickListener(_ => presenter.addResource(p.get.name, i.get.id, resourceName.getValue, resourceValue.getValue)(po))
-    resources.addComponent(resourceName)
-    resources.addComponent(resourceValue)
-    resources.addComponent(addResourceButton)
+    resources.addComponent(new HorizontalLayout(resourceName, resourceValue, addResourceButton))
     val resourcesList = Binder.layout(i.getSubProperty(_.ref(_.resources))) { r =>
       createResourceTile(presenter, p, i, r)
     }.bind(po)
@@ -68,7 +72,7 @@ object ObjectPanelView {
       case MultiResource(name, values, status) =>
         s"${p.get.name}/${i.get.id}/$name = $values (status: $status)"
     }
-    val label = Binder.label(prop).bind(po)
+    val resource = Binder.label(prop).bind(po)
     val field = new TextField("new value")
     val button = new Button("set")
 
@@ -80,6 +84,6 @@ object ObjectPanelView {
     }
 
     button.addClickListener(_ => presenter.setResourceValue(p.get.name, i.get.id, r.get.name, resourceId, field.getValue)(po))
-    new HorizontalLayout(label, field, button)
+    new HorizontalLayout(resource, field, button)
   }
 }

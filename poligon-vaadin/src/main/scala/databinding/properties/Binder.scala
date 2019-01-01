@@ -64,7 +64,11 @@ object Binder {
     layout
   }
 
-  def label(property: Obs[String]): Comp = bindSimple(property, new Label())
+  def label(property: Obs[String], styleName: String = ""): Comp = bindSimple(property, {
+    val l = new Label()
+    l.addStyleName(styleName)
+    l
+  })
 
   private def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: => P): Comp =
     Comp.dynamic { o =>
