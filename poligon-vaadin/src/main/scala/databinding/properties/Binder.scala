@@ -66,10 +66,11 @@ object Binder {
 
   def label(property: Obs[String]): Comp = bindSimple(property, new Label())
 
-  private def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: P): Comp =
+  private def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: => P): Comp =
     Comp.dynamic { o =>
-      property.listen(v => label.setValue(v), init = true)(o)
-      label
+      val l = label
+      property.listen(v => l.setValue(v), init = true)(o)
+      l
     }
 
   sealed trait WrapperDescription

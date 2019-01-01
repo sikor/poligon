@@ -1,7 +1,8 @@
 package databinding
 
 import com.vaadin.ui.{Component, MenuBar, VerticalLayout}
-import databinding.properties.Comp
+import databinding.properties.Binder.Custom
+import databinding.properties.{Binder, Comp}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 object MainView {
@@ -16,23 +17,21 @@ object MainView {
 
   def create(presenter: MainViewPresenter, viewFactory: ViewFactory): Comp = Comp.dynamic { po: PropertyObservers =>
     val layout = new VerticalLayout()
-    presenter.getModel.listen({ menu =>
-      val menuBar = new MenuBar()
-      menu.menu.categories.foreach { c =>
+    val menuBar = new MenuBar()
+    presenter.getModel.listen({ model =>
+      menuBar.removeItems()
+      model.menu.categories.foreach { c =>
         val category = menuBar.addItem(c.name, null)
         c.items.foreach { i =>
           category.addItem(i.name, _ => presenter.menuItemSelected(c.name, i.name)(po))
         }
       }
-      MainView.replaceOrAdd(layout, 0, menuBar)
     }, init = true)(po)
+    val content = Binder.replaceable(presenter.getSubpresenter.map(viewFactory.createView), Custom).bind(po)
 
+    layout.addComponent(menuBar)
     layout.addComponent(viewFactory.createView(presenter.executeTasksPresenter).bind(po))
-
-    presenter.getSubpresenter.listen({ subPresenter =>
-      MainView.replaceOrAdd(layout, 2, viewFactory.createView(subPresenter).looseBind(po))
-    }, init = true)(po)
-
+    layout.addComponent(content)
     layout
   }
 }
