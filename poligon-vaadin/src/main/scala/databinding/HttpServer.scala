@@ -36,7 +36,7 @@ object HttpServer {
     override def init(request: VaadinRequest): Unit = {
       implicit val po: PropertyObservers = new PropertyObservers(Opt.Empty)
       val presenter = new MainViewPresenter(new ExecuteTasksPresenter(executeTasksService))
-      val view = DefaultViewFactory.createView(presenter).bind(po)
+      val view = MainView.create(presenter).bind(po)
       setContent(view)
     }
   }

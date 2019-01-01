@@ -1,5 +1,6 @@
 package databinding
 
+import databinding.MainView.MainViewContentPresenter.ObjectsPanelContent
 import databinding.ObjectsPanelPresenter.ActionStatus.Success
 import databinding.ObjectsPanelPresenter._
 import poligon.polyproperty.PropertyObserver.PropertyObservers
@@ -56,7 +57,7 @@ object ObjectsPanelPresenter {
 
 }
 
-class ObjectsPanelPresenter extends Presenter {
+class ObjectsPanelPresenter extends ObjectsPanelContent {
   private val model: PropertyWithParent[Seq[SomeObject]] = {
     PropertyWithParent(
       Seq(

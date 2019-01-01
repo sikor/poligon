@@ -28,7 +28,7 @@ object ExecuteTasksPresenter {
 
 }
 
-class ExecuteTasksPresenter(service: ExecuteTasksService)(implicit ec: ExecutionContext) extends Presenter with StrictLogging {
+class ExecuteTasksPresenter(service: ExecuteTasksService)(implicit ec: ExecutionContext) extends StrictLogging {
   private val model: PropertyWithParent[ExecuteTasksStatus] = PropertyWithParent(NotStarted)
 
   def getModel: Property[ExecuteTasksStatus] = model.property
