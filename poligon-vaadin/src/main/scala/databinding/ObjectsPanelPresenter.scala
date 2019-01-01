@@ -42,7 +42,11 @@ object ObjectsPanelPresenter {
 
   case class SingleResource(name: String, value: String, lastAction: Option[Action] = None) extends Resource
 
+  object SingleResource extends HasRecordPropertyCodec[SingleResource]
+
   case class MultiResource(name: String, value: Seq[ResourceInstance], lastAction: Option[Action] = None) extends Resource
+
+  object MultiResource extends HasRecordPropertyCodec[MultiResource]
 
   object Resource extends HasUnionPropertyCodec[Resource]
 

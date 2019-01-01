@@ -1,13 +1,26 @@
 package databinding
 
+import com.github.ghik.silencer.silent
 import com.vaadin.ui._
 import com.vaadin.ui.themes.ValoTheme
 import databinding.ObjectsPanelPresenter._
+import databinding.properties.Binder.LayoutDescription
 import databinding.properties.{Binder, Comp}
-import poligon.polyproperty.Property
+import poligon.polyproperty.{Obs, Property}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 //TODO: styling: https://github.com/vaadin/framework/tree/master/uitest/src/main/java/com/vaadin/tests/themes/valo
+/*
+Plan:
+1. Use Union property for single/multi resources
+2. Update action statuses after callback from backend (show memory leaks handling)
+3. Move propertyobservers to presenters constructors
+4. Move methods for property listening to Obs, rename propertywithparent.
+5. Components builders
+6. Nice styling of demo
+7. implicit propertyobservers or some more high level way to compose components
+8. Class for handling form data with validation
+ */
 object ObjectPanelView {
 
   def createObjectPanelView(presenter: ObjectsPanelPresenter): Comp = Comp.dynamic { po: PropertyObservers =>
@@ -54,7 +67,7 @@ object ObjectPanelView {
     val addResourceButton = new Button("add resource")
     addResourceButton.addClickListener(_ => presenter.addResource(p.get.name, i.get.id, resourceName.getValue, resourceValue.getValue)(po))
     resources.addComponent(new HorizontalLayout(resourceName, resourceValue, addResourceButton))
-    val resourcesList = Binder.layout(i.getSubProperty(_.ref(_.resources))) { r =>
+    val resourcesList = Binder.layout(i.getSubProperty(_.ref(_.resources)), LayoutDescription.Form) { r =>
       createResourceTile(presenter, p, i, r)
     }.bind(po)
     resources.addComponent(resourcesList)
@@ -85,5 +98,17 @@ object ObjectPanelView {
 
     button.addClickListener(_ => presenter.setResourceValue(p.get.name, i.get.id, r.get.name, resourceId, field.getValue)(po))
     new HorizontalLayout(resource, field, button)
+  }
+
+  @silent
+  private def createSingleResource(
+                                    presenter: ObjectsPanelPresenter,
+                                    s: Obs[SingleResource]): Comp = Comp.dynamic { po: PropertyObservers =>
+    val field = new TextField()
+    s.listen(r => {
+      field.setCaption(r.name)
+      field.setValue(r.value)
+    }, init = true)(po)
+    field
   }
 }

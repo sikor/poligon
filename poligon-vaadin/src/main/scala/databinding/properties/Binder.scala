@@ -1,6 +1,7 @@
 package databinding.properties
 
 import com.vaadin.ui._
+import databinding.properties.Binder.LayoutDescription.{Horizontal, Vertical}
 import poligon.polyproperty.{Obs, Property, PropertyCodec, SubProperty}
 
 
@@ -32,9 +33,15 @@ object Binder {
 
   sealed trait LayoutDescription
 
-  case object Vertical extends LayoutDescription
+  object LayoutDescription {
 
-  case object Horizontal extends LayoutDescription
+    case object Vertical extends LayoutDescription
+
+    case object Horizontal extends LayoutDescription
+
+    case object Form extends LayoutDescription
+
+  }
 
   def layout[E](
                  property: Property[Seq[E]],
@@ -43,6 +50,7 @@ object Binder {
     val layout = layoutDescription match {
       case Vertical => new VerticalLayout()
       case Horizontal => new HorizontalLayout()
+      case LayoutDescription.Form => new FormLayout()
     }
 
     require(layout.getComponentCount == 0)
