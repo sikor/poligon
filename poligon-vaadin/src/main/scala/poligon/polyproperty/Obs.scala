@@ -8,6 +8,8 @@ trait Obs[T] {
   def map[R](f: T => R): Obs[R] = new MapObs[T, R](this, f)
 }
 
+
+//TODO: Merge this two cases into one with default identity map function
 class PropertyObs[T](property: Property[T], codec: PropertyCodec[T]) extends Obs[T] {
   def listen(listener: T => Unit, init: Boolean)(obs: PropertyObservers): Unit = {
     property.listen(listener, init)(obs)(codec)

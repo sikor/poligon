@@ -1,6 +1,7 @@
 package poligon.polyproperty
 
 import com.avsystem.commons.serialization.GenRef
+import com.github.ghik.silencer.silent
 import poligon.polyproperty.PropertyObserver.{PropertyObservers, SeqPatch}
 import poligon.{ClassTag, Opt}
 
@@ -14,8 +15,9 @@ sealed trait Property[T] {
   def getCase[R <: T : ClassTag](implicit upc: UnionPropertyCodec[T]): Opt[Property[R]] =
     SubProperty.getCase[T, R](this)
 
-  def getSeq[E](implicit ev: Property[T] =:= Property[Seq[E]]): Seq[Property[E]] =
-    SubProperty.getSeq(ev.apply(this))
+  @silent
+  def getSeq[E](implicit ev: T =:= Seq[E]): Seq[Property[E]] =
+    SubProperty.getSeq(this.asInstanceOf[Property[Seq[E]]])
 
   def listenStructure[E](listener: SeqPatch[E] => Unit)(o: PropertyObservers)(implicit ev: Property[T] =:= Property[Seq[E]]): Unit = {
     o.observe(ev.apply(this), new PropertyObserver[Seq[E]] {
