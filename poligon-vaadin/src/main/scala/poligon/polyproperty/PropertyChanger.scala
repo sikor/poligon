@@ -23,12 +23,12 @@ import poligon.polyproperty.PropertyObserver.PropertyObservers
   * in case sublisteners map is not created for all usages of presenter
   **/
 object PropertyChanger {
-  def set[T: PropertyCodec](property: PropertyWithParent[T], value: T)(implicit observed: PropertyObservers): Unit = {
+  def set[T: PropertyCodec](property: PropertyWithParent[T], value: T)(implicit po: PropertyObservers): Unit = {
     val mp = new MarkedProperties()
     PropertyCodec.updateProperty(value, property.property, mp)
     PropertyMarker.traverseWithParents(property, mp.onPropertyChanged)
-    mp.clearRemoved(observed.propertyRemoved)
-    mp.clearChanged(observed.propertyChanged)
+    mp.clearRemoved(po.propertyRemoved)
+    mp.clearChanged(po.propertyChanged)
   }
 
   def insert[E: SeqPropertyCodec](
