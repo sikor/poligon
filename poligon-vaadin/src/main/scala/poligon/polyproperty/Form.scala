@@ -23,6 +23,11 @@ import com.avsystem.commons.serialization.GenRef
   * (Np rodzic chce ustawić jakąś wartość w formularzu dla swoich dzieci i je odświerzyć)
   * (jeżeli jakiś komponent chce nasłuchiwać na jakieś wartości to można dodać propertiesa do presentera?).
   */
+object Form {
+  def apply[T: PropertyCodec](value: T): Form[T] =
+    new Form[T](PropertyCodec.newProperty[T](value))
+}
+
 class Form[S](private val property: Property[S]) {
 
   def getSubProperty[T: PropertyCodec](ref: GenRef.Creator[S] => GenRef[S, T])

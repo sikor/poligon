@@ -6,7 +6,7 @@ import com.vaadin.ui.themes.ValoTheme
 import databinding.ObjectsPanelPresenter._
 import databinding.properties.Binder.LayoutDescription
 import databinding.properties.{Binder, Comp}
-import poligon.polyproperty.{Obs, Property}
+import poligon.polyproperty.{Form, Obs, Property}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 //TODO: styling: https://github.com/vaadin/framework/tree/master/uitest/src/main/java/com/vaadin/tests/themes/valo
@@ -68,6 +68,8 @@ object ObjectPanelView {
     val addResourceButton = new Button("add resource")
     addResourceButton.addClickListener(_ => presenter.addResource(p.get.name, i.get.id, resourceName.getValue, resourceValue.getValue)(po))
     resources.addComponent(new HorizontalLayout(resourceName, resourceValue, addResourceButton))
+    @silent
+    val instanceForm = Form(i.get)
     val resourcesList = Binder.layout(i.getSubProperty(_.ref(_.resources)), LayoutDescription.Form) { r =>
       createResourceTile(presenter, p, i, r)
     }.bind(po)
