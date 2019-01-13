@@ -1,7 +1,7 @@
 package databinding.properties
 
 import com.vaadin.ui.Component
-import databinding.properties.Comp.{Bound, DynamicComp, StaticComp}
+import databinding.properties.Comp.{Bound, DynamicComp, MapComp, StaticComp}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 sealed trait Comp[T] {
@@ -13,6 +13,8 @@ sealed trait Comp[T] {
         val c = d.bindDynamic(po)
         parentPo.registerSubObservers(c, po)
         c
+      case m: MapComp[_, T] =>
+        m.loose(parentPo)
     }
   }
 
@@ -20,10 +22,13 @@ sealed trait Comp[T] {
     this match {
       case s: StaticComp[T] => s.staticBind
       case d: DynamicComp[T] => d.bindDynamic(parentPo)
+      case m: MapComp[_, T] => m.direct(parentPo)
     }
   }
 
-
+  def map[T2](f: T => T2): Comp[T2] = {
+    new MapComp[T, T2](this, f)
+  }
 }
 
 object Comp {
@@ -42,6 +47,19 @@ object Comp {
 
   trait DynamicComp[T] extends Comp[T] {
     def bindDynamic(po: PropertyObservers): Bound[T]
+  }
+
+  class MapComp[S, T](s: Comp[S], f: S => T) extends Comp[T] {
+    def loose(po: PropertyObservers): Bound[T] = {
+      val b = s.looseBind(po)
+      bound(f(b.get), b.comp)
+    }
+
+    def direct(po: PropertyObservers): Bound[T] = {
+      val b = s.bind(po)
+      bound(f(b.get), b.comp)
+    }
+
   }
 
   def dynamicUnit(factory: PropertyObservers => Component): DynamicComp[Unit] = dynamic(po => unitBound(factory(po)))
