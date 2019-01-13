@@ -116,7 +116,7 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
   }
 
   override def readProperty(property: SeqProperty[E]): Seq[E] = {
-    property.value.map(v => elementCodec.readProperty(v.asInstanceOf[elementCodec.PropertyType]))
+    property.value.map(v => elementCodec.readProperty(v._2.asInstanceOf[elementCodec.PropertyType]))
   }
 
   def insert(property: SeqProperty[E], idx: Int, value: Seq[E]): SeqPatch[E] = {
