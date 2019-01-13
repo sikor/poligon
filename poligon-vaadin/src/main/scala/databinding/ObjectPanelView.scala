@@ -6,8 +6,8 @@ import com.vaadin.ui.themes.ValoTheme
 import databinding.ObjectsPanelPresenter._
 import databinding.properties.Binder.LayoutDescription
 import databinding.properties.{Binder, Comp}
-import poligon.polyproperty.{Form, Obs, Property}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
+import poligon.polyproperty.{Form, Property}
 
 //TODO: styling: https://github.com/vaadin/framework/tree/master/uitest/src/main/java/com/vaadin/tests/themes/valo
 /*
@@ -106,19 +106,27 @@ object ObjectPanelView {
   }
 
   @silent
-  private def createSingleResource(
-                                    presenter: ObjectsPanelPresenter,
-                                    s: Obs[SingleResource],
-                                    f: Form[SingleResource]): Comp[Unit] = Comp.dynamicUnit { po: PropertyObservers =>
-    val formStatus = f.getSubProperty(_.ref(_.lastAction))
+  private def createSingleResource(s: Property[SingleResource]): Comp[String] = Comp.dynamic[String] { po: PropertyObservers =>
     val field = new TextField()
+    var wasOverwritten: Boolean = false
+    field.addValueChangeListener(_ => wasOverwritten = true)
     s.listen(r => {
       field.setCaption(r.name)
       //overwrite field value only if not modified via form
-      if (formStatus.get.isEmpty) {
+      if (!wasOverwritten) {
         field.setValue(r.value)
       }
     }, init = true)(po)
-    field
+    Comp.bound(field.getValue, field)
   }
+
+  @silent
+  private def createMultiResource(m: Property[MultiResource]): Comp[Seq[ResourceInstance]] =
+    Binder.layout(m.getSubProperty(_.ref(_.value)), LayoutDescription.Form) { ri =>
+      Comp.dynamic[ResourceInstance] { po: PropertyObservers =>
+        val field = new TextField()
+        Comp.bound(ResourceInstance(ri.get.idx, field.getValue), field)
+      }
+    }
+
 }

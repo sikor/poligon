@@ -34,6 +34,8 @@ object Comp {
 
   def unitBound(component: Component): Bound[Unit] = new Bound[Unit](() => (), component)
 
+  def bound[T](value: => T, component: Component): Bound[T] = new Bound[T](() => value, component)
+
   class StaticComp[T](factory: => Bound[T]) extends Comp[T] {
     def staticBind: Bound[T] = factory
   }

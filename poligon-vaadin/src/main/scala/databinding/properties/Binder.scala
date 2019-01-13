@@ -2,7 +2,10 @@ package databinding.properties
 
 import com.vaadin.ui._
 import databinding.properties.Binder.LayoutDescription.{Horizontal, Vertical}
+import databinding.properties.Comp.Bound
 import poligon.polyproperty.{Obs, Property, PropertyCodec, SubProperty}
+
+import scala.collection.mutable.ArrayBuffer
 
 
 /**
@@ -31,18 +34,22 @@ object Binder {
 
   }
 
-  def layout[E](
-                 property: Property[Seq[E]],
-                 layoutDescription: LayoutDescription = Vertical)(
-                 childFactory: Property[E] => Comp[Unit]): Comp[Unit] = Comp.dynamicUnit { po =>
+  def layout[E, V](
+                    property: Property[Seq[E]],
+                    layoutDescription: LayoutDescription = Vertical)(
+                    childFactory: Property[E] => Comp[V]): Comp[Seq[V]] = Comp.dynamic { po =>
     val layout = layoutDescription match {
       case Vertical => new VerticalLayout()
       case Horizontal => new HorizontalLayout()
       case LayoutDescription.Form => new FormLayout()
     }
 
+    val bounds = new ArrayBuffer[Bound[V]]()
+
     SubProperty.getSeq(property).foreach { p =>
-      layout.addComponent(childFactory(p).looseBind(po).comp)
+      val bound = childFactory(p).looseBind(po)
+      layout.addComponent(bound.comp)
+      bounds += bound
     }
     property.listenStructure[E] { patch =>
       patch.removed.foreach { _ =>
@@ -50,12 +57,15 @@ object Binder {
         po.deregisterSubObservers(removedComponent)
         layout.removeComponent(removedComponent)
       }
+      bounds.remove(patch.idx, patch.removed.size)
+
       patch.added.reverse.foreach { a =>
         val c = childFactory(a).looseBind(po)
         layout.addComponent(c.comp, patch.idx)
+        bounds.insert(patch.idx, c)
       }
     }(po)
-    layout
+    Comp.bound(bounds.iterator.map(_.get).toVector, layout)
   }
 
   def label(property: Obs[String], styleName: String = ""): Comp[Unit] = bindSimple(property, {
@@ -83,13 +93,15 @@ object Binder {
     def getContent: Component = getCompositionRoot
   }
 
-  def replaceable(property: Obs[Comp[Unit]], wrapperDescription: WrapperDescription): Comp[Unit] = Comp.dynamicUnit { po =>
+  def replaceable[V](property: Obs[Comp[V]], wrapperDescription: WrapperDescription): Comp[V] = Comp.dynamic[V] { po =>
     val wrapper = wrapperDescription match {
       case Panel => new Panel()
       case Custom => new SimpleCustomComponent()
     }
+    var bound: Bound[V] = null
     property.listen({ c =>
       val component = c.looseBind(po)
+      bound = component
       wrapper match {
         case p: Panel =>
           po.deregisterSubObservers(p.getContent)
@@ -99,6 +111,6 @@ object Binder {
           s.setContent(component.comp)
       }
     }, init = true)(po)
-    wrapper
+    Comp.bound(bound.get, wrapper)
   }
 }
