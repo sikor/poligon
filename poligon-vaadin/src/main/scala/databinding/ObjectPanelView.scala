@@ -24,7 +24,7 @@ Plan:
  */
 object ObjectPanelView {
 
-  def createObjectPanelView(presenter: ObjectsPanelPresenter): Comp = Comp.dynamic { po: PropertyObservers =>
+  def createObjectPanelView(presenter: ObjectsPanelPresenter): Comp[Unit] = Comp.dynamicUnit { po: PropertyObservers =>
     val objects = new VerticalLayout()
     objects.setSpacing(true)
     val objectName = new TextField("object name")
@@ -37,51 +37,53 @@ object ObjectPanelView {
     val objectsList = Binder.layout(presenter.getModel) { p =>
       createObjectTile(presenter, p)
     }.bind(po)
-    objects.addComponent(objectsList)
+    objects.addComponent(objectsList.comp)
     objects
   }
 
-  private def createObjectTile(presenter: ObjectsPanelPresenter, p: Property[SomeObject]): Comp = Comp.dynamic { po: PropertyObservers =>
-    val objectTile = new VerticalLayout()
-    objectTile.setSpacing(true)
-    val removeObjectButton = new Button("remove")
-    removeObjectButton.addClickListener(_ => presenter.removeObject(p.get.name)(po))
-    val instanceNum = new Slider("instance number")
-    val addInstanceButton = new Button("add instance")
-    val objectName = Binder.label(p.map(o => s"Object ${o.name} (status: ${o.lastAction})"), ValoTheme.LABEL_H2).bind(po)
-    objectTile.addComponent(new HorizontalLayout(objectName, removeObjectButton))
-    addInstanceButton.addClickListener(_ => presenter.addInstance(p.get.name, instanceNum.getValue.toInt)(po))
-    objectTile.addComponent(new HorizontalLayout(instanceNum, addInstanceButton))
-    val instancesList = Binder.layout(p.getSubProperty(_.ref(_.instances))) { i =>
-      createInstanceTile(presenter, p, i)
-    }.bind(po)
-    objectTile.addComponent(instancesList)
-    objectTile
-  }
+  private def createObjectTile(presenter: ObjectsPanelPresenter, p: Property[SomeObject]): Comp[Unit] =
+    Comp.dynamicUnit { po: PropertyObservers =>
+      val objectTile = new VerticalLayout()
+      objectTile.setSpacing(true)
+      val removeObjectButton = new Button("remove")
+      removeObjectButton.addClickListener(_ => presenter.removeObject(p.get.name)(po))
+      val instanceNum = new Slider("instance number")
+      val addInstanceButton = new Button("add instance")
+      val objectName = Binder.label(p.map(o => s"Object ${o.name} (status: ${o.lastAction})"), ValoTheme.LABEL_H2).bind(po)
+      objectTile.addComponent(new HorizontalLayout(objectName.comp, removeObjectButton))
+      addInstanceButton.addClickListener(_ => presenter.addInstance(p.get.name, instanceNum.getValue.toInt)(po))
+      objectTile.addComponent(new HorizontalLayout(instanceNum, addInstanceButton))
+      val instancesList = Binder.layout(p.getSubProperty(_.ref(_.instances))) { i =>
+        createInstanceTile(presenter, p, i)
+      }.bind(po)
+      objectTile.addComponent(instancesList.comp)
+      objectTile
+    }
 
-  private def createInstanceTile(presenter: ObjectsPanelPresenter, p: Property[SomeObject], i: Property[ObjectInstance]): Comp = Comp.dynamic { po: PropertyObservers =>
-    val resources = new VerticalLayout()
-    resources.setSpacing(true)
-    resources.addComponent(Binder.label(i.map(instance => s"Instance ${instance.id}"), ValoTheme.LABEL_H3).bind(po))
-    val resourceName = new TextField("resource name")
-    val resourceValue = new TextField("resource value")
-    val addResourceButton = new Button("add resource")
-    addResourceButton.addClickListener(_ => presenter.addResource(p.get.name, i.get.id, resourceName.getValue, resourceValue.getValue)(po))
-    resources.addComponent(new HorizontalLayout(resourceName, resourceValue, addResourceButton))
-    @silent
-    val instanceForm = Form(i.get)
-    val resourcesList = Binder.layout(i.getSubProperty(_.ref(_.resources)), LayoutDescription.Form) { r =>
-      createResourceTile(presenter, p, i, r)
-    }.bind(po)
-    resources.addComponent(resourcesList)
-    resources
-  }
+  private def createInstanceTile(presenter: ObjectsPanelPresenter, p: Property[SomeObject], i: Property[ObjectInstance]): Comp[Unit] =
+    Comp.dynamicUnit { po: PropertyObservers =>
+      val resources = new VerticalLayout()
+      resources.setSpacing(true)
+      resources.addComponent(Binder.label(i.map(instance => s"Instance ${instance.id}"), ValoTheme.LABEL_H3).bind(po).comp)
+      val resourceName = new TextField("resource name")
+      val resourceValue = new TextField("resource value")
+      val addResourceButton = new Button("add resource")
+      addResourceButton.addClickListener(_ => presenter.addResource(p.get.name, i.get.id, resourceName.getValue, resourceValue.getValue)(po))
+      resources.addComponent(new HorizontalLayout(resourceName, resourceValue, addResourceButton))
+      @silent
+      val instanceForm = Form(i.get)
+      val resourcesList = Binder.layout(i.getSubProperty(_.ref(_.resources)), LayoutDescription.Form) { r =>
+        createResourceTile(presenter, p, i, r)
+      }.bind(po)
+      resources.addComponent(resourcesList.comp)
+      resources
+    }
 
   private def createResourceTile(
                                   presenter: ObjectsPanelPresenter,
                                   p: Property[SomeObject],
                                   i: Property[ObjectInstance],
-                                  r: Property[Resource]): Comp = Comp.dynamic { po: PropertyObservers =>
+                                  r: Property[Resource]): Comp[Unit] = Comp.dynamicUnit { po: PropertyObservers =>
     val prop = r.map {
       case SingleResource(name, value, status) =>
         s"${p.get.name}/${i.get.id}/$name = $value (status: $status)"
@@ -100,17 +102,22 @@ object ObjectPanelView {
     }
 
     button.addClickListener(_ => presenter.setResourceValue(p.get.name, i.get.id, r.get.name, resourceId, field.getValue)(po))
-    new HorizontalLayout(resource, field, button)
+    new HorizontalLayout(resource.comp, field, button)
   }
 
   @silent
   private def createSingleResource(
                                     presenter: ObjectsPanelPresenter,
-                                    s: Obs[SingleResource]): Comp = Comp.dynamic { po: PropertyObservers =>
+                                    s: Obs[SingleResource],
+                                    f: Form[SingleResource]): Comp[Unit] = Comp.dynamicUnit { po: PropertyObservers =>
+    val formStatus = f.getSubProperty(_.ref(_.lastAction))
     val field = new TextField()
     s.listen(r => {
       field.setCaption(r.name)
-      field.setValue(r.value)
+      //overwrite field value only if not modified via form
+      if (formStatus.get.isEmpty) {
+        field.setValue(r.value)
+      }
     }, init = true)(po)
     field
   }

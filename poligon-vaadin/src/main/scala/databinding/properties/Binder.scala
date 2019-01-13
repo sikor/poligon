@@ -34,17 +34,15 @@ object Binder {
   def layout[E](
                  property: Property[Seq[E]],
                  layoutDescription: LayoutDescription = Vertical)(
-                 childFactory: Property[E] => Comp): Comp = Comp.dynamic { po =>
+                 childFactory: Property[E] => Comp[Unit]): Comp[Unit] = Comp.dynamicUnit { po =>
     val layout = layoutDescription match {
       case Vertical => new VerticalLayout()
       case Horizontal => new HorizontalLayout()
       case LayoutDescription.Form => new FormLayout()
     }
 
-    require(layout.getComponentCount == 0)
-
     SubProperty.getSeq(property).foreach { p =>
-      layout.addComponent(childFactory(p).looseBind(po))
+      layout.addComponent(childFactory(p).looseBind(po).comp)
     }
     property.listenStructure[E] { patch =>
       patch.removed.foreach { _ =>
@@ -54,20 +52,20 @@ object Binder {
       }
       patch.added.reverse.foreach { a =>
         val c = childFactory(a).looseBind(po)
-        layout.addComponent(c, patch.idx)
+        layout.addComponent(c.comp, patch.idx)
       }
     }(po)
     layout
   }
 
-  def label(property: Obs[String], styleName: String = ""): Comp = bindSimple(property, {
+  def label(property: Obs[String], styleName: String = ""): Comp[Unit] = bindSimple(property, {
     val l = new Label()
     l.addStyleName(styleName)
     l
   })
 
-  private def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: => P): Comp =
-    Comp.dynamic { o =>
+  private def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: => P): Comp[Unit] =
+    Comp.dynamicUnit { o =>
       val l = label
       property.listen(v => l.setValue(v), init = true)(o)
       l
@@ -85,7 +83,7 @@ object Binder {
     def getContent: Component = getCompositionRoot
   }
 
-  def replaceable(property: Obs[Comp], wrapperDescription: WrapperDescription): Comp = Comp.dynamic { po =>
+  def replaceable(property: Obs[Comp[Unit]], wrapperDescription: WrapperDescription): Comp[Unit] = Comp.dynamicUnit { po =>
     val wrapper = wrapperDescription match {
       case Panel => new Panel()
       case Custom => new SimpleCustomComponent()
@@ -95,10 +93,10 @@ object Binder {
       wrapper match {
         case p: Panel =>
           po.deregisterSubObservers(p.getContent)
-          p.setContent(component)
+          p.setContent(component.comp)
         case s: SimpleCustomComponent =>
           po.deregisterSubObservers(s.getContent)
-          s.setContent(component)
+          s.setContent(component.comp)
       }
     }, init = true)(po)
     wrapper

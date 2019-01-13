@@ -37,7 +37,7 @@ object HttpServer {
       implicit val po: PropertyObservers = new PropertyObservers(Opt.Empty)
       val presenter = new MainViewPresenter(new ExecuteTasksPresenter(executeTasksService))
       val view = MainView.create(presenter).bind(po)
-      setContent(view)
+      setContent(view.comp)
     }
   }
 

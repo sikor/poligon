@@ -20,6 +20,8 @@ object ObjectsPanelPresenter {
 
   object ActionStatus {
 
+    case object Draft extends ActionStatus
+
     case object Pending extends ActionStatus
 
     case object Success extends ActionStatus

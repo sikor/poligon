@@ -1,14 +1,14 @@
 package databinding.properties
 
 import com.vaadin.ui.Component
-import databinding.properties.Comp.{DynamicComp, StaticComp}
+import databinding.properties.Comp.{Bound, DynamicComp, StaticComp}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
-sealed trait Comp {
-  def looseBind(parentPo: PropertyObservers): Component = {
+sealed trait Comp[T] {
+  def looseBind(parentPo: PropertyObservers): Bound[T] = {
     this match {
-      case s: StaticComp => s.staticBind
-      case d: DynamicComp =>
+      case s: StaticComp[T] => s.staticBind
+      case d: DynamicComp[T] =>
         val po = parentPo.createSubObservers()
         val c = d.bindDynamic(po)
         parentPo.registerSubObservers(c, po)
@@ -16,26 +16,38 @@ sealed trait Comp {
     }
   }
 
-  def bind(parentPo: PropertyObservers): Component = {
+  def bind(parentPo: PropertyObservers): Bound[T] = {
     this match {
-      case s: StaticComp => s.staticBind
-      case d: DynamicComp => d.bindDynamic(parentPo)
+      case s: StaticComp[T] => s.staticBind
+      case d: DynamicComp[T] => d.bindDynamic(parentPo)
     }
   }
+
+
 }
 
 object Comp {
 
-  class StaticComp(factory: => Component) extends Comp {
-    def staticBind: Component = factory
+  class Bound[T](supplier: () => T, val comp: Component) {
+    def get: T = supplier()
   }
 
-  trait DynamicComp extends Comp {
-    def bindDynamic(po: PropertyObservers): Component
+  def unitBound(component: Component): Bound[Unit] = new Bound[Unit](() => (), component)
+
+  class StaticComp[T](factory: => Bound[T]) extends Comp[T] {
+    def staticBind: Bound[T] = factory
   }
 
-  def dynamic(factory: PropertyObservers => Component): DynamicComp = (po: PropertyObservers) => factory(po)
+  trait DynamicComp[T] extends Comp[T] {
+    def bindDynamic(po: PropertyObservers): Bound[T]
+  }
 
-  def static(factory: => Component): StaticComp = new StaticComp(factory)
+  def dynamicUnit(factory: PropertyObservers => Component): DynamicComp[Unit] = dynamic(po => unitBound(factory(po)))
+
+  def dynamic[T](factory: PropertyObservers => Bound[T]): DynamicComp[T] = (po: PropertyObservers) => factory(po)
+
+  def static[T](factory: => Bound[T]): StaticComp[T] = new StaticComp(factory)
+
+  def staticUnit(factory: => Component): StaticComp[Unit] = new StaticComp(unitBound(factory))
 
 }
