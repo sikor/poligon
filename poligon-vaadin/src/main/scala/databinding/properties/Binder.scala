@@ -1,5 +1,6 @@
 package databinding.properties
 
+import com.avsystem.commons.misc.OptArg
 import com.vaadin.ui._
 import databinding.properties.Binder.LayoutDescription.{Horizontal, Vertical}
 import databinding.properties.Comp.Bound
@@ -24,13 +25,20 @@ object Binder {
 
   sealed trait LayoutDescription
 
+  case class BaseSettings(caption: OptArg[String] = OptArg.Empty) {
+    def setOn[T <: Component](c: T): T = {
+      caption.foreach(c.setCaption)
+      c
+    }
+  }
+
   object LayoutDescription {
 
     case object Vertical extends LayoutDescription
 
     case object Horizontal extends LayoutDescription
 
-    case object Form extends LayoutDescription
+    case class Form(settings: BaseSettings = BaseSettings()) extends LayoutDescription
 
   }
 
@@ -41,7 +49,7 @@ object Binder {
     val layout = layoutDescription match {
       case Vertical => new VerticalLayout()
       case Horizontal => new HorizontalLayout()
-      case LayoutDescription.Form => new FormLayout()
+      case LayoutDescription.Form(settings) => settings.setOn(new FormLayout())
     }
 
     val bounds = new ArrayBuffer[Bound[V]]()

@@ -3,7 +3,7 @@ package databinding
 import com.vaadin.ui._
 import com.vaadin.ui.themes.ValoTheme
 import databinding.ObjectsPanelPresenter._
-import databinding.properties.Binder.LayoutDescription
+import databinding.properties.Binder.{BaseSettings, LayoutDescription}
 import databinding.properties.{Binder, Comp}
 import poligon.polyproperty.Property
 import poligon.polyproperty.PropertyObserver.PropertyObservers
@@ -71,7 +71,7 @@ object ObjectPanelView {
       val addResourceButton = new Button("add resource")
       addResourceButton.addClickListener(_ => presenter.addResource(p.get.name, i.get.id, resourceName.getValue, resourceValue.getValue)(po))
       instance.addComponent(new HorizontalLayout(resourceName, resourceValue, addResourceButton))
-      val resourcesList = Binder.layout(i.getSubProperty(_.ref(_.resources)), LayoutDescription.Form) { r =>
+      val resourcesList = Binder.layout(i.getSubProperty(_.ref(_.resources)), LayoutDescription.Form()) { r =>
         r.getCase[SingleResource].map { s =>
           createSingleResource(s).map(value => Seq(ResourceAction(p.get.name, i.get.id, s.get.name, None, value)))
         }.orElse {
@@ -106,12 +106,12 @@ object ObjectPanelView {
   }
 
   private def createMultiResource(m: Property[MultiResource]): Comp[Seq[ResourceInstance]] =
-    Binder.layout(m.getSubProperty(_.ref(_.value)), LayoutDescription.Form) { ri =>
+    Binder.layout(m.getSubProperty(_.ref(_.value)), LayoutDescription.Form(BaseSettings(m.get.name))) { ri =>
       Comp.dynamic[ResourceInstance] { po: PropertyObservers =>
         val field = new TextField()
         var wasOverwritten = false
         field.addValueChangeListener(_ => wasOverwritten = true)
-        field.setCaption(s"${m.get.name}/${ri.get.idx}")
+        field.setCaption(ri.get.idx.toString)
         ri.getSubProperty(_.ref(_.value)).listen(v => if (!wasOverwritten) {
           field.setValue(v)
         }, init = true)(po)
