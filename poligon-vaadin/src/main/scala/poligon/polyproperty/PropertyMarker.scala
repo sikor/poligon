@@ -1,7 +1,7 @@
 package poligon
 package polyproperty
 
-import poligon.polyproperty.Property.{RecordProperty, SeqProperty, SimpleProperty, UnionProperty}
+import poligon.polyproperty.Property._
 import poligon.polyproperty.PropertyCodec.PropertyLifetimeListener
 
 import scala.annotation.tailrec
@@ -66,10 +66,10 @@ object PropertyMarker {
           onChild(f)
           traverseChildren(f, onChild)
         }
-      case s: SeqProperty[_] =>
+      case s: SeqMapProperty[_, _, _] =>
         s.value.foreach { e =>
-          onChild(e)
-          traverseChildren(e, onChild)
+          onChild(e._2)
+          traverseChildren(e._2, onChild)
         }
     }
   }

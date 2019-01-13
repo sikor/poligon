@@ -12,7 +12,6 @@ import poligon.polyproperty.PropertyCodec.PropertyLifetimeListener
 import poligon.polyproperty.PropertyObserver.SeqPatch
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 
 sealed trait PropertyCodec[T] {
@@ -97,22 +96,22 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
   override type PropertyType = SeqProperty[E]
 
   override def newProperty(value: Seq[E]): SeqProperty[E] = {
-    val property = new SeqProperty[E](new ArrayBuffer)
-    value.foreach { v =>
+    val property = new SeqProperty[E](new SeqMap)
+    value.zipWithIndex.foreach { case (v, i) =>
       val pwc = elementCodec.newProperty(v)
-      property.value += pwc
+      property.value.append(i, pwc)
     }
     property
   }
 
   override def updateProperty(value: Seq[E], property: SeqProperty[E], onChildPropertyChanged: PropertyLifetimeListener): Unit = {
     property.value.foreach { p =>
-      PropertyMarker.traverseWithChildren(p, onChildPropertyChanged.onPropertyRemoved)
+      PropertyMarker.traverseWithChildren(p._2, onChildPropertyChanged.onPropertyRemoved)
     }
     property.value.clear()
-    value.foreach { v =>
+    value.zipWithIndex.foreach { case (v, i) =>
       val pwc = elementCodec.newProperty(v)
-      property.value += pwc
+      property.value.append(i, pwc)
     }
   }
 
@@ -121,19 +120,25 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
   }
 
   def insert(property: SeqProperty[E], idx: Int, value: Seq[E]): SeqPatch[E] = {
-    val newValues = value.map(e => elementCodec.newProperty(e))
-    property.value.insert(idx, newValues: _*)
-    new SeqPatch(property, idx, newValues, Seq.empty)
+    val newValues = value.zipWithIndex.map { case (e, i) =>
+      (i + idx, elementCodec.newProperty(e))
+    }
+    val removedEntries = property.value.slice(idx, property.value.size())
+    property.value.insert(idx, newValues)
+    val movedValues = removedEntries.map { case (k, v) => (k + value.size, v) }
+    property.value.append(movedValues)
+    //TODO: design SeqMapPatch that has move index operation/add and remove
+    new SeqPatch(property, idx, newValues.map(_._2), Seq.empty)
   }
 
   def append(property: SeqProperty[E], value: Seq[E]): SeqPatch[E] = {
-    insert(property, property.value.size, value)
+    insert(property, property.value.size(), value)
   }
 
   def remove(property: SeqProperty[E], idx: Int, count: Int): SeqPatch[E] = {
     val removed = property.value.slice(idx, idx + count)
     property.value.remove(idx, count)
-    new SeqPatch(property, idx, Seq.empty, removed)
+    new SeqPatch(property, idx, Seq.empty, removed.map(_._2))
   }
 }
 

@@ -28,7 +28,7 @@ object SubProperty {
   }
 
   def getSeq[E](property: Property[Seq[E]]): Seq[Property[E]] = {
-    asSeqProperty(property).value
+    asSeqProperty(property).value.map(_._2)
   }
 
   def asSeqProperty[E](property: Property[Seq[E]]): SeqProperty[E] = {

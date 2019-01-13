@@ -8,6 +8,16 @@ class SeqMap[K, V] {
 
   private val seq: ArrayBuffer[(K, V)] = new ArrayBuffer[(K, V)]()
 
+  def map[V2](f: ((K, V)) => V2): ArrayBuffer[V2] = seq.map(f)
+
+  def foreach(f: ((K, V)) => Unit): Unit = seq.foreach(f)
+
+  def clear(): Unit = seq.clear()
+
+  def size(): Int = seq.size
+
+  def slice(from: Int, until: Int): ArrayBuffer[(K, V)] = seq.slice(from, until)
+
   /**
     * @return indices removed before insertion because of duplicates
     */
@@ -26,6 +36,13 @@ class SeqMap[K, V] {
     */
   def append(values: Seq[(K, V)]): Seq[Int] = {
     insert(seq.size, values)
+  }
+
+  /**
+    * @return indices removed before insertion because of duplicates
+    */
+  def append(key: K, value: V): Seq[Int] = {
+    append(Seq((key, value)))
   }
 
   def remove(index: Int, count: Int): Unit = {
