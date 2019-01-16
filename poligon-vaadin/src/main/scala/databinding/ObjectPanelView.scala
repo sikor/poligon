@@ -11,12 +11,13 @@ import poligon.polyproperty.PropertyObserver.PropertyObservers
 //TODO: styling: https://github.com/vaadin/framework/tree/master/uitest/src/main/java/com/vaadin/tests/themes/valo
 /*
 Plan:
-0. Handle forms - use case: form divided to many components, submit button is in one of them
-1. Use Union property for single/multi resources
+0. Revert Form returning value approach, rewrite form to standard approach
+0. Implement MapPropertyCodec
+0. SubProperty Macro
+1. Handle recursive listeners calls
 2. Update action statuses after callback from backend (show memory leaks handling)
 3. Move propertyobservers to presenters constructors
-4. Move methods for property listening to Obs, rename propertywithparent.
-5. Components builders
+4. rename propertywithparent.
 6. Nice styling of demo
 7. implicit propertyobservers or some more high level way to compose components
 8. Class for handling form data with validation
@@ -59,8 +60,6 @@ object ObjectPanelView {
       objectTile
     }
 
-  case class ResourceAction(o: String, instance: Int, resource: String, resourceInstance: Option[Int], value: String)
-
   private def createInstanceTile(presenter: ObjectsPanelPresenter, p: Property[SomeObject], i: Property[ObjectInstance]): Comp[Unit] =
     Comp.dynamicUnit { po: PropertyObservers =>
       val instance = new VerticalLayout()
@@ -73,50 +72,25 @@ object ObjectPanelView {
       instance.addComponent(new HorizontalLayout(resourceName, resourceValue, addResourceButton))
       val resourcesList = Binder.layout(i.getSubProperty(_.ref(_.resources)), LayoutDescription.Form()) { r =>
         r.getCase[SingleResource].map { s =>
-          createSingleResource(s).map(value => Seq(ResourceAction(p.get.name, i.get.id, s.get.name, None, value)))
-        }.orElse {
+          Binder.textField(s.get.name, s.map(_.value), newValue => presenter.setSingleResourceValue(p.get.name, i.get.id, s.get.name, newValue)(po))
+        }.orElse[Comp[Unit]] {
           r.getCase[MultiResource].map { m =>
-            createMultiResource(m).map(value => value.map(ri => ResourceAction(p.get.name, i.get.id, m.get.name, Some(ri.idx), ri.value)))
+            createMultiResource(presenter, p.get.name, i.get.id, m)(po)
           }
         }.get
       }.bind(po)
       instance.addComponent(resourcesList.comp)
       val button = new Button("Save")
       button.addClickListener { _ =>
-        resourcesList.get.flatten.foreach(ra =>
-          presenter.setResourceValue(ra.o, ra.instance, ra.resource, ra.resourceInstance, ra.value)(po)
-        )
+        presenter.saveResources()
       }
       instance.addComponent(button)
       instance
     }
 
-  private def createSingleResource(s: Property[SingleResource]): Comp[String] = Comp.dynamic[String] { po: PropertyObservers =>
-    val field = new TextField()
-    var wasOverwritten: Boolean = false
-    field.addValueChangeListener(_ => wasOverwritten = true)
-    s.listen(r => {
-      field.setCaption(r.name)
-      //overwrite field value only if not modified via form
-      if (!wasOverwritten) {
-        field.setValue(r.value)
-      }
-    }, init = true)(po)
-    Comp.bound(field.getValue, field)
-  }
-
-  private def createMultiResource(m: Property[MultiResource]): Comp[Seq[ResourceInstance]] =
+  private def createMultiResource(presenter: ObjectsPanelPresenter, o: String, instance: Int, m: Property[MultiResource])(po: PropertyObservers): Comp[Unit] =
     Binder.layout(m.getSubProperty(_.ref(_.value)), LayoutDescription.Form(BaseSettings(m.get.name))) { ri =>
-      Comp.dynamic[ResourceInstance] { po: PropertyObservers =>
-        val field = new TextField()
-        var wasOverwritten = false
-        field.addValueChangeListener(_ => wasOverwritten = true)
-        field.setCaption(ri.get.idx.toString)
-        ri.getSubProperty(_.ref(_.value)).listen(v => if (!wasOverwritten) {
-          field.setValue(v)
-        }, init = true)(po)
-        Comp.bound(ResourceInstance(ri.get.idx, field.getValue), field)
-      }
+      Binder.textField(ri.get.idx.toString, ri.map(_.value), newValue => presenter.setMultiResourceValue(o, instance, m.get.name, ri.get.idx, newValue)(po))
     }
 
 }

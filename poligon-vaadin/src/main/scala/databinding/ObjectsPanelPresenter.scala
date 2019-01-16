@@ -38,11 +38,11 @@ object ObjectsPanelPresenter {
     def name: String
   }
 
-  case class ResourceInstance(idx: Int, value: String)
+  case class ResourceInstance(idx: Int, value: String, formValue: Option[String] = None)
 
   object ResourceInstance extends HasRecordPropertyCodec[ResourceInstance]
 
-  case class SingleResource(name: String, value: String, lastAction: Option[Action] = None) extends Resource
+  case class SingleResource(name: String, value: String, lastAction: Option[Action] = None, formValue: Option[String] = None) extends Resource
 
   object SingleResource extends HasRecordPropertyCodec[SingleResource]
 
@@ -75,17 +75,23 @@ class ObjectsPanelPresenter extends ObjectsPanelContent {
 
   def getModel: Property[Seq[SomeObject]] = model.property
 
-  def setResourceValue(o: String, instance: Int, resource: String, resourceInstance: Option[Int], value: String)(implicit po: PropertyObservers): Unit = {
+  def setSingleResourceValue(o: String, instance: Int, resource: String, value: String)(implicit po: PropertyObservers): Unit = {
     val resourceModel = findResource(o, instance, resource)
+    resourceModel.getCase[SingleResource].get.getSubProperty(_.ref(_.formValue)).set(Some(value))
+  }
 
-    val newVal = resourceModel.get match {
-      case s: SingleResource => SingleResource(resource, value, Some(Action(Success, s"value set: $value")))
-      case m: MultiResource =>
-        val newMap = m.value.map(v => (v.idx, v)).toMap + (resourceInstance.get -> ResourceInstance(resourceInstance.get, value))
-        MultiResource(resource, newMap.values.toSeq, Some(Action(Success, s"value set: ${resourceInstance.get} -> $value")))
-    }
+  def setMultiResourceValue(o: String, instance: Int, resource: String, resourcesInstance: Int, value: String)(implicit po: PropertyObservers): Unit = {
+    val resourceModel = findResource(o, instance, resource)
+    resourceModel
+      .getCase[MultiResource].get
+      .getSubProperty(_.ref(_.value)).getSeq[ResourceInstance]
+      .find(i => i.get.idx == resourcesInstance).get
+      .getSubProperty(_.ref(_.formValue))
+      .set(Some(value))
+  }
 
-    resourceModel.set(newVal)
+  def saveResources(): Unit = {
+
   }
 
   def addObject(o: String)(implicit po: PropertyObservers): Unit = {
