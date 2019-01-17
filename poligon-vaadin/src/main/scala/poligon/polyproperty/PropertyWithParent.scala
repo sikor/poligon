@@ -1,7 +1,6 @@
 package poligon
 package polyproperty
 
-import com.avsystem.commons.serialization.GenRef
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 class PropertyWithParent[S](val property: Property[S], val parent: Opt[PropertyWithParent[_]])
@@ -25,8 +24,12 @@ object PropertyWithParent {
   }
 
   implicit class RecordPropertyExt[T](p: PropertyWithParent[T])(implicit c: RecordPropertyCodec[T]) {
-    def getField[S](ref: GenRef.Creator[T] => GenRef[T, S]): PropertyWithParent[S] =
-      new PropertyWithParent(SubProperty.getField(p.property)(ref), p.opt)
+
+    def getField[S](f: T => S): PropertyWithParent[S] = macro poligon.PropertyMacros.getField[S]
+
+    def internalGetField[S](name: String): PropertyWithParent[S] = {
+      new PropertyWithParent[S](SubProperty.getField(p.property, name), p.opt)
+    }
   }
 
   implicit class SeqPropertyExt[T](p: PropertyWithParent[Seq[T]])(implicit c: SeqPropertyCodec[T]) {

@@ -77,16 +77,16 @@ class ObjectsPanelPresenter extends ObjectsPanelContent {
 
   def setSingleResourceValue(o: String, instance: Int, resource: String, value: String)(implicit po: PropertyObservers): Unit = {
     val resourceModel = findResource(o, instance, resource)
-    resourceModel.getCase[SingleResource].get.getField(_.ref(_.formValue)).set(Some(value))
+    resourceModel.getCase[SingleResource].get.getField(_.formValue).set(Some(value))
   }
 
   def setMultiResourceValue(o: String, instance: Int, resource: String, resourcesInstance: Int, value: String)(implicit po: PropertyObservers): Unit = {
     val resourceModel = findResource(o, instance, resource)
     resourceModel
       .getCase[MultiResource].get
-      .getField(_.ref(_.value)).getSeq
+      .getField(_.value).getSeq
       .find(i => i.get.idx == resourcesInstance).get
-      .getField(_.ref(_.formValue))
+      .getField(_.formValue)
       .set(Some(value))
   }
 
@@ -100,13 +100,13 @@ class ObjectsPanelPresenter extends ObjectsPanelContent {
 
   def addInstance(o: String, i: Int)(implicit po: PropertyObservers): Unit = {
     val objectModel = findObject(o)
-    objectModel.getField(_.ref(_.instances)).append(ObjectInstance(i, Seq.empty))
-    objectModel.getField(_.ref(_.lastAction)).set(Some(Action(Success, s"instance added: $i")))
+    objectModel.getField(_.instances).append(ObjectInstance(i, Seq.empty))
+    objectModel.getField(_.lastAction).set(Some(Action(Success, s"instance added: $i")))
   }
 
   def addResource(o: String, i: Int, r: String, value: String)(implicit po: PropertyObservers): Unit = {
     findObjectInstance(o, i)
-      .getField(_.ref(_.resources)).append(SingleResource(r, value))
+      .getField(_.resources).append(SingleResource(r, value))
   }
 
   def removeObject(o: String)(implicit po: PropertyObservers): Unit = {
@@ -116,12 +116,12 @@ class ObjectsPanelPresenter extends ObjectsPanelContent {
 
   private def findResource(o: String, instance: Int, resource: String) = {
     findObjectInstance(o, instance)
-      .getField(_.ref(_.resources)).getSeq.find(p => p.get.name == resource).get
+      .getField(_.resources).getSeq.find(p => p.get.name == resource).get
   }
 
   private def findObjectInstance(o: String, instance: Int) = {
     findObject(o)
-      .getField(_.ref(_.instances)).getSeq.find(p => p.get.id == instance).get
+      .getField(_.instances).getSeq.find(p => p.get.id == instance).get
   }
 
   private def findObject(o: String) = {
