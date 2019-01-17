@@ -53,7 +53,7 @@ object ObjectPanelView {
       objectTile.addComponent(new HorizontalLayout(objectName.comp, removeObjectButton))
       addInstanceButton.addClickListener(_ => presenter.addInstance(p.get.name, instanceNum.getValue.toInt)(po))
       objectTile.addComponent(new HorizontalLayout(instanceNum, addInstanceButton))
-      val instancesList = Binder.layout(p.getSubProperty(_.ref(_.instances))) { i =>
+      val instancesList = Binder.layout(p.getField(_.ref(_.instances))) { i =>
         createInstanceTile(presenter, p, i)
       }.bind(po)
       objectTile.addComponent(instancesList.comp)
@@ -70,7 +70,7 @@ object ObjectPanelView {
       val addResourceButton = new Button("add resource")
       addResourceButton.addClickListener(_ => presenter.addResource(p.get.name, i.get.id, resourceName.getValue, resourceValue.getValue)(po))
       instance.addComponent(new HorizontalLayout(resourceName, resourceValue, addResourceButton))
-      val resourcesList = Binder.layout(i.getSubProperty(_.ref(_.resources)), LayoutDescription.Form()) { r =>
+      val resourcesList = Binder.layout(i.getField(_.ref(_.resources)), LayoutDescription.Form()) { r =>
         r.getCase[SingleResource].map { s =>
           Binder.textField(s.get.name, s.map(_.value), newValue => presenter.setSingleResourceValue(p.get.name, i.get.id, s.get.name, newValue)(po))
         }.orElse[Comp[Unit]] {
@@ -89,7 +89,7 @@ object ObjectPanelView {
     }
 
   private def createMultiResource(presenter: ObjectsPanelPresenter, o: String, instance: Int, m: Property[MultiResource])(po: PropertyObservers): Comp[Unit] =
-    Binder.layout(m.getSubProperty(_.ref(_.value)), LayoutDescription.Form(BaseSettings(m.get.name))) { ri =>
+    Binder.layout(m.getField(_.ref(_.value)), LayoutDescription.Form(BaseSettings(m.get.name))) { ri =>
       Binder.textField(ri.get.idx.toString, ri.map(_.value), newValue => presenter.setMultiResourceValue(o, instance, m.get.name, ri.get.idx, newValue)(po))
     }
 

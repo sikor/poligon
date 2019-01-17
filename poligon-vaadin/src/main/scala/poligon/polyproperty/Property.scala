@@ -8,7 +8,7 @@ import poligon.{ClassTag, Opt}
 import scala.collection.mutable
 
 sealed trait Property[T] {
-  def getSubProperty[R](ref: GenRef.Creator[T] => GenRef[T, R])(implicit rpc: RecordPropertyCodec[T]): Property[R] =
+  def getField[R](ref: GenRef.Creator[T] => GenRef[T, R])(implicit rpc: RecordPropertyCodec[T]): Property[R] =
     SubProperty.getField(this)(ref)
 
   def getCase[R <: T : ClassTag](implicit upc: UnionPropertyCodec[T]): Opt[Property[R]] =
