@@ -5,6 +5,7 @@ import com.typesafe.scalalogging.StrictLogging
 import com.vaadin.annotations.{Push, Theme}
 import com.vaadin.server._
 import com.vaadin.ui.UI
+import exampleapp.services.DmService
 import exampleapp.view.{ExecuteTasksPresenter, ExecuteTasksService, MainView, MainViewPresenter}
 import javax.servlet.{ServletConfig, ServletException}
 import org.eclipse.jetty.server.Server
@@ -24,7 +25,7 @@ object HttpServer {
 
   @Theme("valo")
   @Push
-  class PoligonUI(executeTasksService: ExecuteTasksService) extends UI with StrictLogging {
+  class PoligonUI(executeTasksService: ExecuteTasksService, dmService: DmService) extends UI with StrictLogging {
 
     implicit object UIExecutor extends ExecutionContextExecutor {
       override def reportFailure(cause: Throwable): Unit = logger.error("Runnable failed", cause)
@@ -36,7 +37,7 @@ object HttpServer {
 
     override def init(request: VaadinRequest): Unit = {
       implicit val po: PropertyObservers = new PropertyObservers(Opt.Empty)
-      val presenter = new MainViewPresenter(new ExecuteTasksPresenter(executeTasksService))
+      val presenter = new MainViewPresenter(new ExecuteTasksPresenter(executeTasksService), dmService)
       val view = MainView.create(presenter).bind(po)
       setContent(view.comp)
     }
@@ -44,10 +45,11 @@ object HttpServer {
 
   def main(args: Array[String]): Unit = {
     val executeTasksService = new ExecuteTasksService
+    val dmService = new DmService
     val server = new Server(8080)
     val servletContextHandler = new ServletContextHandler()
     servletContextHandler.setContextPath("/*")
-    servletContextHandler.addServlet(new ServletHolder(new PoligonServlet(() => new PoligonUI(executeTasksService), classOf[PoligonUI])), "/*")
+    servletContextHandler.addServlet(new ServletHolder(new PoligonServlet(() => new PoligonUI(executeTasksService, dmService), classOf[PoligonUI])), "/*")
     val idManager = new DefaultSessionIdManager(server)
     server.setSessionIdManager(idManager)
     val sessionHandler = new SessionHandler

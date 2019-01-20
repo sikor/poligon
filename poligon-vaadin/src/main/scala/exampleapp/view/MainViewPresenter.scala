@@ -1,5 +1,6 @@
 package exampleapp.view
 
+import exampleapp.services.DmService
 import exampleapp.view.MainView.MainViewContentPresenter
 import exampleapp.view.MainViewPresenter.{MainViewModel, Menu, MenuCategory, MenuItem}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
@@ -19,16 +20,16 @@ object MainViewPresenter {
 
 }
 
-class MainViewPresenter(val executeTasksPresenter: ExecuteTasksPresenter) {
+class MainViewPresenter(val executeTasksPresenter: ExecuteTasksPresenter, dmService: DmService) {
   private val model = PropertyWithParent(MainViewModel(Menu(Seq(MenuCategory("category 1", Seq(MenuItem("object panel")))))))
-  private val subPresenter: PropertyWithParent[MainViewContentPresenter] = PropertyWithParent(new ObjectsPanelPresenter)
+  private val subPresenter: PropertyWithParent[MainViewContentPresenter] = PropertyWithParent(new ObjectsPanelPresenter(dmService))
 
   def getModel: Property[MainViewModel] = model.property
 
   def getContent: Property[MainViewContentPresenter] = subPresenter.property
 
   private val creators: Map[String, MainViewPresenter => MainViewContentPresenter] =
-    Map("category 1.object panel" -> ((parent: MainViewPresenter) => new ObjectsPanelPresenter))
+    Map("category 1.object panel" -> ((parent: MainViewPresenter) => new ObjectsPanelPresenter(dmService)))
 
   def menuItemSelected(category: String, name: String)(implicit po: PropertyObservers): Unit = {
     val presenter = creators(s"$category.$name")(this)

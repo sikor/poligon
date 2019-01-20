@@ -20,7 +20,7 @@ class DmService {
   setValue(List("Device", "Details", "Model"), "n551jm")
   setValue(List("Device", "Details", "Version"), "3.0.1")
 
-  def getDm: DmTree = {
+  def getDm: Node = {
     dmTree
   }
 

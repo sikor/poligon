@@ -1,5 +1,6 @@
 package exampleapp.view
 
+import exampleapp.services.DmService
 import exampleapp.view.MainView.MainViewContentPresenter.ObjectsPanelContent
 import exampleapp.view.ObjectsPanelPresenter.ActionStatus.Success
 import exampleapp.view.ObjectsPanelPresenter._
@@ -7,12 +8,6 @@ import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty._
 
 
-/**
-  * Why own properties:
-  * - Using GenCodes nice for rest RPC
-  * - Unable to use sealed hierarchy in Udash Properties
-  * - Adding HProperty functionality
-  */
 object ObjectsPanelPresenter {
 
 
@@ -63,7 +58,7 @@ object ObjectsPanelPresenter {
 
 }
 
-class ObjectsPanelPresenter extends ObjectsPanelContent {
+class ObjectsPanelPresenter(dmService: DmService) extends ObjectsPanelContent {
   private val model: PropertyWithParent[Seq[SomeObject]] = {
     PropertyWithParent(
       Seq(
@@ -74,6 +69,7 @@ class ObjectsPanelPresenter extends ObjectsPanelContent {
   }
 
   def getModel: Property[Seq[SomeObject]] = model.property
+
 
   def setSingleResourceValue(o: String, instance: Int, resource: String, value: String)(implicit po: PropertyObservers): Unit = {
     val resourceModel = findResource(o, instance, resource)
