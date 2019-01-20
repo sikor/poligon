@@ -84,7 +84,7 @@ object Property {
 
     class ValueChange(val property: Property[_]) extends PropertyChange
 
-    class SeqMapStructuralChange[K, V, T](val property: SeqMapProperty[K, V, T], modifications: EntryPatch[K, V]) extends PropertyChange
+    class SeqMapStructuralChange[K, V, T](val property: SeqMapProperty[K, V, T], modifications: EntryPatch[K, Property[V]]) extends PropertyChange
 
     class UnionChange[T](val property: UnionProperty[T], val newValue: Property[_ <: T], val oldValue: Property[_ <: T]) extends PropertyChange
 

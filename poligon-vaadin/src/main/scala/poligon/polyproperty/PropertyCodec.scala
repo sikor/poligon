@@ -7,11 +7,13 @@ import com.avsystem.commons.annotation.positioned
 import com.avsystem.commons.meta._
 import com.avsystem.commons.misc.{ApplierUnapplier, ValueOf}
 import com.avsystem.commons.serialization.GenRef
+import poligon.polyproperty.Property.PropertyChange.{SeqMapStructuralChange, UnionChange, ValueChange}
 import poligon.polyproperty.Property._
 import poligon.polyproperty.PropertyCodec.PropertyLifetimeListener
 import poligon.polyproperty.PropertyObserver.SeqPatch
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 
 sealed trait PropertyCodec[T] {
@@ -22,8 +24,9 @@ sealed trait PropertyCodec[T] {
   /**
     * Return all properties that were changed and removed.
     * All ancestors of property has non-structural change that must be handled by caller.
+    * Returns information about which properties are changed (including argument property) in the bottom up order.
     */
-  def updateProperty(value: T, property: PropertyType, onChildPropertyChanged: PropertyLifetimeListener): Unit
+  def updateProperty(value: T, property: PropertyType, onChildPropertyChanged: PropertyLifetimeListener): Seq[PropertyChange]
 
   def readProperty(property: PropertyType): T
 }
@@ -85,8 +88,14 @@ class SimplePropertyCodec[T] extends PropertyCodec[T] {
   override def newProperty(value: T): SimpleProperty[T] =
     new SimpleProperty[T](value)
 
-  override def updateProperty(value: T, property: SimpleProperty[T], onChildPropertyChanged: PropertyLifetimeListener): Unit =
-    property.value = value
+  override def updateProperty(value: T, property: SimpleProperty[T], onChildPropertyChanged: PropertyLifetimeListener): Seq[PropertyChange] = {
+    if (property.value != value) {
+      property.value = value
+      Seq(new ValueChange(property))
+    } else {
+      Seq.empty
+    }
+  }
 
   override def readProperty(property: SimpleProperty[T]): T =
     property.value
@@ -108,15 +117,13 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
     property
   }
 
-  override def updateProperty(value: Seq[E], property: SeqProperty[E], onChildPropertyChanged: PropertyLifetimeListener): Unit = {
-    property.value.foreach { p =>
-      PropertyMarker.traverseWithChildren(p._2, onChildPropertyChanged.onPropertyRemoved)
-    }
-    property.value.clear()
-    value.zipWithIndex.foreach { case (v, i) =>
+  override def updateProperty(value: Seq[E], property: SeqProperty[E], onChildPropertyChanged: PropertyLifetimeListener): Seq[PropertyChange] = {
+    val removedData = property.value.clear()
+    val addedData = value.zipWithIndex.flatMap { case (v, i) =>
       val pwc = elementCodec.newProperty(v)
       property.value.append(i, pwc)
     }
+    Seq(new SeqMapStructuralChange(property, removedData ++ addedData))
   }
 
   override def readProperty(property: SeqProperty[E]): Seq[E] = {
@@ -163,15 +170,23 @@ class MapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V]) extend
     property
   }
 
-  def updateProperty(value: BMap[K, V], property: PropertyType, onChildPropertyChanged: PropertyLifetimeListener): Unit = {
-    property.value.update(
+  def updateProperty(value: BMap[K, V], property: PropertyType, onChildPropertyChanged: PropertyLifetimeListener): Seq[PropertyChange] = {
+    val childrenUpdates = new ArrayBuffer[PropertyChange]
+    val thisUpdates = property.value.update(
       value.keys,
       (k, v) => {
-        onChildPropertyChanged.onPropertyChanged(v)
-        elementCodec.updateProperty(value(k), v.asInstanceOf[elementCodec.PropertyType], onChildPropertyChanged)
+        childrenUpdates ++= elementCodec.updateProperty(value(k), v.asInstanceOf[elementCodec.PropertyType], onChildPropertyChanged)
       },
       k => elementCodec.newProperty(value(k)))
-
+    if (thisUpdates.nonEmpty) {
+      childrenUpdates.result() :+ new SeqMapStructuralChange(property, thisUpdates)
+    } else {
+      if (childrenUpdates.nonEmpty) {
+        childrenUpdates :+ new ValueChange(property)
+      } else {
+        Seq.empty
+      }
+    }
   }
 
   def readProperty(property: PropertyType): BMap[K, V] = {
@@ -196,16 +211,22 @@ class MapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V]) extend
     cases.findOpt(_.isInstance(value)).getOrElse(throw new Exception(s"Unknown case: $value"))
   }
 
-  override def updateProperty(value: T, property: UnionProperty[T], onChildPropertyChanged: PropertyLifetimeListener): Unit = {
+  override def updateProperty(value: T, property: UnionProperty[T], onChildPropertyChanged: PropertyLifetimeListener): Seq[PropertyChange] = {
     val thiCase = caseForValue(value)
     val caseCodec = thiCase.propertyCodec.asInstanceOf[PropertyCodec[T]]
+
     if (property.caseName == thiCase.name) {
-      onChildPropertyChanged.onPropertyChanged(property.value)
-      caseCodec.updateProperty(value, property.value.asInstanceOf[caseCodec.PropertyType], onChildPropertyChanged)
+      val changeBuilder = new ArrayBuffer[PropertyChange]
+      changeBuilder ++= caseCodec.updateProperty(value, property.value.asInstanceOf[caseCodec.PropertyType], onChildPropertyChanged)
+      if (changeBuilder.nonEmpty) {
+        changeBuilder += new ValueChange(property)
+      }
+      changeBuilder.result()
     } else {
-      PropertyMarker.traverseWithChildren(property.value, onChildPropertyChanged.onPropertyRemoved)
+      val oldValue = property.value
       property.caseName = thiCase.name
       property.value = caseCodec.newProperty(value)
+      Vector(new UnionChange[T](property, property.value, oldValue))
     }
   }
 
@@ -279,14 +300,21 @@ sealed trait UnionPropertyCase[T] extends TypedMetadata[T] {
     property
   }
 
-  override def updateProperty(value: T, property: RecordProperty[T], onChildPropertyChanged: PropertyLifetimeListener): Unit = {
+  override def updateProperty(value: T, property: RecordProperty[T], onChildPropertyChanged: PropertyLifetimeListener): Seq[PropertyChange] = {
+    val changeBuilder = new ArrayBuffer[PropertyChange]
     val map = property.fields
     fields.zip(unapplier.unapply(value)).foreach {
       case (field, newFieldValue) =>
         val fieldProperty = map(field.name)
         onChildPropertyChanged.onPropertyChanged(fieldProperty)
         val codec = field.propertyCodec.asInstanceOf[PropertyCodec[Any]]
-        codec.updateProperty(newFieldValue, fieldProperty.asInstanceOf[codec.PropertyType], onChildPropertyChanged)
+        changeBuilder ++= codec.updateProperty(newFieldValue, fieldProperty.asInstanceOf[codec.PropertyType], onChildPropertyChanged)
+    }
+    if (changeBuilder.nonEmpty) {
+      changeBuilder += new ValueChange(property)
+      changeBuilder
+    } else {
+      Seq.empty
     }
   }
 

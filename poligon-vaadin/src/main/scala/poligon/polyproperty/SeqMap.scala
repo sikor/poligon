@@ -14,11 +14,17 @@ class SeqMap[K, V] {
 
   def foreach(f: ((K, V)) => Unit): Unit = seq.foreach(f)
 
-  def clear(): Unit = seq.clear()
+  def clear(): EntryPatch[K, V] = {
+    val removed = seq.iterator.zipWithIndex.map { case ((k, v), i) => Removed(Entry(i, k, v)) }.toVector.reverse
+    seq.clear()
+    removed
+  }
 
   def size(): Int = seq.size
 
   def slice(from: Int, until: Int): ArrayBuffer[(K, V)] = seq.slice(from, until)
+
+  def values(): Seq[V] = seq.map(_._2)
 
   /**
     * @return indices removed before insertion because of duplicates
