@@ -1,8 +1,8 @@
-package databinding
+package exampleapp.view
 
 import com.typesafe.scalalogging.StrictLogging
-import databinding.ExecuteTasksPresenter.ExecuteTasksStatus
-import databinding.ExecuteTasksPresenter.ExecuteTasksStatus.{InProgress, NotStarted}
+import exampleapp.view.ExecuteTasksPresenter.ExecuteTasksStatus
+import exampleapp.view.ExecuteTasksPresenter.ExecuteTasksStatus.{InProgress, NotStarted}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty.{HasSimplePropertyCodec, Property, PropertyWithParent}
 

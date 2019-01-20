@@ -1,9 +1,9 @@
-package databinding.properties
+package exampleapp.properties
 
 import com.avsystem.commons.misc.OptArg
 import com.vaadin.ui._
-import databinding.properties.Binder.LayoutDescription.{Horizontal, Vertical}
-import databinding.properties.Comp.Bound
+import exampleapp.properties.Binder.LayoutDescription.{Horizontal, Vertical}
+import exampleapp.properties.Comp.Bound
 import poligon.polyproperty.{Obs, Property, PropertyCodec, SubProperty}
 
 

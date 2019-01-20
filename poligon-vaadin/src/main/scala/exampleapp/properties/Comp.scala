@@ -1,7 +1,7 @@
-package databinding.properties
+package exampleapp.properties
 
 import com.vaadin.ui.Component
-import databinding.properties.Comp.{Bound, DynamicComp, MapComp, StaticComp}
+import exampleapp.properties.Comp.{Bound, DynamicComp, MapComp, StaticComp}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 sealed trait Comp[T] {

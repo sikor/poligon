@@ -1,4 +1,4 @@
-package databinding
+package exampleapp.view
 
 import java.util.concurrent.{Executors, ThreadLocalRandom, TimeUnit}
 

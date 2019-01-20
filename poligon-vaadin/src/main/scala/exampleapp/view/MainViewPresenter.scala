@@ -1,7 +1,7 @@
-package databinding
+package exampleapp.view
 
-import databinding.MainView.MainViewContentPresenter
-import databinding.MainViewPresenter.{MainViewModel, Menu, MenuCategory, MenuItem}
+import exampleapp.view.MainView.MainViewContentPresenter
+import exampleapp.view.MainViewPresenter.{MainViewModel, Menu, MenuCategory, MenuItem}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty.{HasSimplePropertyCodec, Property, PropertyWithParent}
 

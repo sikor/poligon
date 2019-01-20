@@ -1,9 +1,9 @@
-package databinding
+package exampleapp.view
 
 import com.vaadin.ui.{MenuBar, VerticalLayout}
-import databinding.MainView.MainViewContentPresenter.ObjectsPanelContent
-import databinding.properties.Binder.Custom
-import databinding.properties.{Binder, Comp}
+import exampleapp.properties.Binder.Custom
+import exampleapp.properties.{Binder, Comp}
+import exampleapp.view.MainView.MainViewContentPresenter.ObjectsPanelContent
 import poligon.polyproperty.HasSimplePropertyCodec
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 

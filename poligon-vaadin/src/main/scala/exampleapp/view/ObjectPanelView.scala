@@ -1,10 +1,10 @@
-package databinding
+package exampleapp.view
 
 import com.vaadin.ui._
 import com.vaadin.ui.themes.ValoTheme
-import databinding.ObjectsPanelPresenter._
-import databinding.properties.Binder.{BaseSettings, LayoutDescription}
-import databinding.properties.{Binder, Comp}
+import exampleapp.properties.Binder.{BaseSettings, LayoutDescription}
+import exampleapp.properties.{Binder, Comp}
+import exampleapp.view.ObjectsPanelPresenter.{MultiResource, ObjectInstance, SingleResource, SomeObject}
 import poligon.polyproperty.Property
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 

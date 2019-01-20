@@ -1,8 +1,8 @@
-package databinding
+package exampleapp.view
 
-import databinding.MainView.MainViewContentPresenter.ObjectsPanelContent
-import databinding.ObjectsPanelPresenter.ActionStatus.Success
-import databinding.ObjectsPanelPresenter._
+import exampleapp.view.MainView.MainViewContentPresenter.ObjectsPanelContent
+import exampleapp.view.ObjectsPanelPresenter.ActionStatus.Success
+import exampleapp.view.ObjectsPanelPresenter._
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty._
 
