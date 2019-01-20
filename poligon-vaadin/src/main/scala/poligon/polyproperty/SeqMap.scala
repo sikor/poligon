@@ -2,11 +2,13 @@ package poligon
 package polyproperty
 
 
+import poligon.polyproperty.SeqMap._
+
 import scala.collection.mutable.ArrayBuffer
 
 class SeqMap[K, V] {
 
-  private val seq: ArrayBuffer[(K, V)] = new ArrayBuffer[(K, V)]()
+  private var seq: ArrayBuffer[(K, V)] = new ArrayBuffer[(K, V)]()
 
   def map[V2](f: ((K, V)) => V2): ArrayBuffer[V2] = seq.map(f)
 
@@ -21,32 +23,42 @@ class SeqMap[K, V] {
   /**
     * @return indices removed before insertion because of duplicates
     */
-  def insert(index: Int, values: Seq[(K, V)]): Seq[Int] = {
+  def insert(index: Int, values: (K, V)*): EntryPatch[K, V] = {
     val newKeys = values.iterator.map(_._1).toSet
-    val duplicates = findDuplicates(newKeys)
-    val beforeInsertIndexCount = duplicates.count(_ < index)
+    val duplicatesReversed = findDuplicates(newKeys).reverse
+    val removed = duplicatesReversed.map { i =>
+      val (k, v) = seq.remove(i)
+      Removed(Entry(i, k, v))
+    }
+    val beforeInsertIndexCount = duplicatesReversed.count(_ < index)
     val newIndex = index - beforeInsertIndexCount
-    duplicates.foreach(seq.remove)
     seq.insert(newIndex, values: _*)
-    duplicates
+    val inserted = values.iterator.zipWithIndex.map {
+      case ((k, v), i) => Added(Entry(i, k, v))
+    }.toSeq
+    removed ++ inserted
   }
 
   /**
     * @return indices removed before insertion because of duplicates
     */
-  def append(values: Seq[(K, V)]): Seq[Int] = {
-    insert(seq.size, values)
+  def appendAll(values: Seq[(K, V)]): EntryPatch[K, V] = {
+    insert(seq.size, values: _*)
   }
 
   /**
     * @return indices removed before insertion because of duplicates
     */
-  def append(key: K, value: V): Seq[Int] = {
-    append(Seq((key, value)))
+  def append(key: K, value: V): EntryPatch[K, V] = {
+    appendAll(Seq((key, value)))
   }
 
-  def remove(index: Int, count: Int): Unit = {
+  def remove(index: Int, count: Int): EntryPatch[K, V] = {
+    val removed = slice(index, index + count)
     seq.remove(index, count)
+    removed.zipWithIndex.map { case ((k, v), i) =>
+      Removed(Entry(index + i, k, v))
+    }
   }
 
   def get(key: K): Opt[V] = {
@@ -61,21 +73,49 @@ class SeqMap[K, V] {
     val index = findIndex(key)
     index match {
       case Opt(i) => seq.update(i, (key, value))
-      case Opt.Empty => append(Seq((key, value)))
+      case Opt.Empty => appendAll(Seq((key, value)))
     }
     index.getOrElse(seq.size)
   }
 
-  def remove(key: K): Opt[V] = {
-    val index = findIndex(key)
-    index.map(seq.remove).map(_._2)
+  def remove(key: K): EntryPatch[K, V] = {
+    findIndex(key).map { i =>
+      val v = seq.remove(i)._2
+      Seq(Removed(Entry(i, key, v)))
+    }.getOrElse(Seq.empty)
+  }
+
+  def retainKeys(toRetain: BSet[K]): EntryPatch[K, V] = {
+    val removed = seq.iterator.zipWithIndex.collect {
+      case ((k, v), i) if !toRetain.contains(k) =>
+        Removed(Entry(i, k, v))
+    }.toSeq
+    seq = seq.filter(e => toRetain.contains(e._1))
+    removed.reverse
+  }
+
+  def update(keys: Iterable[K], updateValue: (K, V) => Unit, insertValue: K => V): EntryPatch[K, V] = {
+    val patches = Vector.newBuilder[Modification[K, V]]
+    for ((k, i) <- keys.zipWithIndex) {
+      findIndex(k) match {
+        case Opt(currentIndex) =>
+          if (i != currentIndex) {
+            //currentIndex must be greater than i
+            patches ++= remove(i, currentIndex - i)
+          }
+          updateValue(k, seq(i)._2)
+        case Opt.Empty =>
+          patches ++= insert(i, (k, insertValue(k)))
+      }
+    }
+    patches.result()
   }
 
   private def findIndex(key: K) = {
     seq.indexWhere(v => v._1 == key).opt.filter(_ != -1)
   }
 
-  private def findDuplicates(values: Set[K]): Seq[Int] = {
+  private def findDuplicates(values: BSet[K]): Seq[Int] = {
     val duplicates = new ArrayBuffer[Int]
     for (i <- seq.indices) {
       if (values.contains(seq(i)._1)) {
@@ -84,4 +124,18 @@ class SeqMap[K, V] {
     }
     duplicates
   }
+}
+
+object SeqMap {
+
+  case class Entry[K, V](index: Int, key: K, value: V)
+
+  sealed trait Modification[K, V]
+
+  case class Removed[K, V](entry: Entry[K, V]) extends Modification[K, V]
+
+  case class Added[K, V](entry: Entry[K, V]) extends Modification[K, V]
+
+  type EntryPatch[K, V] = Seq[Modification[K, V]]
+
 }

@@ -1,9 +1,10 @@
-package poligon.polyproperty
+package poligon
+package polyproperty
 
 import com.avsystem.commons.serialization.GenRef
 import com.github.ghik.silencer.silent
 import poligon.polyproperty.PropertyObserver.{PropertyObservers, SeqPatch}
-import poligon.{ClassTag, Opt}
+import poligon.polyproperty.SeqMap.EntryPatch
 
 import scala.collection.mutable
 
@@ -60,9 +61,11 @@ object Property {
 
   class UnionProperty[T](var caseName: String, var value: Property[_ <: T]) extends Property[T]
 
-  class SeqMapProperty[K, V, T[_]](val value: SeqMap[K, Property[V]]) extends Property[T[V]]
+  class SeqMapProperty[K, V, T](val value: SeqMap[K, Property[V]]) extends Property[T]
 
-  type SeqProperty[E] = SeqMapProperty[Int, E, Seq]
+  type SeqProperty[E] = SeqMapProperty[Int, E, Seq[E]]
+
+  type MapProperty[K, V] = SeqMapProperty[K, V, BMap[K, V]]
 
   def print(property: Property[_]): String = {
     property match {
@@ -71,6 +74,20 @@ object Property {
       case u: UnionProperty[_] => s"${u.caseName}: ${print(u.value)}"
       case s: SeqMapProperty[_, _, _] => "[" + s.value.map(p => s"${p._1} -> ${print(p._2)}").mkString(", ") + "]"
     }
+  }
+
+  sealed trait PropertyChange {
+    def property: Property[_]
+  }
+
+  object PropertyChange {
+
+    class ValueChange(val property: Property[_]) extends PropertyChange
+
+    class SeqMapStructuralChange[K, V, T](val property: SeqMapProperty[K, V, T], modifications: EntryPatch[K, V]) extends PropertyChange
+
+    class UnionChange[T](val property: UnionProperty[T], val newValue: Property[_ <: T], val oldValue: Property[_ <: T]) extends PropertyChange
+
   }
 
 }

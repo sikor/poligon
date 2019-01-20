@@ -19,6 +19,10 @@ sealed trait PropertyCodec[T] {
 
   def newProperty(value: T): PropertyType
 
+  /**
+    * Return all properties that were changed and removed.
+    * All ancestors of property has non-structural change that must be handled by caller.
+    */
   def updateProperty(value: T, property: PropertyType, onChildPropertyChanged: PropertyLifetimeListener): Unit
 
   def readProperty(property: PropertyType): T
@@ -124,9 +128,9 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
       (i + idx, elementCodec.newProperty(e))
     }
     val removedEntries = property.value.slice(idx, property.value.size())
-    property.value.insert(idx, newValues)
+    property.value.insert(idx, newValues: _*)
     val movedValues = removedEntries.map { case (k, v) => (k + value.size, v) }
-    property.value.append(movedValues)
+    property.value.appendAll(movedValues)
     //TODO: design SeqMapPatch that has move index operation/add and remove
     new SeqPatch(property, idx, newValues.map(_._2), Seq.empty)
   }
@@ -144,6 +148,37 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
 
 object SeqPropertyCodec {
   def apply[E](implicit spc: SeqPropertyCodec[E]): SeqPropertyCodec[E] = spc
+}
+
+class MapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V]) extends PropertyCodec[BMap[K, V]] {
+  type PropertyType = MapProperty[K, V]
+
+  def newProperty(value: BMap[K, V]): PropertyType = {
+    val property = new MapProperty[K, V](new SeqMap)
+    value.zipWithIndex.foreach { case (v, i) =>
+      val value: Property[V] = elementCodec.newProperty(v._2)
+      val key: K = v._1
+      property.value.append(key, value)
+    }
+    property
+  }
+
+  def updateProperty(value: BMap[K, V], property: PropertyType, onChildPropertyChanged: PropertyLifetimeListener): Unit = {
+    property.value.update(
+      value.keys,
+      (k, v) => {
+        onChildPropertyChanged.onPropertyChanged(v)
+        elementCodec.updateProperty(value(k), v.asInstanceOf[elementCodec.PropertyType], onChildPropertyChanged)
+      },
+      k => elementCodec.newProperty(value(k)))
+
+  }
+
+  def readProperty(property: PropertyType): BMap[K, V] = {
+    val lhm = new mutable.LinkedHashMap[K, V]
+    property.value.foreach { case (k, v) => lhm.put(k, elementCodec.readProperty(v.asInstanceOf[elementCodec.PropertyType])) }
+    lhm
+  }
 }
 
 @positioned(positioned.here) class UnionPropertyCodec[T](
