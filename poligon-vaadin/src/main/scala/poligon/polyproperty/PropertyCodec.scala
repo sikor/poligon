@@ -9,7 +9,6 @@ import com.avsystem.commons.misc.{ApplierUnapplier, ValueOf}
 import com.avsystem.commons.serialization.GenRef
 import poligon.polyproperty.Property.PropertyChange.{SeqMapStructuralChange, UnionChange, ValueChange}
 import poligon.polyproperty.Property._
-import poligon.polyproperty.PropertyCodec.PropertyLifetimeListener
 import poligon.polyproperty.PropertyObserver.SeqPatch
 
 import scala.collection.mutable
@@ -26,24 +25,12 @@ sealed trait PropertyCodec[T] {
     * All ancestors of property has non-structural change that must be handled by caller.
     * Returns information about which properties are changed (including argument property) in the bottom up order.
     */
-  def updateProperty(value: T, property: PropertyType, onChildPropertyChanged: PropertyLifetimeListener): Seq[PropertyChange]
+  def updateProperty(value: T, property: PropertyType): Seq[PropertyChange]
 
   def readProperty(property: PropertyType): T
 }
 
 object PropertyCodec {
-
-  trait PropertyLifetimeListener {
-    def onPropertyChanged(property: Property[_]): Unit
-
-    def onPropertyRemoved(property: Property[_]): Unit
-  }
-
-  object NoOpPropertyLifetimeListener extends PropertyLifetimeListener {
-    override def onPropertyChanged(property: Property[_]): Unit = {}
-
-    override def onPropertyRemoved(property: Property[_]): Unit = {}
-  }
 
   implicit val stringCodec: SimplePropertyCodec[String] = SimplePropertyCodec.materialize[String]
   implicit val byteCodec: SimplePropertyCodec[Byte] = SimplePropertyCodec.materialize[Byte]
@@ -71,9 +58,9 @@ object PropertyCodec {
 
   def newProperty[T: PropertyCodec](value: T): Property[T] = PropertyCodec[T].newProperty(value)
 
-  def updateProperty[T: PropertyCodec](value: T, property: Property[T], onChildPropertyChanged: PropertyLifetimeListener = NoOpPropertyLifetimeListener): Unit = {
+  def updateProperty[T: PropertyCodec](value: T, property: Property[T]): Seq[PropertyChange] = {
     val codec = PropertyCodec[T]
-    codec.updateProperty(value, property.asInstanceOf[codec.PropertyType], onChildPropertyChanged)
+    codec.updateProperty(value, property.asInstanceOf[codec.PropertyType])
   }
 
   def readProperty[T: PropertyCodec](property: Property[T]): T = {
@@ -88,7 +75,7 @@ class SimplePropertyCodec[T] extends PropertyCodec[T] {
   override def newProperty(value: T): SimpleProperty[T] =
     new SimpleProperty[T](value)
 
-  override def updateProperty(value: T, property: SimpleProperty[T], onChildPropertyChanged: PropertyLifetimeListener): Seq[PropertyChange] = {
+  override def updateProperty(value: T, property: SimpleProperty[T]): Seq[PropertyChange] = {
     if (property.value != value) {
       property.value = value
       Seq(new ValueChange(property))
@@ -117,7 +104,7 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
     property
   }
 
-  override def updateProperty(value: Seq[E], property: SeqProperty[E], onChildPropertyChanged: PropertyLifetimeListener): Seq[PropertyChange] = {
+  override def updateProperty(value: Seq[E], property: SeqProperty[E]): Seq[PropertyChange] = {
     val removedData = property.value.clear()
     val addedData = value.zipWithIndex.flatMap { case (v, i) =>
       val pwc = elementCodec.newProperty(v)
@@ -170,12 +157,12 @@ class MapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V]) extend
     property
   }
 
-  def updateProperty(value: BMap[K, V], property: PropertyType, onChildPropertyChanged: PropertyLifetimeListener): Seq[PropertyChange] = {
+  def updateProperty(value: BMap[K, V], property: PropertyType): Seq[PropertyChange] = {
     val childrenUpdates = new ArrayBuffer[PropertyChange]
     val thisUpdates = property.value.update(
       value.keys,
       (k, v) => {
-        childrenUpdates ++= elementCodec.updateProperty(value(k), v.asInstanceOf[elementCodec.PropertyType], onChildPropertyChanged)
+        childrenUpdates ++= elementCodec.updateProperty(value(k), v.asInstanceOf[elementCodec.PropertyType])
       },
       k => elementCodec.newProperty(value(k)))
     if (thisUpdates.nonEmpty) {
@@ -211,13 +198,13 @@ class MapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V]) extend
     cases.findOpt(_.isInstance(value)).getOrElse(throw new Exception(s"Unknown case: $value"))
   }
 
-  override def updateProperty(value: T, property: UnionProperty[T], onChildPropertyChanged: PropertyLifetimeListener): Seq[PropertyChange] = {
+  override def updateProperty(value: T, property: UnionProperty[T]): Seq[PropertyChange] = {
     val thiCase = caseForValue(value)
     val caseCodec = thiCase.propertyCodec.asInstanceOf[PropertyCodec[T]]
 
     if (property.caseName == thiCase.name) {
       val changeBuilder = new ArrayBuffer[PropertyChange]
-      changeBuilder ++= caseCodec.updateProperty(value, property.value.asInstanceOf[caseCodec.PropertyType], onChildPropertyChanged)
+      changeBuilder ++= caseCodec.updateProperty(value, property.value.asInstanceOf[caseCodec.PropertyType])
       if (changeBuilder.nonEmpty) {
         changeBuilder += new ValueChange(property)
       }
@@ -300,15 +287,14 @@ sealed trait UnionPropertyCase[T] extends TypedMetadata[T] {
     property
   }
 
-  override def updateProperty(value: T, property: RecordProperty[T], onChildPropertyChanged: PropertyLifetimeListener): Seq[PropertyChange] = {
+  override def updateProperty(value: T, property: RecordProperty[T]): Seq[PropertyChange] = {
     val changeBuilder = new ArrayBuffer[PropertyChange]
     val map = property.fields
     fields.zip(unapplier.unapply(value)).foreach {
       case (field, newFieldValue) =>
         val fieldProperty = map(field.name)
-        onChildPropertyChanged.onPropertyChanged(fieldProperty)
         val codec = field.propertyCodec.asInstanceOf[PropertyCodec[Any]]
-        changeBuilder ++= codec.updateProperty(newFieldValue, fieldProperty.asInstanceOf[codec.PropertyType], onChildPropertyChanged)
+        changeBuilder ++= codec.updateProperty(newFieldValue, fieldProperty.asInstanceOf[codec.PropertyType])
     }
     if (changeBuilder.nonEmpty) {
       changeBuilder += new ValueChange(property)

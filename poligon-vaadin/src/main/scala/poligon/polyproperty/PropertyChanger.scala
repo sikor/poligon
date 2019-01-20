@@ -1,6 +1,5 @@
 package poligon.polyproperty
 
-import poligon.polyproperty.PropertyMarker.MarkedProperties
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 /**
@@ -15,9 +14,15 @@ import poligon.polyproperty.PropertyObserver.PropertyObservers
   **/
 object PropertyChanger {
   def set[T: PropertyCodec](property: PropertyWithParent[T], value: T)(implicit po: PropertyObservers): Unit = {
-    val mp = new MarkedProperties()
-    PropertyCodec.updateProperty(value, property.property, mp)
-    PropertyMarker.traverseWithParents(property, mp.onPropertyChanged)
+    val childrenChanges = PropertyCodec.updateProperty(value, property.property)
+    val allChanges = if (childrenChanges.nonEmpty) {
+      childrenChanges ++ PropertyMarker.parentsChanged(property)
+    } else {
+      childrenChanges
+    }
+    allChanges.foreach { change =>
+
+    }
     mp.clearRemoved(po.propertyRemoved)
     mp.clearChanged(po.propertyChanged)
   }

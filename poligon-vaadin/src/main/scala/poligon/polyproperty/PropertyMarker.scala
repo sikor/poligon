@@ -1,11 +1,12 @@
 package poligon
 package polyproperty
 
+import poligon.polyproperty.Property.PropertyChange.ValueChange
 import poligon.polyproperty.Property._
-import poligon.polyproperty.PropertyCodec.PropertyLifetimeListener
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 /**
   * Requirements:
@@ -24,26 +25,6 @@ import scala.collection.mutable
   * - Create second class that will maintain the map for listeners, It will be view helper and will allow to create binding
   */
 object PropertyMarker {
-
-  class MarkedProperties() extends PropertyLifetimeListener {
-
-    private val changedProperties: mutable.HashSet[Property[_]] = new mutable.HashSet[Property[_]]()
-    private val removedProperties: mutable.HashSet[Property[_]] = new mutable.HashSet[Property[_]]()
-
-    def clearChanged(onProperty: Property[_] => Unit): Unit = {
-      changedProperties.foreach(onProperty)
-      changedProperties.clear()
-    }
-
-    def clearRemoved(onProperty: Property[_] => Unit): Unit = {
-      removedProperties.foreach(onProperty)
-      removedProperties.clear()
-    }
-
-    override def onPropertyChanged(property: Property[_]): Unit = changedProperties += property
-
-    override def onPropertyRemoved(property: Property[_]): Unit = removedProperties += property
-  }
 
   def traverseWithParents(p: PropertyWithParent[_], onProperty: Property[_] => Unit): Unit = {
     onProperty(p.property)
@@ -82,6 +63,12 @@ object PropertyMarker {
         onParent(parent.property)
         traverseParents(parent, onParent)
     }
+  }
+
+  def parentsChanged(p: PropertyWithParent[_]): Seq[PropertyChange] = {
+    val results = new ArrayBuffer[PropertyChange]
+    traverseParents(p, parent => results += new ValueChange(parent))
+    results
   }
 
 }
