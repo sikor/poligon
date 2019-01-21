@@ -4,6 +4,7 @@ import com.avsystem.commons.misc.OptArg
 import com.vaadin.ui._
 import exampleapp.properties.Binder.LayoutDescription.{Horizontal, Vertical}
 import exampleapp.properties.Comp.Bound
+import poligon.polyproperty.Property.PropertyChange.{Added, Removed}
 import poligon.polyproperty.{Obs, Property, PropertyCodec, SubProperty}
 
 
@@ -56,15 +57,17 @@ object Binder {
       layout.addComponent(bound.comp)
     }
     property.listenStructure[E] { patch =>
-      patch.removed.foreach { _ =>
-        val removedComponent = layout.getComponent(patch.idx)
-        po.deregisterSubObservers(removedComponent)
-        layout.removeComponent(removedComponent)
-      }
-
-      patch.added.reverse.foreach { a =>
-        val c = childFactory(a).looseBind(po)
-        layout.addComponent(c.comp, patch.idx)
+      patch.modification match {
+        case Removed(removed) => removed.foreach { _ =>
+          val removedComponent = layout.getComponent(patch.idx)
+          po.deregisterSubObservers(removedComponent)
+          layout.removeComponent(removedComponent)
+        }
+        case Added(added) =>
+          added.reverse.foreach { a =>
+            val c = childFactory(a).looseBind(po)
+            layout.addComponent(c.comp, patch.idx)
+          }
       }
     }(po)
     Comp.unitBound(layout)

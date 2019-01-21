@@ -1,9 +1,8 @@
 package poligon.polyproperty
 
 import poligon.polyproperty.Property.PropertyChange
-import poligon.polyproperty.Property.PropertyChange.{SeqMapStructuralChange, UnionChange, ValueChange}
+import poligon.polyproperty.Property.PropertyChange._
 import poligon.polyproperty.PropertyObserver.PropertyObservers
-import poligon.polyproperty.SeqMap.Removed
 
 /**
   *
@@ -18,12 +17,16 @@ import poligon.polyproperty.SeqMap.Removed
 object PropertyChanger {
   def set[T: PropertyCodec](property: PropertyWithParent[T], value: T)(implicit po: PropertyObservers): Unit = {
     val childrenChanges = PropertyCodec.updateProperty(value, property.property)
-    val changes = if (childrenChanges.nonEmpty) {
+    val changes = withParents(property, childrenChanges)
+    callListeners(changes, po)
+  }
+
+  private def withParents[T: PropertyCodec](property: PropertyWithParent[T], childrenChanges: Seq[PropertyChange]) = {
+    if (childrenChanges.nonEmpty) {
       childrenChanges ++ PropertyMarker.parentsChanged(property)
     } else {
       childrenChanges
     }
-    callListeners(changes, po)
   }
 
   private def callListeners(changes: Seq[PropertyChange], po: PropertyObservers): Unit = {
@@ -35,6 +38,13 @@ object PropertyChanger {
         sp.modifications.foreach {
           case Removed(entry) =>
             po.propertyRemoved(entry.value)
+          case _ =>
+        }
+      case s: SeqStructuralChange[_] =>
+        po.seqChanged(s)
+        s.modification match {
+          case Removed(elems) =>
+            elems.foreach(e => po.propertyRemoved(e))
           case _ =>
         }
       case u: UnionChange[_] =>
@@ -51,7 +61,7 @@ object PropertyChanger {
                                    observed: PropertyObservers): Unit = {
     val seqProp = SubProperty.asSeqProperty(property.property)
     val patch = SeqPropertyCodec[E].insert(seqProp, index, value)
-    observed.seqChanged(patch)
+    callListeners(withParents(property, patch), observed)
   }
 
   def append[E: SeqPropertyCodec](
@@ -61,7 +71,7 @@ object PropertyChanger {
                                    observed: PropertyObservers): Unit = {
     val seqProp = SubProperty.asSeqProperty(property.property)
     val patch = SeqPropertyCodec[E].append(seqProp, value)
-    observed.seqChanged(patch)
+    callListeners(withParents(property, patch), observed)
   }
 
   def remove[E: SeqPropertyCodec](
@@ -72,8 +82,7 @@ object PropertyChanger {
                                    observed: PropertyObservers): Unit = {
     val seqProp = SubProperty.asSeqProperty(property.property)
     val patch = SeqPropertyCodec[E].remove(seqProp, index, count)
-    patch.removed.foreach(observed.propertyRemoved)
-    observed.seqChanged(patch)
+    callListeners(withParents(property, patch), observed)
   }
 
 

@@ -1,9 +1,7 @@
 package poligon
 package polyproperty
 
-import poligon.polyproperty.Property.PropertyChange.{SeqMapStructuralChange, UnionChange}
-import poligon.polyproperty.Property.SeqProperty
-import poligon.polyproperty.PropertyObserver.SeqPatch
+import poligon.polyproperty.Property.PropertyChange.{SeqMapStructuralChange, SeqStructuralChange, UnionChange}
 
 import scala.collection.mutable
 
@@ -12,7 +10,7 @@ trait PropertyObserver[T] {
 
   def propertyRemoved(property: Property[T]): Unit
 
-  def seqChanged(patch: SeqPatch[_]): Unit
+  def seqChanged(patch: SeqStructuralChange[_]): Unit
 
   def seqMapChanged(patch: SeqMapStructuralChange[_, _, _]): Unit
 
@@ -24,8 +22,6 @@ object PropertyObserver {
   type ObserversMapT = mutable.HashMap[Property[_], mutable.Set[AnyPropertyObserver]]
   type ObserversMultiMap = mutable.MultiMap[Property[_], AnyPropertyObserver]
   type OMM = ObserversMapT with ObserversMultiMap
-
-  class SeqPatch[E](val property: SeqProperty[E], val idx: Int, val added: Seq[Property[E]], val removed: Seq[Property[E]])
 
   class ObserversMap(private val observers: OMM = new ObserversMapT with ObserversMultiMap) extends AnyVal {
 
@@ -42,7 +38,7 @@ object PropertyObserver {
       observers.remove(property).foreach(_.foreach(l => l.propertyRemoved(property.asInstanceOf[Property[Any]])))
     }
 
-    def seqChanged(patch: SeqPatch[_]): Unit = {
+    def seqChanged(patch: SeqStructuralChange[_]): Unit = {
       observers.get(patch.property).foreach(_.foreach(l => l.seqChanged(patch)))
     }
 
@@ -90,7 +86,7 @@ object PropertyObserver {
       traverseAll(_.propertyRemoved(property))
     }
 
-    def seqChanged(patch: SeqPatch[_]): Unit = {
+    def seqChanged(patch: SeqStructuralChange[_]): Unit = {
       traverseAll(_.seqChanged(patch))
     }
 

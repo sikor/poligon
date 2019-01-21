@@ -46,6 +46,11 @@ object PropertyMarker {
           onChild(f)
           traverseChildren(f, onChild)
         }
+      case s: SeqProperty[_] =>
+        s.value.foreach { e =>
+          onChild(e)
+          traverseChildren(e, onChild)
+        }
       case s: SeqMapProperty[_, _, _] =>
         s.value.foreach { e =>
           onChild(e._2)
