@@ -1,6 +1,9 @@
 package poligon.polyproperty
 
+import poligon.polyproperty.Property.PropertyChange
+import poligon.polyproperty.Property.PropertyChange.{SeqMapStructuralChange, UnionChange, ValueChange}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
+import poligon.polyproperty.SeqMap.Removed
 
 /**
   *
@@ -15,16 +18,29 @@ import poligon.polyproperty.PropertyObserver.PropertyObservers
 object PropertyChanger {
   def set[T: PropertyCodec](property: PropertyWithParent[T], value: T)(implicit po: PropertyObservers): Unit = {
     val childrenChanges = PropertyCodec.updateProperty(value, property.property)
-    val allChanges = if (childrenChanges.nonEmpty) {
+    val changes = if (childrenChanges.nonEmpty) {
       childrenChanges ++ PropertyMarker.parentsChanged(property)
     } else {
       childrenChanges
     }
-    allChanges.foreach { change =>
+    callListeners(changes, po)
+  }
 
+  private def callListeners(changes: Seq[PropertyChange], po: PropertyObservers): Unit = {
+    changes.foreach {
+      case v: ValueChange =>
+        po.propertyChanged(v.property)
+      case sp: SeqMapStructuralChange[_, _, _] =>
+        po.seqMapChanged(sp)
+        sp.modifications.foreach {
+          case Removed(entry) =>
+            po.propertyRemoved(entry.value)
+          case _ =>
+        }
+      case u: UnionChange[_] =>
+        po.unionChanged(u)
+        po.propertyRemoved(u.oldValue)
     }
-    mp.clearRemoved(po.propertyRemoved)
-    mp.clearChanged(po.propertyChanged)
   }
 
   def insert[E: SeqPropertyCodec](

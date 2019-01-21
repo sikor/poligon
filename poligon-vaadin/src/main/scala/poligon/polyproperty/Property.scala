@@ -3,6 +3,7 @@ package polyproperty
 
 import com.avsystem.commons.serialization.GenRef
 import com.github.ghik.silencer.silent
+import poligon.polyproperty.Property.PropertyChange
 import poligon.polyproperty.PropertyObserver.{PropertyObservers, SeqPatch}
 import poligon.polyproperty.SeqMap.EntryPatch
 
@@ -28,6 +29,10 @@ sealed trait Property[T] {
       override def seqChanged(patch: SeqPatch[_]): Unit = {
         listener(patch.asInstanceOf[SeqPatch[E]])
       }
+
+      def seqMapChanged(patch: PropertyChange.SeqMapStructuralChange[_, _, _]): Unit = {}
+
+      def unionChanged(patch: PropertyChange.UnionChange[Seq[E]]): Unit = {}
     })
   }
 
@@ -40,6 +45,10 @@ sealed trait Property[T] {
       override def propertyRemoved(property: Property[T]): Unit = {}
 
       override def seqChanged(patch: SeqPatch[_]): Unit = {}
+
+      def seqMapChanged(patch: PropertyChange.SeqMapStructuralChange[_, _, _]): Unit = {}
+
+      def unionChanged(patch: PropertyChange.UnionChange[T]): Unit = {}
     })
     if (init) {
       listener(get)
@@ -84,7 +93,7 @@ object Property {
 
     class ValueChange(val property: Property[_]) extends PropertyChange
 
-    class SeqMapStructuralChange[K, V, T](val property: SeqMapProperty[K, V, T], modifications: EntryPatch[K, Property[V]]) extends PropertyChange
+    class SeqMapStructuralChange[K, V, T](val property: SeqMapProperty[K, V, T], val modifications: EntryPatch[K, Property[V]]) extends PropertyChange
 
     class UnionChange[T](val property: UnionProperty[T], val newValue: Property[_ <: T], val oldValue: Property[_ <: T]) extends PropertyChange
 

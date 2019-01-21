@@ -5,7 +5,6 @@ import poligon.polyproperty.Property.PropertyChange.ValueChange
 import poligon.polyproperty.Property._
 
 import scala.annotation.tailrec
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 /**
