@@ -1,6 +1,7 @@
 package exampleapp.view
 
 import exampleapp.services.DmService
+import exampleapp.services.DmService.{DmTree, Node, Value}
 import exampleapp.view.MainView.MainViewContentPresenter.ObjectsPanelContent
 import exampleapp.view.ObjectsPanelPresenter.ActionStatus.Success
 import exampleapp.view.ObjectsPanelPresenter._
@@ -9,7 +10,6 @@ import poligon.polyproperty._
 
 
 object ObjectsPanelPresenter {
-
 
   sealed trait ActionStatus
 
@@ -55,21 +55,34 @@ object ObjectsPanelPresenter {
 
   object SomeObject extends HasRecordPropertyCodec[SomeObject]
 
+  def dmToObjects(dm: Node): Seq[SomeObject] = {
+    dm.children.collect { case (cn, cv: Node) => nodeToObject(cn, cv) }.toSeq
+  }
+
+  def nodeToObject(name: String, node: Node): SomeObject = {
+    SomeObject(name, node.children.collect { case (cn, cv: Node) => nodeToInstance(cn, cv) }.toSeq)
+  }
+
+  def nodeToInstance(name: String, node: Node): ObjectInstance = {
+    ObjectInstance(name.toInt, node.children.map { case (cn, cv) => treeToResource(cn, cv) }.toSeq)
+  }
+
+  def treeToResource(name: String, node: DmTree): Resource = {
+    node match {
+      case n: Node =>
+        MultiResource(name, n.children.collect { case (idx, Value(value)) => ResourceInstance(idx.toInt, value) }.toSeq)
+      case Value(value) =>
+        SingleResource(name, value)
+    }
+  }
 
 }
 
 class ObjectsPanelPresenter(dmService: DmService) extends ObjectsPanelContent {
-  private val model: PropertyWithParent[Seq[SomeObject]] = {
-    PropertyWithParent(
-      Seq(
-        SomeObject("object 1", Vector(
-          ObjectInstance(3, Vector(
-            SingleResource("resource 1", "value1"),
-            MultiResource("multi resource", Seq(ResourceInstance(2, "value 2"), ResourceInstance(3, "value 3")))))))))
-  }
+  private val model: PropertyWithParent[Seq[SomeObject]] = PropertyWithParent(dmToObjects(dmService.getDm))
+
 
   def getModel: Property[Seq[SomeObject]] = model.property
-
 
   def setSingleResourceValue(o: String, instance: Int, resource: String, value: String)(implicit po: PropertyObservers): Unit = {
     val resourceModel = findResource(o, instance, resource)

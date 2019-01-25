@@ -16,9 +16,11 @@ class DmService {
 
   var dmTree: Node = Node(Map.empty)
 
-  setValue(List("Device", "Details", "Manufacturer"), "asus")
-  setValue(List("Device", "Details", "Model"), "n551jm")
-  setValue(List("Device", "Details", "Version"), "3.0.1")
+  setValue(List("Device", "1", "Manufacturer"), "asus")
+  setValue(List("Device", "1", "Model"), "n551jm")
+  setValue(List("Device", "1", "Version"), "3.0.1")
+  setValue(List("Device", "1", "Errors", "0"), "message 1")
+  setValue(List("Device", "1", "Errors", "1"), "message 2")
 
   def getDm: Node = {
     dmTree
@@ -34,8 +36,8 @@ class DmService {
     dmTree = replace(dmTree, path, None)
   }
 
-  private def replace(tree: Node, p: List[String], newVal: Option[String]): Node = {
-    p match {
+  private def replace(tree: Node, path: List[String], newVal: Option[String]): Node = {
+    path match {
       case head :: Nil =>
         val newMap: Map[String, DmTree] = newVal match {
           case Some(v) => tree.children + (head -> Value(v))
