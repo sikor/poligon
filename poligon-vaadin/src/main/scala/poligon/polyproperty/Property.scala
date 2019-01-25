@@ -76,7 +76,6 @@ object Property {
 
   class SeqMapProperty[K, V, T](val value: SeqMap[K, Property[V]]) extends Property[T]
 
-
   type MapProperty[K, V] = SeqMapProperty[K, V, BMap[K, V]]
 
   def print(property: Property[_]): String = {
@@ -108,6 +107,16 @@ object Property {
     class SeqStructuralChange[E](val property: SeqProperty[E], val idx: Int, val modification: Modification[Seq[Property[E]]]) extends PropertyChange
 
     class UnionChange[T](val property: UnionProperty[T], val newValue: Property[_ <: T], val oldValue: Property[_ <: T]) extends PropertyChange
+
+  }
+
+  sealed trait Diff[+T]
+
+  object Diff {
+
+    case object NoOp extends Diff[Nothing]
+
+    case class Val[T](value: T) extends Diff[T]
 
   }
 

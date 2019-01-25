@@ -7,6 +7,7 @@ import com.avsystem.commons.annotation.positioned
 import com.avsystem.commons.meta._
 import com.avsystem.commons.misc.{ApplierUnapplier, ValueOf}
 import com.avsystem.commons.serialization.GenRef
+import poligon.polyproperty.Property.Diff.{Val, NoOp}
 import poligon.polyproperty.Property.PropertyChange._
 import poligon.polyproperty.Property.{PropertyChange, _}
 
@@ -47,9 +48,25 @@ object PropertyCodec {
   private val noneCodec: SimplePropertyCodec[None.type] = SimplePropertyCodec.materialize[None.type]
 
   implicit def optionCodec[T: PropertyCodec]: UnionPropertyCodec[Option[T]] = new UnionPropertyCodec[Option[T]](
-    List(new Predefined[Some[T]]("Some", implicitly[ClassTag[Some[T]]], someCodec[T]),
-      new Predefined[None.type]("None", implicitly[ClassTag[None.type]], noneCodec))
+    List(new Predefined[Some[T]](classOf[Some[_]].getSimpleName, implicitly[ClassTag[Some[T]]], someCodec[T]),
+      new Predefined[None.type](None.getClass.getSimpleName, implicitly[ClassTag[None.type]], noneCodec))
   )
+
+  private val noOpCodec: SimplePropertyCodec[NoOp.type] = SimplePropertyCodec.materialize[NoOp.type]
+
+  private def valCodec[T: PropertyCodec]: RecordPropertyCodec[Val[T]] = RecordPropertyCodec.materialize[Val[T]]
+
+  implicit def diffCodec[T: PropertyCodec]: UnionPropertyCodec[Diff[T]] = new UnionPropertyCodec[Diff[T]](
+    List(new Predefined[Val[T]](classOf[Val[_]].getSimpleName, implicitly[ClassTag[Val[T]]], valCodec[T]),
+      new Predefined[NoOp.type](NoOp.getClass.getSimpleName, implicitly[ClassTag[NoOp.type]], noOpCodec))
+  ) {
+    override def updateProperty(value: Diff[T], property: UnionProperty[Diff[T]]): Seq[PropertyChange] = {
+      value match {
+        case NoOp => Seq.empty
+        case _: Val[T] => super.updateProperty(value, property)
+      }
+    }
+  }
 
   implicit def seqCodec[E: PropertyCodec]: SeqPropertyCodec[E] = new SeqPropertyCodec[E]()
 
