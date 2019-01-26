@@ -5,6 +5,8 @@ import exampleapp.services.DmService.{DmTree, Node, Value}
 import exampleapp.view.MainView.MainViewContentPresenter.ObjectsPanelContent
 import exampleapp.view.ObjectsPanelPresenter.ActionStatus.Success
 import exampleapp.view.ObjectsPanelPresenter._
+import poligon.polyproperty.Property.Diff
+import poligon.polyproperty.Property.Diff.{NoOp, Val}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty._
 
@@ -33,23 +35,23 @@ object ObjectsPanelPresenter {
     def name: String
   }
 
-  case class ResourceInstance(idx: Int, value: String, formValue: Option[String] = None)
+  case class ResourceInstance(idx: Int, value: String, formValue: Diff[String] = NoOp)
 
   object ResourceInstance extends HasRecordPropertyCodec[ResourceInstance]
 
-  case class SingleResource(name: String, value: String, lastAction: Option[Action] = None, formValue: Option[String] = None) extends Resource
+  case class SingleResource(name: String, value: String, lastAction: Diff[Action] = NoOp, formValue: Diff[String] = NoOp) extends Resource
 
   object SingleResource extends HasRecordPropertyCodec[SingleResource]
 
-  case class MultiResource(name: String, value: Seq[ResourceInstance], lastAction: Option[Action] = None) extends Resource
+  case class MultiResource(name: String, value: Seq[ResourceInstance], lastAction: Diff[Action] = NoOp) extends Resource
 
   object MultiResource extends HasRecordPropertyCodec[MultiResource]
 
   object Resource extends HasUnionPropertyCodec[Resource]
 
-  case class ObjectInstance(id: Int, resources: Seq[Resource], lastAction: Option[Action] = None)
+  case class ObjectInstance(id: Int, resources: Seq[Resource], lastAction: Diff[Action] = NoOp)
 
-  case class SomeObject(name: String, instances: Seq[ObjectInstance], lastAction: Option[Action] = None)
+  case class SomeObject(name: String, instances: Seq[ObjectInstance], lastAction: Diff[Action] = NoOp)
 
   object ObjectInstance extends HasRecordPropertyCodec[ObjectInstance]
 
@@ -86,7 +88,7 @@ class ObjectsPanelPresenter(dmService: DmService) extends ObjectsPanelContent {
 
   def setSingleResourceValue(o: String, instance: Int, resource: String, value: String)(implicit po: PropertyObservers): Unit = {
     val resourceModel = findResource(o, instance, resource)
-    resourceModel.getCase[SingleResource].get.getField(_.formValue).set(Some(value))
+    resourceModel.getCase[SingleResource].get.getField(_.formValue).set(Val(value))
   }
 
   def setMultiResourceValue(o: String, instance: Int, resource: String, resourcesInstance: Int, value: String)(implicit po: PropertyObservers): Unit = {
@@ -96,7 +98,7 @@ class ObjectsPanelPresenter(dmService: DmService) extends ObjectsPanelContent {
       .getField(_.value).getSeq
       .find(i => i.get.idx == resourcesInstance).get
       .getField(_.formValue)
-      .set(Some(value))
+      .set(Val(value))
   }
 
   def saveResources(): Unit = {
@@ -110,7 +112,7 @@ class ObjectsPanelPresenter(dmService: DmService) extends ObjectsPanelContent {
   def addInstance(o: String, i: Int)(implicit po: PropertyObservers): Unit = {
     val objectModel = findObject(o)
     objectModel.getField(_.instances).append(ObjectInstance(i, Seq.empty))
-    objectModel.getField(_.lastAction).set(Some(Action(Success, s"instance added: $i")))
+    objectModel.getField(_.lastAction).set(Val(Action(Success, s"instance added: $i")))
   }
 
   def addResource(o: String, i: Int, r: String, value: String)(implicit po: PropertyObservers): Unit = {
