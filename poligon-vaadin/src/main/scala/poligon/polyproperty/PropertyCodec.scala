@@ -10,7 +10,7 @@ import com.avsystem.commons.serialization.GenRef
 import poligon.polyproperty.Property.Diff.{NoOp, Val}
 import poligon.polyproperty.Property.PropertyChange._
 import poligon.polyproperty.Property.{PropertyChange, _}
-import poligon.polyproperty.SeqMap.EntryPatch
+import poligon.polyproperty.SeqMap.{Entry, EntryPatch}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{SortedMap, mutable}
@@ -125,28 +125,38 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
 
   override def updateProperty(value: Seq[E], property: SeqProperty[E]): Seq[PropertyChange] = {
     val childrenUpdates = new ArrayBuffer[PropertyChange]
-    if (value.size <= property.value.size) {
+    val oldSize = property.value.size
+    if (value.size <= oldSize) {
       value.zipWithIndex.foreach { case (v, index) =>
         childrenUpdates ++= elementCodec.updateProperty(v, property.value(index).asInstanceOf[elementCodec.PropertyType])
       }
       val removed = property.value.slice(value.size, property.value.size - value.size)
       property.value.remove(value.size, property.value.size - value.size)
       if (removed.nonEmpty) {
-        childrenUpdates += new SeqStructuralChange(property, value.size, Removed[Seq[Property[E]]](removed))
+        val changes = removed.reverseIterator.zipWithIndex
+          .map { case (r, i) =>
+            val idx = oldSize - i - 1
+            Removed(Entry(idx, idx, r))
+          }.toSeq
+        childrenUpdates += new SeqStructuralChange(property, changes)
       } else if (childrenUpdates.nonEmpty) {
         childrenUpdates += new ValueChange(property)
       }
     } else {
-      val oldSize = property.value.size
       value.zipWithIndex.takeWhile(e => e._2 < oldSize).foreach { case (v, index) =>
         childrenUpdates ++= elementCodec.updateProperty(v, property.value(index).asInstanceOf[elementCodec.PropertyType])
       }
-      val toInsert = value.iterator.slice(oldSize, value.size)
+      val toInsert: Seq[Property[E]] = value.iterator.slice(oldSize, value.size)
         .map(e => elementCodec.newProperty(e)).toSeq
       property.value.insertAll(oldSize, toInsert)
       if (toInsert.nonEmpty) {
-        childrenUpdates += new SeqStructuralChange(property, oldSize, Added[Seq[Property[E]]](toInsert))
-      } else if (childrenUpdates.nonEmpty) {
+        val change = toInsert.iterator.zipWithIndex.map { case (p, i) =>
+          val idx = oldSize + i
+          Added(Entry(idx, idx, p))
+        }.toSeq
+        childrenUpdates += new SeqStructuralChange(property, change)
+      }
+      else if (childrenUpdates.nonEmpty) {
         childrenUpdates += new ValueChange(property)
       }
     }
@@ -158,10 +168,13 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
   }
 
   def insert(property: SeqProperty[E], idx: Int, value: Seq[E]): Seq[PropertyChange] = {
-    val newValues = value.map(e => elementCodec.newProperty(e))
+    val newValues: BSeq[Property[E]] = value.map(e => elementCodec.newProperty(e))
     property.value.insert(idx, newValues: _*)
     if (value.nonEmpty) {
-      Seq(new SeqStructuralChange[E](property, idx, PropertyChange.Added(newValues)))
+      Seq(new SeqStructuralChange[E](property, newValues.iterator.zipWithIndex.map { case (r, i) =>
+        val id = idx + i
+        PropertyChange.Added(Entry(id, id, r))
+      }.toSeq))
     } else {
       Seq.empty
     }
@@ -172,11 +185,15 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
   }
 
   def remove(property: SeqProperty[E], idx: Int, count: Int): Seq[PropertyChange] = {
-    require(count >= 0)
+    val oldSize = property.value.size
+    require(count >= 0 && idx + count <= oldSize)
     val removed = property.value.slice(idx, idx + count)
     property.value.remove(idx, count)
     if (count > 0) {
-      Seq(new SeqStructuralChange[E](property, idx, Removed(removed)))
+      Seq(new SeqStructuralChange[E](property, removed.reverseIterator.zipWithIndex.map { case (r, i) =>
+        val id = oldSize - i - 1
+        Removed(Entry(id, id, r))
+      }.toSeq))
     } else {
       Seq.empty
     }

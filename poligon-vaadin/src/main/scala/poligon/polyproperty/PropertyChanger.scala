@@ -99,13 +99,6 @@ object PropertyChanger {
             po.propertyRemoved(entry.value)
           case _ =>
         }
-      case s: SeqStructuralChange[_] =>
-        po.seqChanged(s)
-        s.modification match {
-          case Removed(elems) =>
-            elems.foreach(e => po.propertyRemoved(e))
-          case _ =>
-        }
       case u: UnionChange[_] =>
         po.unionChanged(u)
         po.propertyRemoved(u.oldValue)

@@ -107,7 +107,7 @@ object Property {
 
     class SeqMapStructuralChange[K, V, T](val property: Property[T], val modifications: EntryPatch[K, Property[V]]) extends PropertyChange
 
-    class SeqStructuralChange[E](val property: SeqProperty[E], val idx: Int, val modification: Modification[Seq[Property[E]]]) extends PropertyChange
+    type SeqStructuralChange[E] = SeqMapStructuralChange[Int, E, Seq[E]]
 
     class UnionChange[T](val property: UnionProperty[T], val newValue: Property[_ <: T], val oldValue: Property[_ <: T]) extends PropertyChange
 
