@@ -7,12 +7,12 @@ import com.avsystem.commons.annotation.positioned
 import com.avsystem.commons.meta._
 import com.avsystem.commons.misc.{ApplierUnapplier, ValueOf}
 import com.avsystem.commons.serialization.GenRef
-import poligon.polyproperty.Property.Diff.{Val, NoOp}
+import poligon.polyproperty.Property.Diff.{NoOp, Val}
 import poligon.polyproperty.Property.PropertyChange._
 import poligon.polyproperty.Property.{PropertyChange, _}
 
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.{SortedMap, mutable}
 
 
 sealed trait PropertyCodec[T] {
@@ -69,6 +69,8 @@ object PropertyCodec {
   }
 
   implicit def seqCodec[E: PropertyCodec]: SeqPropertyCodec[E] = new SeqPropertyCodec[E]()
+
+  implicit def sortedMapCodec[K: Ordering, V: PropertyCodec]: SortedMapPropertyCodec[K, V] = new SortedMapPropertyCodec[K, V]()
 
   def apply[T](implicit v: PropertyCodec[T]): PropertyCodec[T] = v
 
@@ -221,6 +223,40 @@ class MapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V]) extend
     val lhm = new mutable.LinkedHashMap[K, V]
     property.value.foreach { case (k, v) => lhm.put(k, elementCodec.readProperty(v.asInstanceOf[elementCodec.PropertyType])) }
     lhm
+  }
+}
+
+class SortedMapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V], val ordering: Ordering[K]) extends PropertyCodec[SortedMap[K, V]] {
+  type PropertyType = SortedMapProperty[K, V, SortedMap[K, V]]
+
+  def newProperty(value: SortedMap[K, V]): PropertyType = {
+    val valueProperties = value.mapValues(v => elementCodec.newProperty(v))
+    new SortedMapProperty[K, V, SortedMap[K, V]](new SeqSortedMap[K, Property[V]](valueProperties))
+  }
+
+  def updateProperty(value: SortedMap[K, V], property: PropertyType): Seq[PropertyChange] = {
+    val childrenUpdates = new ArrayBuffer[PropertyChange]
+    val thisUpdates = property.value.update(
+      value.keys.toSeq,
+      (k, v) => {
+        childrenUpdates ++= elementCodec.updateProperty(value(k), v.asInstanceOf[elementCodec.PropertyType])
+      },
+      k => elementCodec.newProperty(value(k)))
+    if (thisUpdates.nonEmpty) {
+      childrenUpdates :+ new SeqMapStructuralChange(property, thisUpdates)
+    } else {
+      if (childrenUpdates.nonEmpty) {
+        childrenUpdates :+ new ValueChange(property)
+      } else {
+        Seq.empty
+      }
+    }
+  }
+
+  def readProperty(property: PropertyType): SortedMap[K, V] = {
+    val tree = new mutable.TreeMap[K, V]
+    property.value.foreach { case (k, v) => tree.put(k, elementCodec.readProperty(v.asInstanceOf[elementCodec.PropertyType])) }
+    tree
   }
 }
 

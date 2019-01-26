@@ -76,6 +76,8 @@ object Property {
 
   class SeqMapProperty[K, V, T](val value: SeqMap[K, Property[V]]) extends Property[T]
 
+  class SortedMapProperty[K, V, T](val value: SeqSortedMap[K, Property[V]]) extends Property[T]
+
   type MapProperty[K, V] = SeqMapProperty[K, V, BMap[K, V]]
 
   def print(property: Property[_]): String = {
@@ -85,6 +87,7 @@ object Property {
       case u: UnionProperty[_] => s"${u.caseName}: ${print(u.value)}"
       case s: SeqProperty[_] => "[" + s.value.map(p => print(p)).mkString(", ") + "]"
       case s: SeqMapProperty[_, _, _] => "[" + s.value.map(p => s"${p._1} -> ${print(p._2)}").mkString(", ") + "]"
+      case s: SortedMapProperty[_, _, _] => "[" + s.value.map(p => s"${p._1} -> ${print(p._2)}").mkString(", ") + "]"
     }
   }
 
@@ -102,7 +105,7 @@ object Property {
 
     class ValueChange(val property: Property[_]) extends PropertyChange
 
-    class SeqMapStructuralChange[K, V, T](val property: SeqMapProperty[K, V, T], val modifications: EntryPatch[K, Property[V]]) extends PropertyChange
+    class SeqMapStructuralChange[K, V, T](val property: Property[T], val modifications: EntryPatch[K, Property[V]]) extends PropertyChange
 
     class SeqStructuralChange[E](val property: SeqProperty[E], val idx: Int, val modification: Modification[Seq[Property[E]]]) extends PropertyChange
 
