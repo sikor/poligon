@@ -1,6 +1,6 @@
-package exampleapp.services
+package poligon.exampleapp.services
 
-import exampleapp.services.DmService.{DmTree, Node, Value}
+import poligon.exampleapp.services.DmService.{DmTree, Node, Value}
 
 object DmService {
 

@@ -1,10 +1,10 @@
-package exampleapp.view
+package poligon.exampleapp.view
 
-import exampleapp.services.DmService
-import exampleapp.services.DmService.{DmTree, Node, Value}
-import exampleapp.view.MainView.MainViewContentPresenter.ObjectsPanelContent
-import exampleapp.view.ObjectsPanelPresenter.ActionStatus.Success
-import exampleapp.view.ObjectsPanelPresenter._
+import poligon.exampleapp.services.DmService
+import poligon.exampleapp.services.DmService.{DmTree, Node, Value}
+import poligon.exampleapp.view.MainView.MainViewContentPresenter.ObjectsPanelContent
+import poligon.exampleapp.view.ObjectsPanelPresenter.ActionStatus.Success
+import poligon.exampleapp.view.ObjectsPanelPresenter._
 import poligon.polyproperty.Property.Diff
 import poligon.polyproperty.Property.Diff.{NoOp, Val}
 import poligon.polyproperty.PropertyObserver.PropertyObservers

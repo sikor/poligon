@@ -1,9 +1,9 @@
-package exampleapp.view
+package poligon.exampleapp.view
 
 import com.vaadin.ui.{MenuBar, VerticalLayout}
-import exampleapp.properties.Binder.Custom
-import exampleapp.properties.{Binder, Comp}
-import exampleapp.view.MainView.MainViewContentPresenter.ObjectsPanelContent
+import poligon.exampleapp.properties.Binder.Custom
+import poligon.exampleapp.properties.{Binder, Comp}
+import poligon.exampleapp.view.MainView.MainViewContentPresenter.ObjectsPanelContent
 import poligon.polyproperty.HasSimplePropertyCodec
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 

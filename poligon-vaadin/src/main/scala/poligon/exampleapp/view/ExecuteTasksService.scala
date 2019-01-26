@@ -1,4 +1,4 @@
-package exampleapp.view
+package poligon.exampleapp.view
 
 import java.util.concurrent.{Executors, ThreadLocalRandom, TimeUnit}
 

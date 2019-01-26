@@ -1,10 +1,10 @@
-package exampleapp.view
+package poligon.exampleapp.view
 
 import com.vaadin.ui._
 import com.vaadin.ui.themes.ValoTheme
-import exampleapp.properties.Binder.{BaseSettings, LayoutDescription}
-import exampleapp.properties.{Binder, Comp}
-import exampleapp.view.ObjectsPanelPresenter.{MultiResource, ObjectInstance, SingleResource, SomeObject}
+import poligon.exampleapp.properties.Binder.{BaseSettings, LayoutDescription}
+import poligon.exampleapp.properties.{Binder, Comp}
+import poligon.exampleapp.view.ObjectsPanelPresenter.{MultiResource, ObjectInstance, SingleResource, SomeObject}
 import poligon.polyproperty.Property
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 

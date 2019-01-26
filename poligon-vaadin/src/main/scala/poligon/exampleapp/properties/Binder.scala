@@ -1,9 +1,9 @@
-package exampleapp.properties
+package poligon.exampleapp.properties
 
 import com.avsystem.commons.misc.OptArg
 import com.vaadin.ui._
-import exampleapp.properties.Binder.LayoutDescription.{Horizontal, Vertical}
-import exampleapp.properties.Comp.Bound
+import poligon.exampleapp.properties.Binder.LayoutDescription.{Horizontal, Vertical}
+import poligon.exampleapp.properties.Comp.Bound
 import poligon.polyproperty.Property.PropertyChange.{Added, Removed}
 import poligon.polyproperty.{Obs, Property, PropertyCodec, SubProperty}
 

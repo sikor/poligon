@@ -1,8 +1,8 @@
-package exampleapp.view
+package poligon.exampleapp.view
 
-import exampleapp.services.DmService
-import exampleapp.view.MainView.MainViewContentPresenter
-import exampleapp.view.MainViewPresenter.{MainViewModel, Menu, MenuCategory, MenuItem}
+import poligon.exampleapp.services.DmService
+import poligon.exampleapp.view.MainView.MainViewContentPresenter
+import poligon.exampleapp.view.MainViewPresenter.{MainViewModel, Menu, MenuCategory, MenuItem}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty.{HasSimplePropertyCodec, Property, PropertyWithParent}
 

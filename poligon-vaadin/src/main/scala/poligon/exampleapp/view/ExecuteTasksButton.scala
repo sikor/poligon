@@ -1,8 +1,8 @@
-package exampleapp.view
+package poligon.exampleapp.view
 
 import com.vaadin.ui.Button
-import exampleapp.properties.Comp
-import exampleapp.view.ExecuteTasksPresenter.ExecuteTasksStatus.NotStarted
+import poligon.exampleapp.properties.Comp
+import poligon.exampleapp.view.ExecuteTasksPresenter.ExecuteTasksStatus.NotStarted
 
 object ExecuteTasksButton {
   def create(presenter: ExecuteTasksPresenter): Comp[Unit] = Comp.dynamicUnit { observed =>

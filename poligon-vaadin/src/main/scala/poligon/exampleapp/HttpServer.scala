@@ -1,12 +1,12 @@
-package exampleapp
+package poligon.exampleapp
 
 import com.avsystem.commons.misc.Opt
 import com.typesafe.scalalogging.StrictLogging
 import com.vaadin.annotations.{Push, Theme}
 import com.vaadin.server._
 import com.vaadin.ui.UI
-import exampleapp.services.DmService
-import exampleapp.view.{ExecuteTasksPresenter, ExecuteTasksService, MainView, MainViewPresenter}
+import poligon.exampleapp.services.DmService
+import poligon.exampleapp.view.{ExecuteTasksPresenter, ExecuteTasksService, MainView, MainViewPresenter}
 import javax.servlet.{ServletConfig, ServletException}
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.session.{DefaultSessionIdManager, SessionHandler}
