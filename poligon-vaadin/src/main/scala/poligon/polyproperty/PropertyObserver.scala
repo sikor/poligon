@@ -10,11 +10,7 @@ trait PropertyObserver[T] {
 
   def propertyRemoved(property: Property[T]): Unit
 
-  def seqChanged(patch: SeqStructuralChange[_]): Unit
-
-  def seqMapChanged(patch: SeqMapStructuralChange[_, _, _]): Unit
-
-  def unionChanged(patch: UnionChange[T]): Unit
+  def structureChange(patch: SeqMapStructuralChange[_, _, T]): Unit
 }
 
 object PropertyObserver {
@@ -38,16 +34,8 @@ object PropertyObserver {
       observers.remove(property).foreach(_.foreach(l => l.propertyRemoved(property.asInstanceOf[Property[Any]])))
     }
 
-    def seqChanged(patch: SeqStructuralChange[_]): Unit = {
-      observers.get(patch.property).foreach(_.foreach(l => l.seqChanged(patch)))
-    }
-
-    def seqMapChanged(patch: SeqMapStructuralChange[_, _, _]): Unit = {
-      observers.get(patch.property).foreach(_.foreach(l => l.seqMapChanged(patch)))
-    }
-
-    def unionChanged(patch: UnionChange[_]): Unit = {
-      observers.get(patch.property).foreach(_.foreach(l => l.unionChanged(patch.asInstanceOf[UnionChange[Any]])))
+    def structureChange(patch: SeqMapStructuralChange[_, _, _]): Unit = {
+      observers.get(patch.property).foreach(_.foreach(l => l.structureChange(patch.asInstanceOf[SeqMapStructuralChange[_, _, Any]])))
     }
 
     private[PropertyObserver] def clear(): Unit = {
@@ -86,16 +74,8 @@ object PropertyObserver {
       traverseAll(_.propertyRemoved(property))
     }
 
-    def seqChanged(patch: SeqStructuralChange[_]): Unit = {
-      traverseAll(_.seqChanged(patch))
-    }
-
-    def seqMapChanged(patch: SeqMapStructuralChange[_, _, _]): Unit = {
-      traverseAll(_.seqMapChanged(patch))
-    }
-
-    def unionChanged(patch: UnionChange[_]): Unit = {
-      traverseAll(_.unionChanged(patch))
+    def structureChange(patch: SeqMapStructuralChange[_, _, _]): Unit = {
+      traverseAll(_.structureChange(patch))
     }
 
     private def traverseAll(onObserversMap: ObserversMap => Unit): Unit = {

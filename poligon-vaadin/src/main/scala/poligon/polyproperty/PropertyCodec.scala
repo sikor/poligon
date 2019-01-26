@@ -10,7 +10,6 @@ import com.avsystem.commons.serialization.GenRef
 import poligon.polyproperty.Property.Diff.{NoOp, Val}
 import poligon.polyproperty.Property.PropertyChange._
 import poligon.polyproperty.Property.{PropertyChange, _}
-import poligon.polyproperty.SeqMap.{Entry, EntryPatch}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{SortedMap, mutable}
@@ -327,10 +326,13 @@ class SortedMapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V], 
       }
       changeBuilder.result()
     } else {
+      val oldCaseName = property.caseName
       val oldValue = property.value
       property.caseName = newCase.name
       property.value = caseCodec.newProperty(value)
-      Vector(new UnionChange[T](property, property.value, oldValue))
+      val change =
+        Seq(Removed(Entry(0, oldCaseName, oldValue.asInstanceOf[Property[AnyRef]])), Added(Entry(0, property.caseName, property.value.asInstanceOf[Property[AnyRef]])))
+      Vector(new SeqMapStructuralChange[String, AnyRef, T](property, change))
     }
   }
 

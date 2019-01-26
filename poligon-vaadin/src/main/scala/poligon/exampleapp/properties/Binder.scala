@@ -57,17 +57,14 @@ object Binder {
       layout.addComponent(bound.comp)
     }
     property.listenStructure[E] { patch =>
-      patch.modification match {
-        case Removed(removed) => removed.foreach { _ =>
-          val removedComponent = layout.getComponent(patch.idx)
+      patch.modifications.foreach {
+        case Removed(removed) =>
+          val removedComponent = layout.getComponent(removed.index)
           po.deregisterSubObservers(removedComponent)
           layout.removeComponent(removedComponent)
-        }
         case Added(added) =>
-          added.reverse.foreach { a =>
-            val c = childFactory(a).looseBind(po)
-            layout.addComponent(c.comp, patch.idx)
-          }
+          val c = childFactory(added.value).looseBind(po)
+          layout.addComponent(c.comp, added.index)
       }
     }(po)
     Comp.unitBound(layout)

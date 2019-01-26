@@ -2,7 +2,7 @@ package poligon
 package polyproperty
 
 
-import poligon.polyproperty.Property.PropertyChange.{Added, Modification, Removed}
+import poligon.polyproperty.Property.PropertyChange._
 import poligon.polyproperty.SeqMap._
 
 import scala.collection.mutable.ArrayBuffer
@@ -102,7 +102,7 @@ class SeqMap[K, V] {
   }
 
   def update(keys: Iterable[K], updateValue: (K, V) => Unit, insertValue: K => V): EntryPatch[K, V] = {
-    val patches = Vector.newBuilder[Modification[Entry[K, V]]]
+    val patches = Vector.newBuilder[Modification[K, V]]
     for ((k, i) <- keys.zipWithIndex) {
       findIndex(k) match {
         case Opt(currentIndex) =>
@@ -135,8 +135,6 @@ class SeqMap[K, V] {
 
 object SeqMap {
 
-  case class Entry[K, V](index: Int, key: K, value: V)
 
-  type EntryPatch[K, V] = Seq[Modification[Entry[K, V]]]
 
 }

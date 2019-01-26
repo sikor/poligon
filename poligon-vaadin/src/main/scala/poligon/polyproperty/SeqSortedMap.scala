@@ -1,8 +1,7 @@
 package poligon
 package polyproperty
 
-import poligon.polyproperty.Property.PropertyChange.{Added, Modification, Removed}
-import poligon.polyproperty.SeqMap.{Entry, EntryPatch}
+import poligon.polyproperty.Property.PropertyChange._
 
 import scala.collection.mutable
 
@@ -14,7 +13,7 @@ class SeqSortedMap[K, V](init: Iterable[(K, V)])(implicit ordering: Ordering[K])
 
   def update(newKeys: Seq[K], updateValue: (K, V) => Unit, insertValue: K => V): EntryPatch[K, V] = {
     val newKeysSorted = newKeys.sorted
-    val patches = Vector.newBuilder[Modification[Entry[K, V]]]
+    val patches = Vector.newBuilder[Modification[K, V]]
     val currentKeys = tree.keysIterator.buffered
     for ((k, i) <- newKeysSorted.zipWithIndex) {
       def insertUpdateOrMove(): Unit = {

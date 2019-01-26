@@ -70,11 +70,11 @@ object PropertyChanger {
 
 
   def remove[K, V](
-                 key: K,
-                 property: PropertyWithParent[SortedMap[K, V]],
-                 codec: SortedMapPropertyCodec[K, V])(
-                 implicit
-                 observed: PropertyObservers): Unit = {
+                    key: K,
+                    property: PropertyWithParent[SortedMap[K, V]],
+                    codec: SortedMapPropertyCodec[K, V])(
+                    implicit
+                    observed: PropertyObservers): Unit = {
     val mapProp = property.property.asInstanceOf[SortedMapProperty[K, V, BSortedMap[K, V]]]
     val patch = codec.remove(key, mapProp)
     callListeners(withParents(property, patch), observed)
@@ -93,15 +93,12 @@ object PropertyChanger {
       case v: ValueChange =>
         po.propertyChanged(v.property)
       case sp: SeqMapStructuralChange[_, _, _] =>
-        po.seqMapChanged(sp)
+        po.structureChange(sp)
         sp.modifications.foreach {
           case Removed(entry) =>
             po.propertyRemoved(entry.value)
           case _ =>
         }
-      case u: UnionChange[_] =>
-        po.unionChanged(u)
-        po.propertyRemoved(u.oldValue)
     }
   }
 }
