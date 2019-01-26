@@ -10,6 +10,8 @@ import poligon.polyproperty.Property.Diff.{NoOp, Val}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty._
 
+import scala.collection.SortedMap
+
 
 object ObjectsPanelPresenter {
 
@@ -43,36 +45,38 @@ object ObjectsPanelPresenter {
 
   object SingleResource extends HasRecordPropertyCodec[SingleResource]
 
-  case class MultiResource(name: String, value: Seq[ResourceInstance], lastAction: Diff[Action] = NoOp) extends Resource
+  case class MultiResource(name: String, value: SortedMap[Int, ResourceInstance], lastAction: Diff[Action] = NoOp) extends Resource
 
   object MultiResource extends HasRecordPropertyCodec[MultiResource]
 
   object Resource extends HasUnionPropertyCodec[Resource]
 
-  case class ObjectInstance(id: Int, resources: Seq[Resource], lastAction: Diff[Action] = NoOp)
+  case class ObjectInstance(id: Int, resources: SortedMap[String, Resource], lastAction: Diff[Action] = NoOp)
 
-  case class SomeObject(name: String, instances: Seq[ObjectInstance], lastAction: Diff[Action] = NoOp)
+  case class SomeObject(name: String, instances: SortedMap[Int, ObjectInstance], lastAction: Diff[Action] = NoOp)
 
   object ObjectInstance extends HasRecordPropertyCodec[ObjectInstance]
 
   object SomeObject extends HasRecordPropertyCodec[SomeObject]
 
-  def dmToObjects(dm: Node): Seq[SomeObject] = {
-    dm.children.collect { case (cn, cv: Node) => nodeToObject(cn, cv) }.toSeq
+  def dmToObjects(dm: Node): SortedMap[String, SomeObject] = {
+    dm.children.collect { case (cn, cv: Node) => (cn, cv) }.mkSortedMap(kv => kv._1, kv => nodeToObject(kv._1, kv._2))
   }
 
   def nodeToObject(name: String, node: Node): SomeObject = {
-    SomeObject(name, node.children.collect { case (cn, cv: Node) => nodeToInstance(cn, cv) }.toSeq)
+    SomeObject(name, node.children.collect { case (cn, cv: Node) => (cn, cv) }
+      .mkSortedMap(kv => kv._1.toInt, kv => nodeToInstance(kv._1, kv._2)))
   }
 
   def nodeToInstance(name: String, node: Node): ObjectInstance = {
-    ObjectInstance(name.toInt, node.children.map { case (cn, cv) => treeToResource(cn, cv) }.toSeq)
+    ObjectInstance(name.toInt, node.children.mkSortedMap(kv => kv._1, kv => treeToResource(kv._1, kv._2)))
   }
 
   def treeToResource(name: String, node: DmTree): Resource = {
     node match {
       case n: Node =>
-        MultiResource(name, n.children.collect { case (idx, Value(value)) => ResourceInstance(idx.toInt, value) }.toSeq)
+        MultiResource(name, n.children.collect { case (idx, Value(value)) => ResourceInstance(idx.toInt, value) }
+          .mkSortedMap(r => r.idx, identity))
       case Value(value) =>
         SingleResource(name, value)
     }
@@ -81,10 +85,9 @@ object ObjectsPanelPresenter {
 }
 
 class ObjectsPanelPresenter(dmService: DmService) extends ObjectsPanelContent {
-  private val model: PropertyWithParent[Seq[SomeObject]] = PropertyWithParent(dmToObjects(dmService.getDm))
+  private val model: PropertyWithParent[SortedMap[String, SomeObject]] = PropertyWithParent(dmToObjects(dmService.getDm))
 
-
-  def getModel: Property[Seq[SomeObject]] = model.property
+  def getModel: Property[SortedMap[String, SomeObject]] = model.property
 
   def setSingleResourceValue(o: String, instance: Int, resource: String, value: String)(implicit po: PropertyObservers): Unit = {
     val resourceModel = findResource(o, instance, resource)
@@ -95,8 +98,7 @@ class ObjectsPanelPresenter(dmService: DmService) extends ObjectsPanelContent {
     val resourceModel = findResource(o, instance, resource)
     resourceModel
       .getCase[MultiResource].get
-      .getField(_.value).getSeq
-      .find(i => i.get.idx == resourcesInstance).get
+      .getField(_.value)(resourcesInstance)
       .getField(_.formValue)
       .set(Val(value))
   }
@@ -106,36 +108,33 @@ class ObjectsPanelPresenter(dmService: DmService) extends ObjectsPanelContent {
   }
 
   def addObject(o: String)(implicit po: PropertyObservers): Unit = {
-    model.append(SomeObject(o, Seq.empty))
+    model.put(o, SomeObject(o, SortedMap.empty))
   }
 
   def addInstance(o: String, i: Int)(implicit po: PropertyObservers): Unit = {
     val objectModel = findObject(o)
-    objectModel.getField(_.instances).append(ObjectInstance(i, Seq.empty))
+    objectModel.getField(_.instances).put(i, ObjectInstance(i, SortedMap.empty))
     objectModel.getField(_.lastAction).set(Val(Action(Success, s"instance added: $i")))
   }
 
   def addResource(o: String, i: Int, r: String, value: String)(implicit po: PropertyObservers): Unit = {
     findObjectInstance(o, i)
-      .getField(_.resources).append(SingleResource(r, value))
+      .getField(_.resources).put(r, SingleResource(r, value))
   }
 
   def removeObject(o: String)(implicit po: PropertyObservers): Unit = {
-    val idx = model.get.indexWhere(_.name == o)
-    model.remove(idx, 1)
+    model.remove(o)
   }
 
   private def findResource(o: String, instance: Int, resource: String) = {
-    findObjectInstance(o, instance)
-      .getField(_.resources).getSeq.find(p => p.get.name == resource).get
+    findObjectInstance(o, instance).getField(_.resources)(resource)
   }
 
   private def findObjectInstance(o: String, instance: Int) = {
-    findObject(o)
-      .getField(_.instances).getSeq.find(p => p.get.id == instance).get
+    findObject(o).getField(_.instances)(instance)
   }
 
   private def findObject(o: String) = {
-    model.getSeq.find(p => p.get.name == o).get
+    model(o)
   }
 }

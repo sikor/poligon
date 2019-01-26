@@ -1,7 +1,10 @@
 package poligon
 package polyproperty
 
+import poligon.polyproperty.Property.SortedMapProperty
 import poligon.polyproperty.PropertyObserver.PropertyObservers
+
+import scala.collection.SortedMap
 
 class PropertyWithParent[S](val property: Property[S], val parent: Opt[PropertyWithParent[_]])
 
@@ -46,6 +49,32 @@ object PropertyWithParent {
 
     def remove(index: Int, count: Int)(implicit observed: PropertyObservers): Unit = {
       PropertyChanger.remove[T](p, index, count)
+    }
+  }
+
+  implicit class SortedMapExt[K, V](p: PropertyWithParent[SortedMap[K, V]])(implicit c: SortedMapPropertyCodec[K, V]) {
+    def get(key: K): Opt[PropertyWithParent[V]] = {
+      seqSortedMap.get(key).map(wrap)
+    }
+
+    def apply(key: K): PropertyWithParent[V] = {
+      wrap(seqSortedMap(key))
+    }
+
+    def put(key: K, value: V)(implicit observed: PropertyObservers): Unit = {
+      PropertyChanger.put(key, value, p, c)
+    }
+
+    def remove(key: K)(implicit observed: PropertyObservers): Unit = {
+      PropertyChanger.remove(key, p, c)
+    }
+
+    private def wrap(s: Property[V]): PropertyWithParent[V] = {
+      new PropertyWithParent[V](s, p.opt)
+    }
+
+    private def seqSortedMap: SeqSortedMap[K, Property[V]] = {
+      p.property.asInstanceOf[SortedMapProperty[K, V, BSortedMap[K, V]]].value
     }
   }
 

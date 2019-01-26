@@ -42,7 +42,34 @@ class SeqSortedMap[K, V](init: Iterable[(K, V)])(implicit ordering: Ordering[K])
     patches.result()
   }
 
+  def put(key: K, updateValue: (K, V) => Unit, insertValue: K => V): EntryPatch[K, V] = {
+    tree.get(key) match {
+      case Some(v) =>
+        updateValue(key, v)
+        Seq.empty
+      case None =>
+        val value = insertValue(key)
+        tree.put(key, value)
+        val index = tree.iterator.indexOf(key)
+        Seq(Added(Entry(index, key, value)))
+    }
+  }
+
+  def remove(key: K): EntryPatch[K, V] = {
+    val idx = tree.iterator.indexOf(key)
+    tree.remove(key) match {
+      case Some(v) =>
+        Seq(Removed(Entry(idx, key, v)))
+      case None =>
+        Seq.empty
+    }
+  }
+
   def foreach(f: ((K, V)) => Unit): Unit = tree.foreach(f)
 
   def map[V2](f: ((K, V)) => V2): Iterable[V2] = tree.map(f)
+
+  def get(key: K): Opt[V] = tree.get(key).toOpt
+
+  def apply(key: K): V = tree(key)
 }

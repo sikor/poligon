@@ -10,6 +10,7 @@ import com.avsystem.commons.serialization.GenRef
 import poligon.polyproperty.Property.Diff.{NoOp, Val}
 import poligon.polyproperty.Property.PropertyChange._
 import poligon.polyproperty.Property.{PropertyChange, _}
+import poligon.polyproperty.SeqMap.EntryPatch
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{SortedMap, mutable}
@@ -242,6 +243,34 @@ class SortedMapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V], 
         childrenUpdates ++= elementCodec.updateProperty(value(k), v.asInstanceOf[elementCodec.PropertyType])
       },
       k => elementCodec.newProperty(value(k)))
+    addThisUpdates(property, childrenUpdates, thisUpdates)
+  }
+
+  def readProperty(property: PropertyType): SortedMap[K, V] = {
+    val tree = new mutable.TreeMap[K, V]
+    property.value.foreach { case (k, v) => tree.put(k, elementCodec.readProperty(v.asInstanceOf[elementCodec.PropertyType])) }
+    tree
+  }
+
+  def put(key: K, value: V, property: PropertyType): Seq[PropertyChange] = {
+    val childrenUpdates = new ArrayBuffer[PropertyChange]
+    val thisUpdates = property.value.put(
+      key,
+      (_, v) => {
+        childrenUpdates ++= elementCodec.updateProperty(value, v.asInstanceOf[elementCodec.PropertyType])
+      },
+      k => elementCodec.newProperty(value))
+    addThisUpdates(property, childrenUpdates, thisUpdates)
+  }
+
+  def remove(key: K, property: PropertyType): Seq[PropertyChange] = {
+    val thisUpdates = property.value.remove(key)
+    addThisUpdates(property, Seq.empty, thisUpdates)
+  }
+
+  private def addThisUpdates(property: SortedMapProperty[K, V, BSortedMap[K, V]],
+                             childrenUpdates: Seq[PropertyChange],
+                             thisUpdates: EntryPatch[K, Property[V]]): BSeq[PropertyChange] = {
     if (thisUpdates.nonEmpty) {
       childrenUpdates :+ new SeqMapStructuralChange(property, thisUpdates)
     } else {
@@ -251,12 +280,6 @@ class SortedMapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V], 
         Seq.empty
       }
     }
-  }
-
-  def readProperty(property: PropertyType): SortedMap[K, V] = {
-    val tree = new mutable.TreeMap[K, V]
-    property.value.foreach { case (k, v) => tree.put(k, elementCodec.readProperty(v.asInstanceOf[elementCodec.PropertyType])) }
-    tree
   }
 }
 

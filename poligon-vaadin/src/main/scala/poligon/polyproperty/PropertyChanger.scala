@@ -1,8 +1,11 @@
 package poligon.polyproperty
 
-import poligon.polyproperty.Property.PropertyChange
+import poligon.BSortedMap
+import poligon.polyproperty.Property.{PropertyChange, SortedMapProperty}
 import poligon.polyproperty.Property.PropertyChange._
 import poligon.polyproperty.PropertyObserver.PropertyObservers
+
+import scala.collection.SortedMap
 
 /**
   *
@@ -19,38 +22,6 @@ object PropertyChanger {
     val childrenChanges = PropertyCodec.updateProperty(value, property.property)
     val changes = withParents(property, childrenChanges)
     callListeners(changes, po)
-  }
-
-  private def withParents[T: PropertyCodec](property: PropertyWithParent[T], childrenChanges: Seq[PropertyChange]) = {
-    if (childrenChanges.nonEmpty) {
-      childrenChanges ++ PropertyMarker.parentsChanged(property)
-    } else {
-      childrenChanges
-    }
-  }
-
-  private def callListeners(changes: Seq[PropertyChange], po: PropertyObservers): Unit = {
-    changes.foreach {
-      case v: ValueChange =>
-        po.propertyChanged(v.property)
-      case sp: SeqMapStructuralChange[_, _, _] =>
-        po.seqMapChanged(sp)
-        sp.modifications.foreach {
-          case Removed(entry) =>
-            po.propertyRemoved(entry.value)
-          case _ =>
-        }
-      case s: SeqStructuralChange[_] =>
-        po.seqChanged(s)
-        s.modification match {
-          case Removed(elems) =>
-            elems.foreach(e => po.propertyRemoved(e))
-          case _ =>
-        }
-      case u: UnionChange[_] =>
-        po.unionChanged(u)
-        po.propertyRemoved(u.oldValue)
-    }
   }
 
   def insert[E: SeqPropertyCodec](
@@ -85,5 +56,59 @@ object PropertyChanger {
     callListeners(withParents(property, patch), observed)
   }
 
+  def put[K, V](
+                 key: K,
+                 value: V,
+                 property: PropertyWithParent[SortedMap[K, V]],
+                 codec: SortedMapPropertyCodec[K, V])(
+                 implicit
+                 observed: PropertyObservers): Unit = {
+    val mapProp = property.property.asInstanceOf[SortedMapProperty[K, V, BSortedMap[K, V]]]
+    val patch = codec.put(key, value, mapProp)
+    callListeners(withParents(property, patch), observed)
+  }
 
+
+  def remove[K, V](
+                 key: K,
+                 property: PropertyWithParent[SortedMap[K, V]],
+                 codec: SortedMapPropertyCodec[K, V])(
+                 implicit
+                 observed: PropertyObservers): Unit = {
+    val mapProp = property.property.asInstanceOf[SortedMapProperty[K, V, BSortedMap[K, V]]]
+    val patch = codec.remove(key, mapProp)
+    callListeners(withParents(property, patch), observed)
+  }
+
+  private def withParents(property: PropertyWithParent[_], childrenChanges: Seq[PropertyChange]) = {
+    if (childrenChanges.nonEmpty) {
+      childrenChanges ++ PropertyMarker.parentsChanged(property)
+    } else {
+      childrenChanges
+    }
+  }
+
+  private def callListeners(changes: Seq[PropertyChange], po: PropertyObservers): Unit = {
+    changes.foreach {
+      case v: ValueChange =>
+        po.propertyChanged(v.property)
+      case sp: SeqMapStructuralChange[_, _, _] =>
+        po.seqMapChanged(sp)
+        sp.modifications.foreach {
+          case Removed(entry) =>
+            po.propertyRemoved(entry.value)
+          case _ =>
+        }
+      case s: SeqStructuralChange[_] =>
+        po.seqChanged(s)
+        s.modification match {
+          case Removed(elems) =>
+            elems.foreach(e => po.propertyRemoved(e))
+          case _ =>
+        }
+      case u: UnionChange[_] =>
+        po.unionChanged(u)
+        po.propertyRemoved(u.oldValue)
+    }
+  }
 }
