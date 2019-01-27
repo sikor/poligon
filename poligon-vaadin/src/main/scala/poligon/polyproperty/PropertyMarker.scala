@@ -1,8 +1,9 @@
 package poligon
 package polyproperty
 
-import poligon.polyproperty.Property.PropertyChange.ValueChange
 import poligon.polyproperty.Property._
+import poligon.polyproperty.PropertyCodec.PropertyChange
+import poligon.polyproperty.PropertyCodec.PropertyChange.ValueChange
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer

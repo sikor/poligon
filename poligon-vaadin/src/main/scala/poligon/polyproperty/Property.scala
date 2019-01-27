@@ -1,7 +1,7 @@
 package poligon
 package polyproperty
 
-import poligon.polyproperty.Property.PropertyChange.{SeqMapStructuralChange, SeqStructuralChange}
+import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.SeqMapStructuralChange
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 import scala.collection.mutable
@@ -9,14 +9,14 @@ import scala.collection.mutable.ArrayBuffer
 
 sealed trait Property[T] {
 
-  def listenStructure[E](listener: SeqStructuralChange[E] => Unit)(o: PropertyObservers)(implicit ev: Property[T] =:= Property[Seq[E]]): Unit = {
+  def listenStructure[E](listener: SeqMapStructuralChange[Int, E, Seq[E]] => Unit)(o: PropertyObservers)(implicit ev: Property[T] =:= Property[Seq[E]]): Unit = {
     o.observe(ev.apply(this), new PropertyObserver[Seq[E]] {
       override def propertyChanged(property: Property[Seq[E]]): Unit = {}
 
       override def propertyRemoved(property: Property[Seq[E]]): Unit = {}
 
       override def structureChange(patch: SeqMapStructuralChange[_, _, Seq[E]]): Unit = {
-        listener(patch.asInstanceOf[SeqStructuralChange[E]])
+        listener(patch.asInstanceOf[SeqMapStructuralChange[Int, E, Seq[E]]])
       }
     })
   }
@@ -68,31 +68,6 @@ object Property {
       case s: SeqMapProperty[_, _, _] => "[" + s.value.map(p => s"${p._1} -> ${print(p._2)}").mkString(", ") + "]"
       case s: SortedMapProperty[_, _, _] => "[" + s.value.map(p => s"${p._1} -> ${print(p._2)}").mkString(", ") + "]"
     }
-  }
-
-  sealed trait PropertyChange {
-    def property: Property[_]
-  }
-
-  object PropertyChange {
-
-    sealed trait Modification[K, V]
-
-    case class Removed[K, V](entry: Entry[K, V]) extends Modification[K, V]
-
-    case class Added[K, V](entry: Entry[K, V]) extends Modification[K, V]
-
-    case class Entry[K, V](index: Int, key: K, value: V)
-
-    type EntryPatch[K, V] = Seq[Modification[K, V]]
-
-    class ValueChange(val property: Property[_]) extends PropertyChange
-
-    class SeqMapStructuralChange[K, V, T](val property: Property[T], val modifications: EntryPatch[K, Property[V]]) extends PropertyChange
-
-    type SeqStructuralChange[E] = SeqMapStructuralChange[Int, E, Seq[E]]
-
-    type UnionChange[T] = SeqMapStructuralChange[String, _ <: T, T]
   }
 
   sealed trait Diff[+T]

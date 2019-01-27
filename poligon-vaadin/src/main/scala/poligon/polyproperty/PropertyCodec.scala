@@ -8,9 +8,10 @@ import com.avsystem.commons.meta._
 import com.avsystem.commons.misc.{ApplierUnapplier, ValueOf}
 import com.avsystem.commons.serialization.GenRef
 import poligon.polyproperty.Property.Diff.{NoOp, Val}
-import poligon.polyproperty.Property.PropertyChange._
-import poligon.polyproperty.Property.{PropertyChange, _}
-import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec
+import poligon.polyproperty.Property._
+import poligon.polyproperty.PropertyCodec.PropertyChange._
+import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.SeqMapStructuralChange
+import poligon.polyproperty.PropertyCodec.{PropertyChange, StructuralPropertyCodec}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{SortedMap, mutable}
@@ -33,12 +34,40 @@ sealed trait PropertyCodec[T] {
 
 object PropertyCodec {
 
+  sealed trait PropertyChange {
+    def property: Property[_]
+  }
+
+  object PropertyChange {
+
+    sealed trait Modification[K, V]
+
+    case class Removed[K, V](entry: Entry[K, V]) extends Modification[K, V]
+
+    case class Added[K, V](entry: Entry[K, V]) extends Modification[K, V]
+
+    case class Entry[K, V](index: Int, key: K, value: V)
+
+    type EntryPatch[K, V] = Seq[Modification[K, V]]
+
+    class ValueChange(val property: Property[_]) extends PropertyChange
+
+  }
+
   sealed trait StructuralPropertyCodec[K, V, T] extends PropertyCodec[T] {
     type StructuralChangeType = SeqMapStructuralChange[K, V, T]
 
     protected def createStructuralChange(property: Property[T], modifications: EntryPatch[K, Property[V]]): StructuralChangeType = {
       new SeqMapStructuralChange[K, V, T](property, modifications)
     }
+  }
+
+  object StructuralPropertyCodec {
+
+    class SeqMapStructuralChange[K, V, T] private[StructuralPropertyCodec](val property: Property[T],
+                                                                           val modifications: EntryPatch[K, Property[V]])
+      extends PropertyChange
+
   }
 
   implicit val stringCodec: SimplePropertyCodec[String] = SimplePropertyCodec.materialize[String]

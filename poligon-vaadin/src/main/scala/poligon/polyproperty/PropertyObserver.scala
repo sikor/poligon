@@ -1,7 +1,7 @@
 package poligon
 package polyproperty
 
-import poligon.polyproperty.Property.PropertyChange.SeqMapStructuralChange
+import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.SeqMapStructuralChange
 
 import scala.collection.mutable
 

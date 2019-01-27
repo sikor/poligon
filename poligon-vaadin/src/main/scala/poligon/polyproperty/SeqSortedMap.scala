@@ -1,7 +1,8 @@
 package poligon
 package polyproperty
 
-import poligon.polyproperty.Property.PropertyChange._
+
+import poligon.polyproperty.PropertyCodec.PropertyChange._
 
 import scala.collection.mutable
 

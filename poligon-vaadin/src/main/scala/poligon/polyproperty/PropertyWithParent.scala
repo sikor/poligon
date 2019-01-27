@@ -1,8 +1,8 @@
 package poligon
 package polyproperty
 
-import poligon.polyproperty.Property.PropertyChange.SeqMapStructuralChange
 import poligon.polyproperty.Property.SortedMapProperty
+import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.SeqMapStructuralChange
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 import scala.collection.SortedMap

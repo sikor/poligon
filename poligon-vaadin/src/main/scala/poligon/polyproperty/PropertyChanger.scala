@@ -1,8 +1,10 @@
 package poligon.polyproperty
 
 import poligon.BSortedMap
-import poligon.polyproperty.Property.{PropertyChange, SortedMapProperty}
-import poligon.polyproperty.Property.PropertyChange._
+import poligon.polyproperty.Property.SortedMapProperty
+import poligon.polyproperty.PropertyCodec.PropertyChange
+import poligon.polyproperty.PropertyCodec.PropertyChange.{Removed, ValueChange}
+import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.SeqMapStructuralChange
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 import scala.collection.SortedMap

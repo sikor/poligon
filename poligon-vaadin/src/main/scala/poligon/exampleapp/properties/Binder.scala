@@ -4,7 +4,7 @@ import com.avsystem.commons.misc.OptArg
 import com.vaadin.ui._
 import poligon.exampleapp.properties.Binder.LayoutDescription.{Horizontal, Vertical}
 import poligon.exampleapp.properties.Comp.Bound
-import poligon.polyproperty.Property.PropertyChange.{Added, Removed}
+import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Removed}
 import poligon.polyproperty.{Obs, Property, PropertyCodec, SubProperty}
 
 
