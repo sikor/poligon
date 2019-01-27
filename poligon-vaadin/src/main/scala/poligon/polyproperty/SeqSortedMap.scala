@@ -50,13 +50,13 @@ class SeqSortedMap[K, V](init: Iterable[(K, V)])(implicit ordering: Ordering[K])
       case None =>
         val value = insertValue(key)
         tree.put(key, value)
-        val index = tree.iterator.indexOf(key)
+        val index = tree.keysIterator.indexOf(key)
         Seq(Added(Entry(index, key, value)))
     }
   }
 
   def remove(key: K): EntryPatch[K, V] = {
-    val idx = tree.iterator.indexOf(key)
+    val idx = tree.keysIterator.indexOf(key)
     tree.remove(key) match {
       case Some(v) =>
         Seq(Removed(Entry(idx, key, v)))
