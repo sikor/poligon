@@ -10,7 +10,7 @@ import com.avsystem.commons.serialization.GenRef
 import poligon.polyproperty.Property.Diff.{NoOp, Val}
 import poligon.polyproperty.Property._
 import poligon.polyproperty.PropertyCodec.PropertyChange._
-import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.SeqMapStructuralChange
+import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.StructuralChange
 import poligon.polyproperty.PropertyCodec.{PropertyChange, StructuralPropertyCodec}
 
 import scala.collection.mutable.ArrayBuffer
@@ -40,13 +40,21 @@ object PropertyCodec {
 
   object PropertyChange {
 
-    sealed trait Modification[K, V]
+    sealed trait Modification[K, V] {
+      def map[V2](f: V => V2): Modification[K, V2]
+    }
 
-    case class Removed[K, V](entry: Entry[K, V]) extends Modification[K, V]
+    case class Removed[K, V](entry: Entry[K, V]) extends Modification[K, V] {
+      def map[V2](f: V => V2): Modification[K, V2] = Removed(entry.map(f))
+    }
 
-    case class Added[K, V](entry: Entry[K, V]) extends Modification[K, V]
+    case class Added[K, V](entry: Entry[K, V]) extends Modification[K, V] {
+      def map[V2](f: V => V2): Modification[K, V2] = Added(entry.map(f))
+    }
 
-    case class Entry[K, V](index: Int, key: K, value: V)
+    case class Entry[K, V](index: Int, key: K, value: V) {
+      def map[V2](f: V => V2): Entry[K, V2] = Entry(index, key, f(value))
+    }
 
     type EntryPatch[K, V] = Seq[Modification[K, V]]
 
@@ -55,17 +63,17 @@ object PropertyCodec {
   }
 
   sealed trait StructuralPropertyCodec[K, V, T] extends PropertyCodec[T] {
-    type StructuralChangeType = SeqMapStructuralChange[K, V, T]
+    type StructuralChangeType = StructuralChange[K, V, T]
 
     protected def createStructuralChange(property: Property[T], modifications: EntryPatch[K, Property[V]]): StructuralChangeType = {
-      new SeqMapStructuralChange[K, V, T](property, modifications)
+      new StructuralChange[K, V, T](property, modifications)
     }
   }
 
   object StructuralPropertyCodec {
 
-    class SeqMapStructuralChange[K, V, T] private[StructuralPropertyCodec](val property: Property[T],
-                                                                           val modifications: EntryPatch[K, Property[V]])
+    class StructuralChange[K, V, T] private[StructuralPropertyCodec](val property: Property[T],
+                                                                     val modifications: EntryPatch[K, Property[V]])
       extends PropertyChange
 
   }

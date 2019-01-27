@@ -4,7 +4,7 @@ import poligon.BSortedMap
 import poligon.polyproperty.Property.SortedMapProperty
 import poligon.polyproperty.PropertyCodec.PropertyChange
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Removed, ValueChange}
-import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.SeqMapStructuralChange
+import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.StructuralChange
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 import scala.collection.SortedMap
@@ -94,7 +94,7 @@ object PropertyChanger {
     changes.foreach {
       case v: ValueChange =>
         po.propertyChanged(v.property)
-      case sp: SeqMapStructuralChange[_, _, _] =>
+      case sp: StructuralChange[_, _, _] =>
         po.structureChange(sp)
         sp.modifications.foreach {
           case Removed(entry) =>

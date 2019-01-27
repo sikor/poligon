@@ -2,7 +2,9 @@ package poligon
 package polyproperty
 
 import poligon.polyproperty.Property.SortedMapProperty
-import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.SeqMapStructuralChange
+import poligon.polyproperty.PropertyCodec.PropertyChange.EntryPatch
+import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec
+import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.StructuralChange
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 import scala.collection.SortedMap
@@ -29,7 +31,7 @@ object PropertyWithParent {
 
         override def propertyRemoved(property: Property[T]): Unit = {}
 
-        override def structureChange(patch: SeqMapStructuralChange[_, _, T]): Unit = {}
+        override def structureChange(patch: StructuralChange[_, _, T]): Unit = {}
       })
       if (init) {
         listener(get)
@@ -51,7 +53,9 @@ object PropertyWithParent {
     }
   }
 
-  implicit class SeqPropertyExt[T](p: PropertyWithParent[Seq[T]])(implicit c: SeqPropertyCodec[T]) {
+  implicit class SeqPropertyExt[T](val p: PropertyWithParent[Seq[T]])(implicit val c: SeqPropertyCodec[T])
+    extends StructuralPropertyExt[Int, T, Seq[T]] {
+
     def getSeq: Seq[PropertyWithParent[T]] =
       SubProperty.getSeq(p.property).map(e => new PropertyWithParent[T](e, p.opt))
 
@@ -68,7 +72,9 @@ object PropertyWithParent {
     }
   }
 
-  implicit class SortedMapExt[K, V](p: PropertyWithParent[SortedMap[K, V]])(implicit c: SortedMapPropertyCodec[K, V]) {
+  implicit class SortedMapPropertyExt[K, V](val p: PropertyWithParent[SortedMap[K, V]])(implicit val c: SortedMapPropertyCodec[K, V])
+    extends StructuralPropertyExt[K, V, SortedMap[K, V]] {
+
     def get(key: K): Opt[PropertyWithParent[V]] = {
       seqSortedMap.get(key).map(wrap)
     }
@@ -94,8 +100,26 @@ object PropertyWithParent {
     }
   }
 
-  implicit class StructuralPropertyExt[C[_] <: Iterable[_], E](p: PropertyWithParent[C[E]])(implicit c: PropertyCodec[C[E]]) {
+  class StructuralChangeWithParents[K, V, T] private[PropertyWithParent](val property: PropertyWithParent[T],
+                                                                         val modifications: EntryPatch[K, PropertyWithParent[V]])
 
+  trait StructuralPropertyExt[K, V, T] {
+    def p: PropertyWithParent[T]
+
+    def c: StructuralPropertyCodec[K, V, T]
+
+    def listenStructure(listener: StructuralChangeWithParents[K, V, T] => Unit)(implicit o: PropertyObservers): Unit = {
+      o.observe(p.property, new PropertyObserver[T] {
+        override def propertyChanged(property: Property[T]): Unit = {}
+
+        override def propertyRemoved(property: Property[T]): Unit = {}
+
+        override def structureChange(patch: StructuralChange[_, _, T]): Unit = {
+          val sc = patch.asInstanceOf[StructuralChange[K, V, T]]
+          listener(new StructuralChangeWithParents[K, V, T](p, sc.modifications.map(_.map(sp => new PropertyWithParent[V](sp, p.opt)))))
+        }
+      })
+    }
   }
 
 }

@@ -1,7 +1,7 @@
 package poligon
 package polyproperty
 
-import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.SeqMapStructuralChange
+import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.StructuralChange
 
 import scala.collection.mutable
 
@@ -10,7 +10,7 @@ trait PropertyObserver[T] {
 
   def propertyRemoved(property: Property[T]): Unit
 
-  def structureChange(patch: SeqMapStructuralChange[_, _, T]): Unit
+  def structureChange(patch: StructuralChange[_, _, T]): Unit
 }
 
 object PropertyObserver {
@@ -34,8 +34,8 @@ object PropertyObserver {
       observers.remove(property).foreach(_.foreach(l => l.propertyRemoved(property.asInstanceOf[Property[Any]])))
     }
 
-    def structureChange(patch: SeqMapStructuralChange[_, _, _]): Unit = {
-      observers.get(patch.property).foreach(_.foreach(l => l.structureChange(patch.asInstanceOf[SeqMapStructuralChange[_, _, Any]])))
+    def structureChange(patch: StructuralChange[_, _, _]): Unit = {
+      observers.get(patch.property).foreach(_.foreach(l => l.structureChange(patch.asInstanceOf[StructuralChange[_, _, Any]])))
     }
 
     private[PropertyObserver] def clear(): Unit = {
@@ -74,7 +74,7 @@ object PropertyObserver {
       traverseAll(_.propertyRemoved(property))
     }
 
-    def structureChange(patch: SeqMapStructuralChange[_, _, _]): Unit = {
+    def structureChange(patch: StructuralChange[_, _, _]): Unit = {
       traverseAll(_.structureChange(patch))
     }
 

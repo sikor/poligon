@@ -1,7 +1,7 @@
 package poligon
 package polyproperty
 
-import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.SeqMapStructuralChange
+import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.StructuralChange
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 import scala.collection.mutable
@@ -9,14 +9,14 @@ import scala.collection.mutable.ArrayBuffer
 
 sealed trait Property[T] {
 
-  def listenStructure[E](listener: SeqMapStructuralChange[Int, E, Seq[E]] => Unit)(o: PropertyObservers)(implicit ev: Property[T] =:= Property[Seq[E]]): Unit = {
+  def listenStructure[E](listener: StructuralChange[Int, E, Seq[E]] => Unit)(o: PropertyObservers)(implicit ev: Property[T] =:= Property[Seq[E]]): Unit = {
     o.observe(ev.apply(this), new PropertyObserver[Seq[E]] {
       override def propertyChanged(property: Property[Seq[E]]): Unit = {}
 
       override def propertyRemoved(property: Property[Seq[E]]): Unit = {}
 
-      override def structureChange(patch: SeqMapStructuralChange[_, _, Seq[E]]): Unit = {
-        listener(patch.asInstanceOf[SeqMapStructuralChange[Int, E, Seq[E]]])
+      override def structureChange(patch: StructuralChange[_, _, Seq[E]]): Unit = {
+        listener(patch.asInstanceOf[StructuralChange[Int, E, Seq[E]]])
       }
     })
   }
@@ -29,7 +29,7 @@ sealed trait Property[T] {
 
       override def propertyRemoved(property: Property[T]): Unit = {}
 
-      override def structureChange(patch: SeqMapStructuralChange[_, _, T]): Unit = {}
+      override def structureChange(patch: StructuralChange[_, _, T]): Unit = {}
     })
     if (init) {
       listener(get)
