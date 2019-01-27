@@ -3,7 +3,6 @@ package polyproperty
 
 
 import poligon.polyproperty.Property.PropertyChange._
-import poligon.polyproperty.SeqMap._
 
 import scala.collection.mutable.ArrayBuffer
 

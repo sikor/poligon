@@ -3,7 +3,6 @@ package polyproperty
 
 import com.avsystem.commons.serialization.GenRef
 import com.github.ghik.silencer.silent
-import poligon.polyproperty.Property.PropertyChange
 import poligon.polyproperty.Property.PropertyChange.{SeqMapStructuralChange, SeqStructuralChange}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 

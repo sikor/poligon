@@ -56,6 +56,11 @@ object PropertyMarker {
           onChild(e._2)
           traverseChildren(e._2, onChild)
         }
+      case s: SortedMapProperty[_, _, _] =>
+        s.value.foreach { e =>
+          onChild(e._2)
+          traverseChildren(e._2, onChild)
+        }
     }
   }
 
