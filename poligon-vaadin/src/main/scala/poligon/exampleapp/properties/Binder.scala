@@ -20,6 +20,12 @@ import poligon.polyproperty._
   * should map one to one to fields in view. On submit presenter collects data from model and calls some action.
   * - Need a way for component to modify properties.
   * - Have to add validation functionality to properties
+  *
+  *
+  * Reusing components:
+  * 1. Method one - component uses Obs and lambdas as their api
+  * 2. Method two - component define its model
+  * 3. Method three - model can implement interfaces that allows them to be used in components
   */
 object Binder {
 
@@ -43,9 +49,9 @@ object Binder {
   }
 
   def layout[K, V, T](
-                        property: PropertyWithParent[T],
-                        layoutDescription: LayoutDescription = Vertical)(
-                        childFactory: PropertyWithParent[V] => Comp[Unit])(implicit c: StructuralPropertyCodec[K, V, T]): Comp[Unit] =
+                       property: PropertyWithParent[T],
+                       layoutDescription: LayoutDescription = Vertical)(
+                       childFactory: PropertyWithParent[V] => Comp[Unit])(implicit c: StructuralPropertyCodec[K, V, T]): Comp[Unit] =
     Comp.dynamic { implicit po =>
       val layout = layoutDescription match {
         case Vertical => new VerticalLayout()
@@ -74,11 +80,11 @@ object Binder {
     l
   })
 
-  def textField(caption: String, property: Obs[String], onValueSet: String => Unit): Comp[Unit] = Comp.dynamic { po =>
+  def textField(caption: String, initValue: String, onValueSet: String => Unit): Comp[Unit] = Comp.static {
     val field = new TextField()
+    field.setValue(initValue)
     field.addValueChangeListener(_ => onValueSet(field.getValue))
     field.setCaption(caption)
-    property.listen(v => field.setValue(v), init = true)(po)
     Comp.unitBound(field)
   }
 

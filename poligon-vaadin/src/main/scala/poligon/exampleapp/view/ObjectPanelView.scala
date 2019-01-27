@@ -5,15 +5,13 @@ import com.vaadin.ui.themes.ValoTheme
 import poligon.exampleapp.properties.Binder.{BaseSettings, LayoutDescription}
 import poligon.exampleapp.properties.{Binder, Comp}
 import poligon.exampleapp.view.ObjectsPanelPresenter._
+import poligon.polyproperty.Property.Diff.Val
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty.PropertyWithParent
 
 //TODO: styling: https://github.com/vaadin/framework/tree/master/uitest/src/main/java/com/vaadin/tests/themes/valo
 /*
 Plan:
-0. Revert Form returning value approach, rewrite form to standard approach
-0. Implement MapPropertyCodec
-0. SubProperty Macro
 1. Handle recursive listeners calls
 2. Update action statuses after callback from backend (show memory leaks handling)
 3. Move propertyobservers to presenters constructors
@@ -46,12 +44,12 @@ object ObjectPanelView {
       val objectTile = new VerticalLayout()
       objectTile.setSpacing(true)
       val removeObjectButton = new Button("remove")
-      removeObjectButton.addClickListener(_ => presenter.removeObject(p.get.name)(po))
+      removeObjectButton.addClickListener(_ => presenter.removeObject(p.read.name)(po))
       val instanceNum = new Slider("instance number")
       val addInstanceButton = new Button("add instance")
       val objectName = Binder.label(p.map(o => s"Object ${o.name} (status: ${o.lastAction})"), ValoTheme.LABEL_H2).bind(po)
       objectTile.addComponent(new HorizontalLayout(objectName.comp, removeObjectButton))
-      addInstanceButton.addClickListener(_ => presenter.addInstance(p.get.name, instanceNum.getValue.toInt)(po))
+      addInstanceButton.addClickListener(_ => presenter.addInstance(p.read.name, instanceNum.getValue.toInt)(po))
       objectTile.addComponent(new HorizontalLayout(instanceNum, addInstanceButton))
       val instancesList = Binder.layout(p.getField(_.instances)) { i: PropertyWithParent[ObjectInstance] =>
         createInstanceTile(presenter, p, i)
@@ -61,36 +59,40 @@ object ObjectPanelView {
     }
 
   def createInstanceTile(presenter: ObjectsPanelPresenter, p: PropertyWithParent[SomeObject], i: PropertyWithParent[ObjectInstance]): Comp[Unit] =
-    Comp.dynamicUnit { po: PropertyObservers =>
+    Comp.dynamicUnit { implicit po: PropertyObservers =>
       val instance = new VerticalLayout()
       instance.setSpacing(true)
       instance.addComponent(Binder.label(i.map(instance => s"Instance ${instance.id}"), ValoTheme.LABEL_H3).bind(po).comp)
       val resourceName = new TextField("resource name")
       val resourceValue = new TextField("resource value")
       val addResourceButton = new Button("add resource")
-      addResourceButton.addClickListener(_ => presenter.addResource(p.get.name, i.get.id, resourceName.getValue, resourceValue.getValue)(po))
+      addResourceButton.addClickListener(_ => presenter.addResource(p.read.name, i.read.id, resourceName.getValue, resourceValue.getValue)(po))
       instance.addComponent(new HorizontalLayout(resourceName, resourceValue, addResourceButton))
       val resourcesList = Binder.layout(i.getField(_.resources), LayoutDescription.Form()) { r: PropertyWithParent[Resource] =>
         r.getCase[SingleResource].map { s =>
-          Binder.textField(s.get.name, s.map(_.value), newValue => presenter.setSingleResourceValue(p.get.name, i.get.id, s.get.name, newValue)(po))
+          Binder.textField(s.read.name, s.getField(_.value).read, newValue => s.getField(_.formValue).set(Val(newValue)))
         }.orElse[Comp[Unit]] {
           r.getCase[MultiResource].map { m =>
-            createMultiResource(presenter, p.get.name, i.get.id, m)(po)
+            createMultiResource(presenter, p.read.name, i.read.id, m)(po)
           }
         }.get
       }.bind(po)
       instance.addComponent(resourcesList.comp)
       val button = new Button("Save")
       button.addClickListener { _ =>
+        i.getField(_.resources).read.values.foreach {
+          case s: SingleResource =>
+          case m: MultiResource =>
+        }
         presenter.saveResources()
       }
       instance.addComponent(button)
       instance
     }
 
-  def createMultiResource(presenter: ObjectsPanelPresenter, o: String, instance: Int, m: PropertyWithParent[MultiResource])(po: PropertyObservers): Comp[Unit] =
-    Binder.layout(m.getField(_.value), LayoutDescription.Form(BaseSettings(m.get.name))) { ri: PropertyWithParent[ResourceInstance] =>
-      Binder.textField(ri.get.idx.toString, ri.map(_.value), newValue =>
-        presenter.setMultiResourceValue(o, instance, m.get.name, ri.get.idx, newValue)(po))
+  def createMultiResource(presenter: ObjectsPanelPresenter, o: String, instance: Int, m: PropertyWithParent[MultiResource])(implicit po: PropertyObservers): Comp[Unit] =
+    Binder.layout(m.getField(_.value), LayoutDescription.Form(BaseSettings(m.read.name))) { ri: PropertyWithParent[ResourceInstance] =>
+      Binder.textField(ri.read.idx.toString, ri.getField(_.value).read, newValue =>
+        ri.getField(_.formValue).set(Val(newValue)))
     }
 }

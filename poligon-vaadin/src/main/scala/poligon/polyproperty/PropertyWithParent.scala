@@ -9,16 +9,24 @@ import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 import scala.collection.SortedMap
 
-class PropertyWithParent[S](val property: Property[S], val parent: Opt[PropertyWithParent[_]])
+class PropertyWithParent[S](val property: Property[S], val parent: Opt[PropertyWithParent[_]],
+                            val refresher: () => Opt[S] = () => Opt.Empty) {
+}
 
 
 object PropertyWithParent {
+  def apply[T: PropertyCodec](value: () => T): PropertyWithParent[T] =
+    new PropertyWithParent[T](PropertyCodec.newProperty[T](value()), Opt.Empty, () => value().opt)
+
   def apply[T: PropertyCodec](value: T): PropertyWithParent[T] =
     new PropertyWithParent[T](PropertyCodec.newProperty[T](value), Opt.Empty)
 
   implicit class GeneralPropertyExt[T](p: PropertyWithParent[T])(implicit c: PropertyCodec[T]) {
-    def get: T = c.readProperty(p.property.asInstanceOf[c.PropertyType])
+    def read: T = c.readProperty(p.property.asInstanceOf[c.PropertyType])
 
+    def refresh(implicit po: PropertyObservers): Unit = {
+      p.refresher().foreach(d => set(d))
+    }
 
     def set(value: T)(implicit observed: PropertyObservers): Unit = {
       PropertyChanger.set(p, value)
@@ -27,7 +35,7 @@ object PropertyWithParent {
     def listen(listener: T => Unit, init: Boolean = false)(implicit o: PropertyObservers): Unit = {
       o.observe(p.property, new PropertyObserver[T] {
         override def propertyChanged(property: Property[T]): Unit = {
-          listener(get)
+          listener(read)
         }
 
         override def propertyRemoved(property: Property[T]): Unit = {}
@@ -35,7 +43,7 @@ object PropertyWithParent {
         override def structureChange(patch: StructuralChange[_, _, T]): Unit = {}
       })
       if (init) {
-        listener(get)
+        listener(read)
       }
     }
 
