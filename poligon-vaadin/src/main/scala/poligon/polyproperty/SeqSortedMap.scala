@@ -72,4 +72,8 @@ class SeqSortedMap[K, V](init: Iterable[(K, V)])(implicit ordering: Ordering[K])
   def get(key: K): Opt[V] = tree.get(key).toOpt
 
   def apply(key: K): V = tree(key)
+
+  def values(): Iterable[V] = tree.values
+
+  def entries(): Seq[Entry[K, V]] = tree.iterator.zipWithIndex.map { case ((k, v), i) => Entry(i, k, v) }.toSeq
 }

@@ -5,7 +5,8 @@ import com.vaadin.ui._
 import poligon.exampleapp.properties.Binder.LayoutDescription.{Horizontal, Vertical}
 import poligon.exampleapp.properties.Comp.Bound
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Removed}
-import poligon.polyproperty.{Obs, Property, PropertyCodec, SubProperty}
+import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec
+import poligon.polyproperty._
 
 
 /**
@@ -40,6 +41,32 @@ object Binder {
     case class Form(settings: BaseSettings = BaseSettings()) extends LayoutDescription
 
   }
+
+  def layout2[K, V, T](
+                        property: PropertyWithParent[T],
+                        layoutDescription: LayoutDescription = Vertical)(
+                        childFactory: PropertyWithParent[V] => Comp[Unit])(implicit c: StructuralPropertyCodec[K, V, T]): Comp[Unit] =
+    Comp.dynamic { implicit po =>
+      val layout = layoutDescription match {
+        case Vertical => new VerticalLayout()
+        case Horizontal => new HorizontalLayout()
+        case LayoutDescription.Form(settings) => settings.setOn(new FormLayout())
+      }
+
+      PropertyWithParent.listenStructure[K, V, T](property, init = true) { patch =>
+        patch.modifications.foreach {
+          case Removed(removed) =>
+            val removedComponent = layout.getComponent(removed.index)
+            po.deregisterSubObservers(removedComponent)
+            layout.removeComponent(removedComponent)
+          case Added(added) =>
+            val c = childFactory(added.value).looseBind(po)
+            layout.addComponent(c.comp, added.index)
+        }
+      }
+
+      Comp.unitBound(layout)
+    }
 
   def layout[E](
                  property: Property[Seq[E]],

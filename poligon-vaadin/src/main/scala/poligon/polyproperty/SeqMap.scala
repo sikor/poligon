@@ -26,6 +26,8 @@ class SeqMap[K, V] {
 
   def values(): Seq[V] = seq.map(_._2)
 
+  def entries(): Seq[Entry[K, V]] = seq.iterator.zipWithIndex.map { case ((k, v), i) => Entry(i, k, v) }.toSeq
+
   /**
     * @return indices removed before insertion because of duplicates
     */
@@ -133,7 +135,6 @@ class SeqMap[K, V] {
 }
 
 object SeqMap {
-
 
 
 }

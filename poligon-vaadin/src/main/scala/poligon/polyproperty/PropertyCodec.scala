@@ -68,6 +68,8 @@ object PropertyCodec {
     protected def createStructuralChange(property: Property[T], modifications: EntryPatch[K, Property[V]]): StructuralChangeType = {
       new StructuralChange[K, V, T](property, modifications)
     }
+
+    def getEntries(p: PropertyType): Seq[Entry[K, Property[V]]]
   }
 
   object StructuralPropertyCodec {
@@ -243,6 +245,9 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends S
       Seq.empty
     }
   }
+
+  def getEntries(p: SeqProperty[E]): Seq[Entry[Int, Property[E]]] =
+    p.value.iterator.zipWithIndex.map { case (e, i) => Entry(i, i, e) }.toSeq
 }
 
 
@@ -287,6 +292,8 @@ class MapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V]) extend
     property.value.foreach { case (k, v) => lhm.put(k, elementCodec.readProperty(v.asInstanceOf[elementCodec.PropertyType])) }
     lhm
   }
+
+  def getEntries(p: MapProperty[K, V]): Seq[Entry[K, Property[V]]] = p.value.entries()
 }
 
 class SortedMapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V], val ordering: Ordering[K])
@@ -345,6 +352,8 @@ class SortedMapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V], 
       }
     }
   }
+
+  def getEntries(p: SortedMapProperty[K, V, BSortedMap[K, V]]): Seq[Entry[K, Property[V]]] = p.value.entries()
 }
 
 @positioned(positioned.here) class UnionPropertyCodec[T](
@@ -394,6 +403,8 @@ class SortedMapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V], 
     cases.findOpt(_.name == name)
       .getOrElse(throw new Exception(s"Unknown case: $name"))
   }
+
+  def getEntries(p: UnionProperty[T]): Seq[Entry[String, Property[AnyRef]]] = Seq(Entry(0, p.caseName, p.value.asInstanceOf[Property[AnyRef]]))
 }
 
 object UnionPropertyCodec extends AdtMetadataCompanion[UnionPropertyCodec] {

@@ -2,7 +2,7 @@ package poligon
 package polyproperty
 
 import poligon.polyproperty.Property.SortedMapProperty
-import poligon.polyproperty.PropertyCodec.PropertyChange.EntryPatch
+import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, EntryPatch}
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.StructuralChange
 import poligon.polyproperty.PropertyObserver.PropertyObservers
@@ -119,6 +119,29 @@ object PropertyWithParent {
           listener(new StructuralChangeWithParents[K, V, T](p, sc.modifications.map(_.map(sp => new PropertyWithParent[V](sp, p.opt)))))
         }
       })
+    }
+  }
+
+  def listenStructure[K, V, T](p: PropertyWithParent[T], init: Boolean = false)
+                              (listener: StructuralChangeWithParents[K, V, T] => Unit)
+                              (implicit
+                               o: PropertyObservers,
+                               c: StructuralPropertyCodec[K, V, T]): Unit = {
+    o.observe(p.property, new PropertyObserver[T] {
+      override def propertyChanged(property: Property[T]): Unit = {}
+
+      override def propertyRemoved(property: Property[T]): Unit = {}
+
+      override def structureChange(patch: StructuralChange[_, _, T]): Unit = {
+        val sc = patch.asInstanceOf[StructuralChange[K, V, T]]
+        listener(new StructuralChangeWithParents[K, V, T](p, sc.modifications.map(_.map(sp => new PropertyWithParent[V](sp, p.opt)))))
+      }
+    })
+
+    if (init) {
+      val entries = c.getEntries(p.property.asInstanceOf[c.PropertyType])
+        .map(e => Added(e.map(sp => new PropertyWithParent[V](sp, p.opt))))
+      listener(new StructuralChangeWithParents(p, entries))
     }
   }
 
