@@ -37,6 +37,10 @@ object PropertyWithParent {
         listener(get)
       }
     }
+
+    def obs: Obs[T] = new PropertyObs[T](p.property, c)
+
+    def map[R](f: T => R): Obs[R] = obs.map(f)
   }
 
   implicit class UnionPropertyExt[S](p: PropertyWithParent[S])(implicit c: UnionPropertyCodec[S]) {

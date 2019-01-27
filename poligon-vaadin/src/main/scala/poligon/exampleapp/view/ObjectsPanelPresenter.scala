@@ -85,9 +85,7 @@ object ObjectsPanelPresenter {
 }
 
 class ObjectsPanelPresenter(dmService: DmService) extends ObjectsPanelContent {
-  private val model: PropertyWithParent[SortedMap[String, SomeObject]] = PropertyWithParent(dmToObjects(dmService.getDm))
-
-  def getModel: Property[SortedMap[String, SomeObject]] = model.property
+  val model: PropertyWithParent[SortedMap[String, SomeObject]] = PropertyWithParent(dmToObjects(dmService.getDm))
 
   def setSingleResourceValue(o: String, instance: Int, resource: String, value: String)(implicit po: PropertyObservers): Unit = {
     val resourceModel = findResource(o, instance, resource)

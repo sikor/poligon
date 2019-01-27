@@ -42,7 +42,7 @@ object Binder {
 
   }
 
-  def layout2[K, V, T](
+  def layout[K, V, T](
                         property: PropertyWithParent[T],
                         layoutDescription: LayoutDescription = Vertical)(
                         childFactory: PropertyWithParent[V] => Comp[Unit])(implicit c: StructuralPropertyCodec[K, V, T]): Comp[Unit] =
@@ -67,35 +67,6 @@ object Binder {
 
       Comp.unitBound(layout)
     }
-
-  def layout[E](
-                 property: Property[Seq[E]],
-                 layoutDescription: LayoutDescription = Vertical)(
-                 childFactory: Property[E] => Comp[Unit]): Comp[Unit] = Comp.dynamic { po =>
-    val layout = layoutDescription match {
-      case Vertical => new VerticalLayout()
-      case Horizontal => new HorizontalLayout()
-      case LayoutDescription.Form(settings) => settings.setOn(new FormLayout())
-    }
-
-
-    SubProperty.getSeq(property).foreach { p =>
-      val bound = childFactory(p).looseBind(po)
-      layout.addComponent(bound.comp)
-    }
-    property.listenStructure[E] { patch =>
-      patch.modifications.foreach {
-        case Removed(removed) =>
-          val removedComponent = layout.getComponent(removed.index)
-          po.deregisterSubObservers(removedComponent)
-          layout.removeComponent(removedComponent)
-        case Added(added) =>
-          val c = childFactory(added.value).looseBind(po)
-          layout.addComponent(c.comp, added.index)
-      }
-    }(po)
-    Comp.unitBound(layout)
-  }
 
   def label(property: Obs[String], styleName: String = ""): Comp[Unit] = bindSimple(property, {
     val l = new Label()
