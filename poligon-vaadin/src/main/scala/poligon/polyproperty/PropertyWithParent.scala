@@ -1,6 +1,7 @@
 package poligon
 package polyproperty
 
+import poligon.polyproperty.Property.PropertyChange.SeqMapStructuralChange
 import poligon.polyproperty.Property.SortedMapProperty
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
@@ -18,6 +19,21 @@ object PropertyWithParent {
 
     def set(value: T)(implicit observed: PropertyObservers): Unit = {
       PropertyChanger.set(p, value)
+    }
+
+    def listen(listener: T => Unit, init: Boolean = false)(implicit o: PropertyObservers): Unit = {
+      o.observe(p.property, new PropertyObserver[T] {
+        override def propertyChanged(property: Property[T]): Unit = {
+          listener(property.get)
+        }
+
+        override def propertyRemoved(property: Property[T]): Unit = {}
+
+        override def structureChange(patch: SeqMapStructuralChange[_, _, T]): Unit = {}
+      })
+      if (init) {
+        listener(get)
+      }
     }
   }
 
@@ -76,6 +92,10 @@ object PropertyWithParent {
     private def seqSortedMap: SeqSortedMap[K, Property[V]] = {
       p.property.asInstanceOf[SortedMapProperty[K, V, BSortedMap[K, V]]].value
     }
+  }
+
+  implicit class StructuralPropertyExt[C[_] <: Iterable[_], E](p: PropertyWithParent[C[E]])(implicit c: PropertyCodec[C[E]]) {
+
   }
 
 }

@@ -1,8 +1,6 @@
 package poligon
 package polyproperty
 
-import com.avsystem.commons.serialization.GenRef
-import com.github.ghik.silencer.silent
 import poligon.polyproperty.Property.PropertyChange.{SeqMapStructuralChange, SeqStructuralChange}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
@@ -10,15 +8,6 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 sealed trait Property[T] {
-  def getField[R](ref: GenRef.Creator[T] => GenRef[T, R])(implicit rpc: RecordPropertyCodec[T]): Property[R] =
-    SubProperty.getField(this)(ref)
-
-  def getCase[R <: T : ClassTag](implicit upc: UnionPropertyCodec[T]): Opt[Property[R]] =
-    SubProperty.getCase[T, R](this)
-
-  @silent
-  def getSeq[E](implicit ev: T =:= Seq[E]): Seq[Property[E]] =
-    SubProperty.getSeq(this.asInstanceOf[Property[Seq[E]]])
 
   def listenStructure[E](listener: SeqStructuralChange[E] => Unit)(o: PropertyObservers)(implicit ev: Property[T] =:= Property[Seq[E]]): Unit = {
     o.observe(ev.apply(this), new PropertyObserver[Seq[E]] {

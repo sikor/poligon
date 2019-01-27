@@ -10,6 +10,7 @@ import com.avsystem.commons.serialization.GenRef
 import poligon.polyproperty.Property.Diff.{NoOp, Val}
 import poligon.polyproperty.Property.PropertyChange._
 import poligon.polyproperty.Property.{PropertyChange, _}
+import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{SortedMap, mutable}
@@ -31,6 +32,14 @@ sealed trait PropertyCodec[T] {
 }
 
 object PropertyCodec {
+
+  sealed trait StructuralPropertyCodec[K, V, T] extends PropertyCodec[T] {
+    type StructuralChangeType = SeqMapStructuralChange[K, V, T]
+
+    protected def createStructuralChange(property: Property[T], modifications: EntryPatch[K, Property[V]]): StructuralChangeType = {
+      new SeqMapStructuralChange[K, V, T](property, modifications)
+    }
+  }
 
   implicit val stringCodec: SimplePropertyCodec[String] = SimplePropertyCodec.materialize[String]
   implicit val byteCodec: SimplePropertyCodec[Byte] = SimplePropertyCodec.materialize[Byte]
@@ -110,7 +119,7 @@ object SimplePropertyCodec {
   def materialize[T]: SimplePropertyCodec[T] = new SimplePropertyCodec[T]
 }
 
-class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends PropertyCodec[Seq[E]] {
+class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends StructuralPropertyCodec[Int, E, Seq[E]] {
   override type PropertyType = SeqProperty[E]
 
   override def newProperty(value: Seq[E]): SeqProperty[E] = {
@@ -137,7 +146,7 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
             val idx = oldSize - i - 1
             Removed(Entry(idx, idx, r))
           }.toSeq
-        childrenUpdates += new SeqStructuralChange(property, changes)
+        childrenUpdates += createStructuralChange(property, changes)
       } else if (childrenUpdates.nonEmpty) {
         childrenUpdates += new ValueChange(property)
       }
@@ -153,7 +162,7 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
           val idx = oldSize + i
           Added(Entry(idx, idx, p))
         }.toSeq
-        childrenUpdates += new SeqStructuralChange(property, change)
+        childrenUpdates += createStructuralChange(property, change)
       }
       else if (childrenUpdates.nonEmpty) {
         childrenUpdates += new ValueChange(property)
@@ -170,7 +179,7 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
     val newValues: BSeq[Property[E]] = value.map(e => elementCodec.newProperty(e))
     property.value.insert(idx, newValues: _*)
     if (value.nonEmpty) {
-      Seq(new SeqStructuralChange[E](property, newValues.iterator.zipWithIndex.map { case (r, i) =>
+      Seq(createStructuralChange(property, newValues.iterator.zipWithIndex.map { case (r, i) =>
         val id = idx + i
         PropertyChange.Added(Entry(id, id, r))
       }.toSeq))
@@ -189,7 +198,7 @@ class SeqPropertyCodec[E](implicit val elementCodec: PropertyCodec[E]) extends P
     val removed = property.value.slice(idx, idx + count)
     property.value.remove(idx, count)
     if (count > 0) {
-      Seq(new SeqStructuralChange[E](property, removed.reverseIterator.zipWithIndex.map { case (r, i) =>
+      Seq(createStructuralChange(property, removed.reverseIterator.zipWithIndex.map { case (r, i) =>
         val id = oldSize - i - 1
         Removed(Entry(id, id, r))
       }.toSeq))
@@ -204,7 +213,7 @@ object SeqPropertyCodec {
   def apply[E](implicit spc: SeqPropertyCodec[E]): SeqPropertyCodec[E] = spc
 }
 
-class MapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V]) extends PropertyCodec[BMap[K, V]] {
+class MapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V]) extends StructuralPropertyCodec[K, V, BMap[K, V]] {
   type PropertyType = MapProperty[K, V]
 
   def newProperty(value: BMap[K, V]): PropertyType = {
@@ -226,7 +235,7 @@ class MapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V]) extend
       },
       k => elementCodec.newProperty(value(k)))
     if (thisUpdates.nonEmpty) {
-      childrenUpdates :+ new SeqMapStructuralChange(property, thisUpdates)
+      childrenUpdates :+ createStructuralChange(property, thisUpdates)
     } else {
       if (childrenUpdates.nonEmpty) {
         childrenUpdates :+ new ValueChange(property)
@@ -243,7 +252,9 @@ class MapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V]) extend
   }
 }
 
-class SortedMapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V], val ordering: Ordering[K]) extends PropertyCodec[SortedMap[K, V]] {
+class SortedMapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V], val ordering: Ordering[K])
+  extends StructuralPropertyCodec[K, V, SortedMap[K, V]] {
+
   type PropertyType = SortedMapProperty[K, V, SortedMap[K, V]]
 
   def newProperty(value: SortedMap[K, V]): PropertyType = {
@@ -288,7 +299,7 @@ class SortedMapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V], 
                              childrenUpdates: Seq[PropertyChange],
                              thisUpdates: EntryPatch[K, Property[V]]): BSeq[PropertyChange] = {
     if (thisUpdates.nonEmpty) {
-      childrenUpdates :+ new SeqMapStructuralChange(property, thisUpdates)
+      childrenUpdates :+ createStructuralChange(property, thisUpdates)
     } else {
       if (childrenUpdates.nonEmpty) {
         childrenUpdates :+ new ValueChange(property)
@@ -301,7 +312,7 @@ class SortedMapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V], 
 
 @positioned(positioned.here) class UnionPropertyCodec[T](
                                                           @multi @adtCaseMetadata val cases: List[UnionPropertyCase[_]]
-                                                        ) extends PropertyCodec[T] {
+                                                        ) extends StructuralPropertyCodec[String, AnyRef, T] {
   override type PropertyType = UnionProperty[T]
 
   override def newProperty(value: T): UnionProperty[T] = {
@@ -332,7 +343,7 @@ class SortedMapPropertyCodec[K, V](implicit val elementCodec: PropertyCodec[V], 
       property.value = caseCodec.newProperty(value)
       val change =
         Seq(Removed(Entry(0, oldCaseName, oldValue.asInstanceOf[Property[AnyRef]])), Added(Entry(0, property.caseName, property.value.asInstanceOf[Property[AnyRef]])))
-      Vector(new SeqMapStructuralChange[String, AnyRef, T](property, change))
+      Vector(createStructuralChange(property, change))
     }
   }
 
