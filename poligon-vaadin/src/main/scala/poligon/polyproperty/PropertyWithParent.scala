@@ -17,7 +17,8 @@ object PropertyWithParent {
     new PropertyWithParent[T](PropertyCodec.newProperty[T](value), Opt.Empty)
 
   implicit class GeneralPropertyExt[T](p: PropertyWithParent[T])(implicit c: PropertyCodec[T]) {
-    def get: T = p.property.get
+    def get: T = c.readProperty(p.property.asInstanceOf[c.PropertyType])
+
 
     def set(value: T)(implicit observed: PropertyObservers): Unit = {
       PropertyChanger.set(p, value)
@@ -26,7 +27,7 @@ object PropertyWithParent {
     def listen(listener: T => Unit, init: Boolean = false)(implicit o: PropertyObservers): Unit = {
       o.observe(p.property, new PropertyObserver[T] {
         override def propertyChanged(property: Property[T]): Unit = {
-          listener(property.get)
+          listener(get)
         }
 
         override def propertyRemoved(property: Property[T]): Unit = {}
@@ -38,7 +39,7 @@ object PropertyWithParent {
       }
     }
 
-    def obs: Obs[T] = new PropertyObs[T](p.property, c)
+    def obs: Obs[T] = new PropertyObs[T](p, c)
 
     def map[R](f: T => R): Obs[R] = obs.map(f)
   }

@@ -26,7 +26,7 @@ object MainView {
 
   def create(presenter: MainViewPresenter): Comp[Unit] = Comp.dynamicUnit { po: PropertyObservers =>
     val menuBar = new MenuBar()
-    presenter.getModel.listen({ model =>
+    presenter.model.listen({ model =>
       menuBar.removeItems()
       model.menu.categories.foreach { c =>
         val category = menuBar.addItem(c.name, null)
@@ -35,7 +35,7 @@ object MainView {
         }
       }
     }, init = true)(po)
-    val content = Binder.replaceable(presenter.getContent.map(createContent), Custom).bind(po)
+    val content = Binder.replaceable(presenter.subPresenter.map(createContent), Custom).bind(po)
 
     val layout = new VerticalLayout()
     layout.addComponent(menuBar)

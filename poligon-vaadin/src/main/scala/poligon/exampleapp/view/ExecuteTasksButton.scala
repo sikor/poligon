@@ -7,7 +7,7 @@ import poligon.exampleapp.view.ExecuteTasksPresenter.ExecuteTasksStatus.NotStart
 object ExecuteTasksButton {
   def create(presenter: ExecuteTasksPresenter): Comp[Unit] = Comp.dynamicUnit { observed =>
     val button = new Button
-    presenter.getModel.listen({ s =>
+    presenter.model.listen({ s =>
       button.setCaption(s.toString)
       button.setEnabled(s == NotStarted)
     }, true)(observed)

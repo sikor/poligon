@@ -1,47 +1,10 @@
 package poligon
 package polyproperty
 
-import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.StructuralChange
-import poligon.polyproperty.PropertyObserver.PropertyObservers
-
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-sealed trait Property[T] {
-
-  def listenStructure[E](listener: StructuralChange[Int, E, Seq[E]] => Unit)(o: PropertyObservers)(implicit ev: Property[T] =:= Property[Seq[E]]): Unit = {
-    o.observe(ev.apply(this), new PropertyObserver[Seq[E]] {
-      override def propertyChanged(property: Property[Seq[E]]): Unit = {}
-
-      override def propertyRemoved(property: Property[Seq[E]]): Unit = {}
-
-      override def structureChange(patch: StructuralChange[_, _, Seq[E]]): Unit = {
-        listener(patch.asInstanceOf[StructuralChange[Int, E, Seq[E]]])
-      }
-    })
-  }
-
-  def listen(listener: T => Unit, init: Boolean = false)(o: PropertyObservers)(implicit codec: PropertyCodec[T]): Unit = {
-    o.observe(this, new PropertyObserver[T] {
-      override def propertyChanged(property: Property[T]): Unit = {
-        listener(property.get)
-      }
-
-      override def propertyRemoved(property: Property[T]): Unit = {}
-
-      override def structureChange(patch: StructuralChange[_, _, T]): Unit = {}
-    })
-    if (init) {
-      listener(get)
-    }
-  }
-
-  def get(implicit codec: PropertyCodec[T]): T = codec.readProperty(this.asInstanceOf[codec.PropertyType])
-
-  def obs(implicit codec: PropertyCodec[T]): Obs[T] = new PropertyObs[T](this, codec)
-
-  def map[R](f: T => R)(implicit codec: PropertyCodec[T]): Obs[R] = obs.map(f)
-}
+sealed trait Property[T]
 
 object Property {
 

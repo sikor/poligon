@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.StrictLogging
 import poligon.exampleapp.view.ExecuteTasksPresenter.ExecuteTasksStatus
 import poligon.exampleapp.view.ExecuteTasksPresenter.ExecuteTasksStatus.{InProgress, NotStarted}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
-import poligon.polyproperty.{HasSimplePropertyCodec, Property, PropertyWithParent}
+import poligon.polyproperty.{HasSimplePropertyCodec, PropertyWithParent}
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
@@ -29,9 +29,7 @@ object ExecuteTasksPresenter {
 }
 
 class ExecuteTasksPresenter(service: ExecuteTasksService)(implicit ec: ExecutionContext) extends StrictLogging {
-  private val model: PropertyWithParent[ExecuteTasksStatus] = PropertyWithParent(NotStarted)
-
-  def getModel: Property[ExecuteTasksStatus] = model.property
+  val model: PropertyWithParent[ExecuteTasksStatus] = PropertyWithParent(NotStarted)
 
   def executeTasks(implicit observed: PropertyObservers): Unit = {
     model.set(InProgress)
