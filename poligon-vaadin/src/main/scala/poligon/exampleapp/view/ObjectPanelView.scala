@@ -82,7 +82,12 @@ object ObjectPanelView {
       button.addClickListener { _ =>
         i.getField(_.resources).read.values.foreach {
           case s: SingleResource =>
+            s.formValue.toOpt.foreach(v =>
+              presenter.dmService.setValue(List(p.read.name, i.read.id.toString, s.name), v))
           case m: MultiResource =>
+            m.value.values.foreach(ri =>
+              ri.formValue.toOpt.foreach(v =>
+                presenter.dmService.setValue(List(p.read.name, i.read.id.toString, m.name, ri.idx.toString), v)))
         }
         presenter.saveResources()
       }

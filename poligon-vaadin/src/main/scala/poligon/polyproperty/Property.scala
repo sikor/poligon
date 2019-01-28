@@ -1,6 +1,8 @@
 package poligon
 package polyproperty
 
+import poligon.polyproperty.Property.Diff.{NoOp, Val}
+
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -33,7 +35,12 @@ object Property {
     }
   }
 
-  sealed trait Diff[+T]
+  sealed trait Diff[+T] {
+    def toOpt: Opt[T] = this match {
+      case NoOp => Opt.Empty
+      case Val(s) => s.opt
+    }
+  }
 
   object Diff {
 

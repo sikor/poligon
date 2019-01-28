@@ -15,6 +15,10 @@ import scala.collection.SortedMap
 
 object ObjectsPanelPresenter {
 
+  implicit val listOrdering: Ordering[List[String]] = Ordering.fromLessThan { (l1, l2) =>
+    l1 != l2 && (l1.isEmpty || l1.zip(l2).find { case (s1, s2) => s1 != s2 }.exists { case (s1, s2) => s1 < s2 })
+  }
+
   sealed trait ActionStatus
 
   object ActionStatus {
@@ -51,7 +55,10 @@ object ObjectsPanelPresenter {
 
   object Resource extends HasUnionPropertyCodec[Resource]
 
-  case class ObjectInstance(id: Int, resources: SortedMap[String, Resource], lastAction: Diff[Action] = NoOp)
+  case class ObjectInstance(id: Int,
+                            resources: SortedMap[String, Resource],
+                            lastAction: Diff[Action] = NoOp,
+                            formValues: Diff[SortedMap[List[String], String]] = NoOp)
 
   case class SomeObject(name: String, instances: SortedMap[Int, ObjectInstance], lastAction: Diff[Action] = NoOp)
 
@@ -84,7 +91,7 @@ object ObjectsPanelPresenter {
 
 }
 
-class ObjectsPanelPresenter(dmService: DmService) extends ObjectsPanelContent {
+class ObjectsPanelPresenter(val dmService: DmService) extends ObjectsPanelContent {
   val model: PropertyWithParent[SortedMap[String, SomeObject]] = PropertyWithParent(() => dmToObjects(dmService.getDm))
 
   def setSingleResourceValue(o: String, instance: Int, resource: String, value: String)(implicit po: PropertyObservers): Unit = {
