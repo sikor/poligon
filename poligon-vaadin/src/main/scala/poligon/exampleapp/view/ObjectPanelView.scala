@@ -80,7 +80,8 @@ object ObjectPanelView {
       instance.addComponent(resourcesList.comp)
       val button = new Button("Save")
       button.addClickListener { _ =>
-        i.getField(_.resources).read.values.foreach {
+        val resourcesSnap = i.getField(_.resources).read
+        resourcesSnap.values.foreach {
           case s: SingleResource =>
             s.formValue.toOpt.foreach(v =>
               presenter.dmService.setValue(List(p.read.name, i.read.id.toString, s.name), v))
@@ -89,7 +90,7 @@ object ObjectPanelView {
               ri.formValue.toOpt.foreach(v =>
                 presenter.dmService.setValue(List(p.read.name, i.read.id.toString, m.name, ri.idx.toString), v)))
         }
-        presenter.saveResources()
+        presenter.model.refresh
       }
       instance.addComponent(button)
       instance

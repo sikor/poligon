@@ -10,7 +10,7 @@ import poligon.polyproperty.PropertyObserver.PropertyObservers
 import scala.collection.SortedMap
 
 class PropertyWithParent[S](val property: Property[S], val parent: Opt[PropertyWithParent[_]],
-                            val refresher: () => Opt[S] = () => Opt.Empty) {
+                            private val refresher: () => Opt[S] = () => Opt.Empty) {
 }
 
 

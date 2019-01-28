@@ -7,6 +7,8 @@ import com.avsystem.commons.annotation.positioned
 import com.avsystem.commons.meta._
 import com.avsystem.commons.misc.{ApplierUnapplier, ValueOf}
 import com.avsystem.commons.serialization.GenRef
+import com.typesafe.scalalogging.Logger
+import org.slf4j.LoggerFactory
 import poligon.polyproperty.Property.Diff.{NoOp, Val}
 import poligon.polyproperty.Property._
 import poligon.polyproperty.PropertyCodec.PropertyChange._
@@ -33,6 +35,8 @@ sealed trait PropertyCodec[T] {
 }
 
 object PropertyCodec {
+
+  private val logger = Logger(LoggerFactory.getLogger(PropertyCodec.getClass))
 
   sealed trait PropertyChange {
     def property: Property[_]
@@ -126,7 +130,13 @@ object PropertyCodec {
 
   def updateProperty[T: PropertyCodec](value: T, property: Property[T]): Seq[PropertyChange] = {
     val codec = PropertyCodec[T]
-    codec.updateProperty(value, property.asInstanceOf[codec.PropertyType])
+    try {
+      codec.updateProperty(value, property.asInstanceOf[codec.PropertyType])
+    } catch {
+      case NonFatal(e) =>
+        logger.error(s"Failed to update property: ${Property.print(property)} with value: $value")
+        throw e
+    }
   }
 
   def readProperty[T: PropertyCodec](property: Property[T]): T = {

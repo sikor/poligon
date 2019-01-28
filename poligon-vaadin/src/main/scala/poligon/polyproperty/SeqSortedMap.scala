@@ -24,7 +24,7 @@ class SeqSortedMap[K, V](init: Iterable[(K, V)])(implicit ordering: Ordering[K])
           updateValue(k, tree(k))
           currentKeys.next()
         } else {
-          patches += Removed(Entry(i, k, tree(k)))
+          patches += Removed(Entry(i, currentKeys.head, tree(currentKeys.head)))
           currentKeys.next()
           insertUpdateOrMove()
         }
