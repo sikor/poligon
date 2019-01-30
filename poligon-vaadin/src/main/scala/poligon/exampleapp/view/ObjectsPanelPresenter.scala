@@ -37,7 +37,7 @@ object ObjectsPanelPresenter {
     def name: String
   }
 
-  case class ResourceInstance(idx: Int, value: String, formValue: Diff[String] = NoOp)
+  case class ResourceInstance(idx: Int, value: String, formValue: Diff[String] = NoOp, lastAction: Diff[Action] = NoOp)
 
   object ResourceInstance extends HasRecordPropertyCodec[ResourceInstance]
 
@@ -45,7 +45,7 @@ object ObjectsPanelPresenter {
 
   object SingleResource extends HasRecordPropertyCodec[SingleResource]
 
-  case class MultiResource(name: String, value: SortedMap[Int, ResourceInstance], lastAction: Diff[Action] = NoOp) extends Resource
+  case class MultiResource(name: String, value: SortedMap[Int, ResourceInstance]) extends Resource
 
   object MultiResource extends HasRecordPropertyCodec[MultiResource]
 
@@ -88,20 +88,7 @@ object ObjectsPanelPresenter {
 
 class ObjectsPanelPresenter(val dmService: DmService) extends ObjectsPanelContent {
   val model: PropertyWithParent[SortedMap[String, SomeObject]] = PropertyWithParent(() => dmToObjects(dmService.getDm))
-
-  def setSingleResourceValue(o: String, instance: Int, resource: String, value: String)(implicit po: PropertyObservers): Unit = {
-    val resourceModel = findResource(o, instance, resource)
-    resourceModel.getCase[SingleResource].get.getField(_.formValue).set(Val(value))
-  }
-
-  def setMultiResourceValue(o: String, instance: Int, resource: String, resourcesInstance: Int, value: String)(implicit po: PropertyObservers): Unit = {
-    val resourceModel = findResource(o, instance, resource)
-    resourceModel
-      .getCase[MultiResource].get
-      .getField(_.value)(resourcesInstance)
-      .getField(_.formValue)
-      .set(Val(value))
-  }
+  val newObjectName = PropertyWithParent("")
 
   def addObject(o: String)(implicit po: PropertyObservers): Unit = {
     model.put(o, SomeObject(o, SortedMap.empty))
@@ -120,10 +107,6 @@ class ObjectsPanelPresenter(val dmService: DmService) extends ObjectsPanelConten
 
   def removeObject(o: String)(implicit po: PropertyObservers): Unit = {
     model.remove(o)
-  }
-
-  private def findResource(o: String, instance: Int, resource: String) = {
-    findObjectInstance(o, instance).getField(_.resources)(resource)
   }
 
   private def findObjectInstance(o: String, instance: Int) = {

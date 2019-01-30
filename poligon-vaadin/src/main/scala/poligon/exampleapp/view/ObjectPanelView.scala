@@ -22,7 +22,7 @@ Plan:
  */
 object ObjectPanelView {
 
-  def createObjectPanelView(presenter: ObjectsPanelPresenter): Comp[Unit] = Comp.dynamicUnit { implicit po: PropertyObservers =>
+  def createObjectPanelView(presenter: ObjectsPanelPresenter): Comp = Comp.dynamic { implicit po: PropertyObservers =>
     val objects = new VerticalLayout()
     objects.setSpacing(true)
     val objectName = new TextField("object name")
@@ -35,12 +35,12 @@ object ObjectPanelView {
     val objectsList = Binder.layout(presenter.model) { p: PropertyWithParent[SomeObject] =>
       createObjectTile(presenter, p)
     }.bind(po)
-    objects.addComponent(objectsList.comp)
+    objects.addComponent(objectsList)
     objects
   }
 
-  def createObjectTile(presenter: ObjectsPanelPresenter, p: PropertyWithParent[SomeObject]): Comp[Unit] =
-    Comp.dynamicUnit { implicit po: PropertyObservers =>
+  def createObjectTile(presenter: ObjectsPanelPresenter, p: PropertyWithParent[SomeObject]): Comp =
+    Comp.dynamic { implicit po: PropertyObservers =>
       val objectTile = new VerticalLayout()
       objectTile.setSpacing(true)
       val removeObjectButton = new Button("remove")
@@ -48,21 +48,21 @@ object ObjectPanelView {
       val instanceNum = new Slider("instance number")
       val addInstanceButton = new Button("add instance")
       val objectName = Binder.label(p.map(o => s"Object ${o.name} (status: ${o.lastAction})"), ValoTheme.LABEL_H2).bind(po)
-      objectTile.addComponent(new HorizontalLayout(objectName.comp, removeObjectButton))
+      objectTile.addComponent(new HorizontalLayout(objectName, removeObjectButton))
       addInstanceButton.addClickListener(_ => presenter.addInstance(p.read.name, instanceNum.getValue.toInt)(po))
       objectTile.addComponent(new HorizontalLayout(instanceNum, addInstanceButton))
       val instancesList = Binder.layout(p.getField(_.instances)) { i: PropertyWithParent[ObjectInstance] =>
         createInstanceTile(presenter, p, i)
       }.bind(po)
-      objectTile.addComponent(instancesList.comp)
+      objectTile.addComponent(instancesList)
       objectTile
     }
 
-  def createInstanceTile(presenter: ObjectsPanelPresenter, p: PropertyWithParent[SomeObject], i: PropertyWithParent[ObjectInstance]): Comp[Unit] =
-    Comp.dynamicUnit { implicit po: PropertyObservers =>
+  def createInstanceTile(presenter: ObjectsPanelPresenter, p: PropertyWithParent[SomeObject], i: PropertyWithParent[ObjectInstance]): Comp =
+    Comp.dynamic { implicit po: PropertyObservers =>
       val instance = new VerticalLayout()
       instance.setSpacing(true)
-      instance.addComponent(Binder.label(i.map(instance => s"Instance ${instance.id}"), ValoTheme.LABEL_H3).bind(po).comp)
+      instance.addComponent(Binder.label(i.map(instance => s"Instance ${instance.id}"), ValoTheme.LABEL_H3).bind(po))
       val resourceName = new TextField("resource name")
       val resourceValue = new TextField("resource value")
       val addResourceButton = new Button("add resource")
@@ -70,14 +70,17 @@ object ObjectPanelView {
       instance.addComponent(new HorizontalLayout(resourceName, resourceValue, addResourceButton))
       val resourcesList = Binder.layout(i.getField(_.resources), LayoutDescription.Form()) { r: PropertyWithParent[Resource] =>
         r.getCase[SingleResource].map { s =>
-          Binder.textField(s.read.name, s.getField(_.value).read, newValue => s.getField(_.formValue).set(Val(newValue)))
-        }.orElse[Comp[Unit]] {
+          Binder.textField(s.read.name, s.getField(_.value).read, newValue => {
+            s.getField(_.formValue).set(Val(newValue))
+            s.getField(_.lastAction).set(Val(Action(ActionStatus.Draft, "")))
+          })
+        }.orElse[Comp] {
           r.getCase[MultiResource].map { m =>
             createMultiResource(presenter, p.read.name, i.read.id, m)(po)
           }
         }.get
       }.bind(po)
-      instance.addComponent(resourcesList.comp)
+      instance.addComponent(resourcesList)
       val button = new Button("Save")
       button.addClickListener { _ =>
         val resourcesSnap = i.getField(_.resources).read
@@ -96,9 +99,11 @@ object ObjectPanelView {
       instance
     }
 
-  def createMultiResource(presenter: ObjectsPanelPresenter, o: String, instance: Int, m: PropertyWithParent[MultiResource])(implicit po: PropertyObservers): Comp[Unit] =
+  def createMultiResource(presenter: ObjectsPanelPresenter, o: String, instance: Int, m: PropertyWithParent[MultiResource])(implicit po: PropertyObservers): Comp =
     Binder.layout(m.getField(_.value), LayoutDescription.Form(BaseSettings(m.read.name))) { ri: PropertyWithParent[ResourceInstance] =>
-      Binder.textField(ri.read.idx.toString, ri.getField(_.value).read, newValue =>
-        ri.getField(_.formValue).set(Val(newValue)))
+      Binder.textField(ri.read.idx.toString, ri.getField(_.value).read, newValue => {
+        ri.getField(_.formValue).set(Val(newValue))
+        ri.getField(_.lastAction).set(Val(Action(ActionStatus.Draft, "")))
+      })
     }
 }

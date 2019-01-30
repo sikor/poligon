@@ -20,11 +20,11 @@ object MainView {
 
   }
 
-  private def createContent(presenter: MainViewContentPresenter): Comp[Unit] = presenter match {
+  private def createContent(presenter: MainViewContentPresenter): Comp = presenter match {
     case o: ObjectsPanelContent => ObjectPanelView.createObjectPanelView(o.get)
   }
 
-  def create(presenter: MainViewPresenter): Comp[Unit] = Comp.dynamicUnit { po: PropertyObservers =>
+  def create(presenter: MainViewPresenter): Comp = Comp.dynamic { po: PropertyObservers =>
     val menuBar = new MenuBar()
     presenter.model.listen({ model =>
       menuBar.removeItems()
@@ -39,8 +39,8 @@ object MainView {
 
     val layout = new VerticalLayout()
     layout.addComponent(menuBar)
-    layout.addComponent(ExecuteTasksButton.create(presenter.executeTasksPresenter).bind(po).comp)
-    layout.addComponent(content.comp)
+    layout.addComponent(ExecuteTasksButton.create(presenter.executeTasksPresenter).bind(po))
+    layout.addComponent(content)
     layout
   }
 }

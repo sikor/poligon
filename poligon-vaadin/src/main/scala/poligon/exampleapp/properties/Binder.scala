@@ -3,7 +3,6 @@ package poligon.exampleapp.properties
 import com.avsystem.commons.misc.OptArg
 import com.vaadin.ui._
 import poligon.exampleapp.properties.Binder.LayoutDescription.{Horizontal, Vertical}
-import poligon.exampleapp.properties.Comp.Bound
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Removed}
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec
 import poligon.polyproperty._
@@ -51,7 +50,7 @@ object Binder {
   def layout[K, V, T](
                        property: PropertyWithParent[T],
                        layoutDescription: LayoutDescription = Vertical)(
-                       childFactory: PropertyWithParent[V] => Comp[Unit])(implicit c: StructuralPropertyCodec[K, V, T]): Comp[Unit] =
+                       childFactory: PropertyWithParent[V] => Comp)(implicit c: StructuralPropertyCodec[K, V, T]): Comp =
     Comp.dynamic { implicit po =>
       val layout = layoutDescription match {
         case Vertical => new VerticalLayout()
@@ -67,29 +66,33 @@ object Binder {
             layout.removeComponent(removedComponent)
           case Added(added) =>
             val c = childFactory(added.value).looseBind(po)
-            layout.addComponent(c.comp, added.index)
+            layout.addComponent(c, added.index)
         }
       }
 
-      Comp.unitBound(layout)
+      layout
     }
 
-  def label(property: Obs[String], styleName: String = ""): Comp[Unit] = bindSimple(property, {
+  def label(property: Obs[String], styleName: String = ""): Comp = bindSimple(property, {
     val l = new Label()
     l.addStyleName(styleName)
     l
   })
 
-  def textField(caption: String, initValue: String, onValueSet: String => Unit): Comp[Unit] = Comp.static {
+  def textField(caption: String, initValue: String, onValueSet: String => Unit): Comp = Comp.static {
     val field = new TextField()
     field.setValue(initValue)
     field.addValueChangeListener(_ => onValueSet(field.getValue))
     field.setCaption(caption)
-    Comp.unitBound(field)
+    field
   }
 
-  private def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: => P): Comp[Unit] =
-    Comp.dynamicUnit {
+  def textField(caption: String, property: PropertyWithParent[String]): Comp = Comp.dynamic {
+      ???
+  }
+
+  private def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: => P): Comp =
+    Comp.dynamic {
       o =>
         val l = label
         property.listen(v => l.setValue(v), init = true)(o)
@@ -108,26 +111,24 @@ object Binder {
     def getContent: Component = getCompositionRoot
   }
 
-  def replaceable[V](property: Obs[Comp[V]], wrapperDescription: WrapperDescription): Comp[V] = Comp.dynamic[V] {
+  def replaceable(property: Obs[Comp], wrapperDescription: WrapperDescription): Comp = Comp.dynamic {
     po =>
       val wrapper = wrapperDescription match {
         case Panel => new Panel()
         case Custom => new SimpleCustomComponent()
       }
-      var bound: Bound[V] = null
       property.listen({
         c =>
           val component = c.looseBind(po)
-          bound = component
           wrapper match {
             case p: Panel =>
               po.deregisterSubObservers(p.getContent)
-              p.setContent(component.comp)
+              p.setContent(component)
             case s: SimpleCustomComponent =>
               po.deregisterSubObservers(s.getContent)
-              s.setContent(component.comp)
+              s.setContent(component)
           }
       }, init = true)(po)
-      Comp.bound(bound.get, wrapper)
+      wrapper
   }
 }
