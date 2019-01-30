@@ -11,6 +11,8 @@ import scala.collection.SortedMap
 
 class PropertyWithParent[S](val property: Property[S], val parent: Opt[PropertyWithParent[_]],
                             private val refresher: () => Opt[S] = () => Opt.Empty) {
+
+  override def toString = s"PropertyWithParent($property, $parent)"
 }
 
 
