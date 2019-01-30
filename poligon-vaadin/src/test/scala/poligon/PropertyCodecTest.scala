@@ -3,7 +3,12 @@ package poligon
 import java.time.Instant
 
 import org.scalatest.FunSuite
+import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Modification, Removed}
+import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty._
+
+import scala.collection.SortedMap
+import scala.collection.immutable.TreeMap
 
 case class MalyModel(s: Short)
 
@@ -89,5 +94,55 @@ class PropertyCodecTest extends FunSuite {
     val seq = SubProperty.getSeq(prop)
     assert(seq.length == 3)
     assert(PropertyCodec.readProperty(seq.head) == 1)
+  }
+
+  test("sorted map insert in the middle") {
+    sortedMapInsert("aa", 1)
+  }
+
+  test("sorted map insert at the end") {
+    sortedMapInsert("cc", 2)
+  }
+
+  test("sorted map insert at the beginning") {
+    sortedMapInsert("00", 0)
+  }
+
+  test("sorted map update") {
+    implicit val po: PropertyObservers = new PropertyObservers(Opt.Empty)
+    val p = PropertyWithParent[SortedMap[String, String]](TreeMap("a" -> "a", "b" -> "b", "c" -> "c", "d" -> "d", "y" -> "y"))
+    PropertyWithParent.listenStructure[String, String, SortedMap[String, String]](p) { ch =>
+      assert(ch.modifications.size == 5)
+      assertModification(ch.modifications.head, isAdded = true, 0, "0")
+      assertModification(ch.modifications(1), isAdded = true, 2, "aa")
+      assertModification(ch.modifications(2), isAdded = false, 4, "c")
+      assertModification(ch.modifications(3), isAdded = true, 5, "x")
+      assertModification(ch.modifications(4), isAdded = false, 6, "y")
+    }
+    val newValue = TreeMap("0" -> "0", "a" -> "a", "aa" -> "aa", "b" -> "b", "d" -> "d", "x" -> "x")
+    p.set(newValue)
+    assert(p.read == newValue)
+  }
+
+  private def assertModification(m: Modification[String, PropertyWithParent[String]], isAdded: Boolean, index: Int, value: String): Unit = {
+    if (isAdded) {
+      assert(m.isInstanceOf[Added[String, PropertyWithParent[String]]])
+    } else {
+      assert(m.isInstanceOf[Removed[String, PropertyWithParent[String]]])
+    }
+    assert(m.entry.index == index)
+    assert(m.entry.key == value)
+    assert(m.entry.value.read == value)
+  }
+
+  private def sortedMapInsert(key: String, expIndex: Int): Unit = {
+    implicit val po: PropertyObservers = new PropertyObservers(Opt.Empty)
+    val p = PropertyWithParent[SortedMap[String, String]](TreeMap("a" -> "a", "b" -> "b"))
+    PropertyWithParent.listenStructure[String, String, SortedMap[String, String]](p) { ch =>
+      assert(ch.modifications.size == 1)
+      assertModification(ch.modifications.head, isAdded = true, expIndex, key)
+    }
+    p.put(key, key)
+    assert(p.read == TreeMap("a" -> "a", "b" -> "b") + (key -> key))
   }
 }

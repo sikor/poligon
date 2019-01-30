@@ -46,6 +46,7 @@ object PropertyCodec {
 
     sealed trait Modification[K, V] {
       def map[V2](f: V => V2): Modification[K, V2]
+      def entry: Entry[K, V]
     }
 
     case class Removed[K, V](entry: Entry[K, V]) extends Modification[K, V] {
