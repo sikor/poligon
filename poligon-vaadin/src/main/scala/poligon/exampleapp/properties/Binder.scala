@@ -2,7 +2,7 @@ package poligon.exampleapp.properties
 
 import com.avsystem.commons.misc.OptArg
 import com.vaadin.ui._
-import poligon.exampleapp.properties.Binder.LayoutDescription.{Horizontal, Vertical}
+import poligon.exampleapp.properties.Binder.LayoutBuilder.Vertical
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Removed}
 import poligon.polyproperty.PropertyWithParent.Struct
 import poligon.polyproperty._
@@ -28,7 +28,7 @@ import poligon.polyproperty._
   */
 object Binder {
 
-  sealed trait LayoutDescription
+  type AnyLayoutBuilder = LayoutBuilder[AbstractOrderedLayout]
 
   case class BaseSettings(caption: OptArg[String] = OptArg.Empty) {
     def setOn[T <: Component](c: T): T = {
@@ -37,26 +37,56 @@ object Binder {
     }
   }
 
-  object LayoutDescription {
+  case class LayoutSettings(spacing: Boolean = false) {
+    def setOn(layout: AbstractOrderedLayout): Unit = {
+      layout.setSpacing(spacing)
+    }
+  }
 
-    case object Vertical extends LayoutDescription
+  sealed trait LayoutBuilder[+T <: AbstractOrderedLayout] {
+    def layoutSettings: LayoutSettings
 
-    case object Horizontal extends LayoutDescription
+    def baseSettings: BaseSettings
 
-    case class Form(settings: BaseSettings = BaseSettings()) extends LayoutDescription
+    def create(comps: Component*): T
+
+    final def build(comps: Component*): T = {
+      val l = create(comps: _*)
+      baseSettings.setOn(l)
+      layoutSettings.setOn(l)
+      l
+    }
+  }
+
+  object LayoutBuilder {
+
+    case class Vertical(layoutSettings: LayoutSettings = LayoutSettings(), baseSettings: BaseSettings = BaseSettings())
+      extends LayoutBuilder[VerticalLayout] {
+      def create(comps: Component*): VerticalLayout = new VerticalLayout(comps: _*)
+    }
+
+    case class Horizontal(layoutSettings: LayoutSettings = LayoutSettings(), baseSettings: BaseSettings = BaseSettings())
+      extends LayoutBuilder[HorizontalLayout] {
+      def create(comps: Component*): HorizontalLayout = new HorizontalLayout(comps: _*)
+    }
+
+    case class Form(layoutSettings: LayoutSettings = LayoutSettings(), baseSettings: BaseSettings = BaseSettings())
+      extends LayoutBuilder[FormLayout] {
+      def create(comps: Component*): FormLayout = new FormLayout(comps: _*)
+    }
 
   }
 
-  def layout[V](
+  def layout(comps: Comp*)(builder: AnyLayoutBuilder = Vertical()): Comp = Comp.dynamic { implicit po =>
+    builder.create(comps.map(_.bind(po)): _*)
+  }
+
+  def dynLayout[V](
                  property: Obs[Struct[V]],
-                 layoutDescription: LayoutDescription = Vertical)(
+                 layoutDescription: AnyLayoutBuilder = Vertical())(
                  childFactory: PropertyWithParent[V] => Comp): Comp =
     Comp.dynamic { implicit po =>
-      val layout = layoutDescription match {
-        case Vertical => new VerticalLayout()
-        case Horizontal => new HorizontalLayout()
-        case LayoutDescription.Form(settings) => settings.setOn(new FormLayout())
-      }
+      val layout = layoutDescription.build()
 
       property.listen { patch =>
         patch.modifications.foreach {
@@ -73,7 +103,9 @@ object Binder {
       layout
     }
 
-  def label(property: Obs[String], styleName: String = ""): Comp = bindSimple(property, {
+  def label(value: String, styleName: String = ""): Comp = Comp.static(new Label(value))
+
+  def dynLabel(property: Obs[String], styleName: String = ""): Comp = bindSimple(property, {
     val l = new Label()
     l.addStyleName(styleName)
     l
@@ -89,6 +121,13 @@ object Binder {
 
   def textField(caption: String, property: PropertyWithParent[String]): Comp =
     textField(caption, property.read, property.sin)
+
+
+  def button(caption: String, onClick: Sin[Unit]): Comp = Comp.dynamic { implicit po =>
+    val button = new Button(caption)
+    button.addClickListener(_ => onClick.set(()))
+    button
+  }
 
   private def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: => P): Comp =
     Comp.dynamic { o =>

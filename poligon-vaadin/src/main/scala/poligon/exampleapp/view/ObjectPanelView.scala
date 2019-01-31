@@ -2,7 +2,8 @@ package poligon.exampleapp.view
 
 import com.vaadin.ui._
 import com.vaadin.ui.themes.ValoTheme
-import poligon.exampleapp.properties.Binder.{BaseSettings, LayoutDescription}
+import poligon.exampleapp.properties.Binder.BaseSettings
+import poligon.exampleapp.properties.Binder.LayoutBuilder.Form
 import poligon.exampleapp.properties.{Binder, Comp}
 import poligon.exampleapp.view.ObjectsPanelPresenter._
 import poligon.polyproperty.Property.Diff.Val
@@ -22,7 +23,7 @@ Plan:
  */
 object ObjectPanelView {
 
-  def createObjectPanelView(presenter: ObjectsPanelPresenter): Comp = Comp.dynamic { implicit po: PropertyObservers =>
+  def createObjectPanelView(presenter: ObjectsPanelPresenter): Comp = Comp.dynamic { implicit po =>
     val objects = new VerticalLayout()
     objects.setSpacing(true)
     val objectName = new TextField("object name")
@@ -32,7 +33,7 @@ object ObjectPanelView {
     objectsLabel.addStyleName(ValoTheme.LABEL_H1)
     objects.addComponent(objectsLabel)
     objects.addComponent(new HorizontalLayout(objectName, addObjectButton))
-    val objectsList = Binder.layout(presenter.model.structObs) { p =>
+    val objectsList = Binder.dynLayout(presenter.model.structObs) { p =>
       createObjectTile(presenter, p)
     }.bind(po)
     objects.addComponent(objectsList)
@@ -47,11 +48,11 @@ object ObjectPanelView {
       removeObjectButton.addClickListener(_ => presenter.removeObject(p.read.name)(po))
       val instanceNum = new Slider("instance number")
       val addInstanceButton = new Button("add instance")
-      val objectName = Binder.label(p.map(o => s"Object ${o.name} (status: ${o.lastAction})"), ValoTheme.LABEL_H2).bind(po)
+      val objectName = Binder.dynLabel(p.map(o => s"Object ${o.name} (status: ${o.lastAction})"), ValoTheme.LABEL_H2).bind(po)
       objectTile.addComponent(new HorizontalLayout(objectName, removeObjectButton))
       addInstanceButton.addClickListener(_ => presenter.addInstance(p.read.name, instanceNum.getValue.toInt)(po))
       objectTile.addComponent(new HorizontalLayout(instanceNum, addInstanceButton))
-      val instancesList = Binder.layout(p.getField(_.instances).structObs) { i =>
+      val instancesList = Binder.dynLayout(p.getField(_.instances).structObs) { i =>
         createInstanceTile(presenter, p, i)
       }.bind(po)
       objectTile.addComponent(instancesList)
@@ -62,13 +63,13 @@ object ObjectPanelView {
     Comp.dynamic { implicit po: PropertyObservers =>
       val instance = new VerticalLayout()
       instance.setSpacing(true)
-      instance.addComponent(Binder.label(i.map(instance => s"Instance ${instance.id}"), ValoTheme.LABEL_H3).bind(po))
+      instance.addComponent(Binder.dynLabel(i.map(instance => s"Instance ${instance.id}"), ValoTheme.LABEL_H3).bind(po))
       val resourceName = new TextField("resource name")
       val resourceValue = new TextField("resource value")
       val addResourceButton = new Button("add resource")
       addResourceButton.addClickListener(_ => presenter.addResource(p.read.name, i.read.id, resourceName.getValue, resourceValue.getValue)(po))
       instance.addComponent(new HorizontalLayout(resourceName, resourceValue, addResourceButton))
-      val resourcesList = Binder.layout(i.getField(_.resources).structObs, LayoutDescription.Form()) { r =>
+      val resourcesList = Binder.dynLayout(i.getField(_.resources).structObs, Form()) { r =>
         r.getCase[SingleResource].map { s =>
           Binder.textField(s.read.name, s.getField(_.value).read, Sin(
             s.getField(_.formValue).sin.rMap(Val(_)),
@@ -99,7 +100,7 @@ object ObjectPanelView {
     }
 
   def createMultiResource(presenter: ObjectsPanelPresenter, o: String, instance: Int, m: PropertyWithParent[MultiResource]): Comp =
-    Binder.layout(m.getField(_.value).structObs, LayoutDescription.Form(BaseSettings(m.read.name))) { ri =>
+    Binder.dynLayout(m.getField(_.value).structObs, Form(baseSettings = BaseSettings(m.read.name))) { ri =>
       Binder.textField(ri.read.idx.toString, ri.getField(_.value).read, Sin(
         ri.getField(_.formValue).sin.rMap(Val(_)),
         ri.getField(_.lastAction).sin.rMap(_ => Val(Action(ActionStatus.Draft, ""))))
