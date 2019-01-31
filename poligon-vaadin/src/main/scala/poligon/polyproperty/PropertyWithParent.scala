@@ -7,6 +7,7 @@ import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, EntryPatch}
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.StructuralChange
 import poligon.polyproperty.PropertyObserver.PropertyObservers
+import poligon.polyproperty.Sin.Sin
 
 import scala.collection.SortedMap
 
@@ -51,6 +52,8 @@ object PropertyWithParent {
     }
 
     def obs: Obs[T] = Obs(p)
+
+    def sin: Sin[T] = Sin(p)
 
     def map[R](f: T => R): Obs[R] = obs.map(f)
   }
