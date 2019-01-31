@@ -4,7 +4,7 @@ import com.avsystem.commons.misc.OptArg
 import com.vaadin.ui._
 import poligon.exampleapp.properties.Binder.LayoutDescription.{Horizontal, Vertical}
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Removed}
-import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec
+import poligon.polyproperty.PropertyWithParent.Struct
 import poligon.polyproperty._
 
 
@@ -47,10 +47,10 @@ object Binder {
 
   }
 
-  def layout[K, V, T](
-                       property: PropertyWithParent[T],
-                       layoutDescription: LayoutDescription = Vertical)(
-                       childFactory: PropertyWithParent[V] => Comp)(implicit c: StructuralPropertyCodec[K, V, T]): Comp =
+  def layout[V](
+                 property: Obs[Struct[V]],
+                 layoutDescription: LayoutDescription = Vertical)(
+                 childFactory: PropertyWithParent[V] => Comp): Comp =
     Comp.dynamic { implicit po =>
       val layout = layoutDescription match {
         case Vertical => new VerticalLayout()
@@ -58,7 +58,7 @@ object Binder {
         case LayoutDescription.Form(settings) => settings.setOn(new FormLayout())
       }
 
-      PropertyWithParent.listenStructure[K, V, T](property, init = true) { patch =>
+      property.listen { patch =>
         patch.modifications.foreach {
           case Removed(removed) =>
             val removedComponent = layout.getComponent(removed.index)
@@ -79,24 +79,22 @@ object Binder {
     l
   })
 
-  def textField(caption: String, initValue: String, onValueSet: String => Unit): Comp = Comp.static {
+  def textField(caption: String, initValue: String, onValueSet: Sin[String]): Comp = Comp.dynamic { implicit po =>
     val field = new TextField()
     field.setValue(initValue)
-    field.addValueChangeListener(_ => onValueSet(field.getValue))
+    field.addValueChangeListener(_ => onValueSet.set(field.getValue))
     field.setCaption(caption)
     field
   }
 
-  def textField(caption: String, property: PropertyWithParent[String]): Comp = Comp.dynamic { implicit po =>
-    textField(caption, property.read, v => property.set(v)).bind(po)
-  }
+  def textField(caption: String, property: PropertyWithParent[String]): Comp =
+    textField(caption, property.read, property.sin)
 
   private def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: => P): Comp =
-    Comp.dynamic {
-      o =>
-        val l = label
-        property.listen(v => l.setValue(v))(o)
-        l
+    Comp.dynamic { o =>
+      val l = label
+      property.listen(v => l.setValue(v))(o)
+      l
     }
 
   sealed trait WrapperDescription
@@ -112,7 +110,7 @@ object Binder {
   }
 
   def replaceable(property: Obs[Comp], wrapperDescription: WrapperDescription): Comp = Comp.dynamic {
-    po =>
+    implicit po =>
       val wrapper = wrapperDescription match {
         case Panel => new Panel()
         case Custom => new SimpleCustomComponent()
@@ -128,7 +126,7 @@ object Binder {
               po.deregisterSubObservers(s.getContent)
               s.setContent(component)
           }
-      })(po)
+      })
       wrapper
   }
 }

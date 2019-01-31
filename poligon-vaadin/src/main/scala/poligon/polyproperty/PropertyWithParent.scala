@@ -6,7 +6,6 @@ import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, EntryPatch}
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.StructuralChange
 import poligon.polyproperty.PropertyObserver.PropertyObservers
-import poligon.polyproperty.Sin.Sin
 
 import scala.collection.SortedMap
 
@@ -87,6 +86,8 @@ object PropertyWithParent {
     def remove(index: Int, count: Int)(implicit observed: PropertyObservers): Unit = {
       PropertyChanger.remove[T](p, index, count)
     }
+
+    def structObs: Obs[Struct[T]] = Obs.struct(p)
   }
 
   implicit class SortedMapPropertyExt[K, V](val p: PropertyWithParent[SortedMap[K, V]])(implicit val c: SortedMapPropertyCodec[K, V]) {

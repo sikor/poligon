@@ -7,7 +7,7 @@ import poligon.exampleapp.properties.{Binder, Comp}
 import poligon.exampleapp.view.ObjectsPanelPresenter._
 import poligon.polyproperty.Property.Diff.Val
 import poligon.polyproperty.PropertyObserver.PropertyObservers
-import poligon.polyproperty.PropertyWithParent
+import poligon.polyproperty.{PropertyWithParent, Sin}
 
 //TODO: styling: https://github.com/vaadin/framework/tree/master/uitest/src/main/java/com/vaadin/tests/themes/valo
 /*
@@ -32,7 +32,7 @@ object ObjectPanelView {
     objectsLabel.addStyleName(ValoTheme.LABEL_H1)
     objects.addComponent(objectsLabel)
     objects.addComponent(new HorizontalLayout(objectName, addObjectButton))
-    val objectsList = Binder.layout(presenter.model) { p: PropertyWithParent[SomeObject] =>
+    val objectsList = Binder.layout(presenter.model.structObs) { p =>
       createObjectTile(presenter, p)
     }.bind(po)
     objects.addComponent(objectsList)
@@ -51,7 +51,7 @@ object ObjectPanelView {
       objectTile.addComponent(new HorizontalLayout(objectName, removeObjectButton))
       addInstanceButton.addClickListener(_ => presenter.addInstance(p.read.name, instanceNum.getValue.toInt)(po))
       objectTile.addComponent(new HorizontalLayout(instanceNum, addInstanceButton))
-      val instancesList = Binder.layout(p.getField(_.instances)) { i: PropertyWithParent[ObjectInstance] =>
+      val instancesList = Binder.layout(p.getField(_.instances).structObs) { i =>
         createInstanceTile(presenter, p, i)
       }.bind(po)
       objectTile.addComponent(instancesList)
@@ -68,15 +68,14 @@ object ObjectPanelView {
       val addResourceButton = new Button("add resource")
       addResourceButton.addClickListener(_ => presenter.addResource(p.read.name, i.read.id, resourceName.getValue, resourceValue.getValue)(po))
       instance.addComponent(new HorizontalLayout(resourceName, resourceValue, addResourceButton))
-      val resourcesList = Binder.layout(i.getField(_.resources), LayoutDescription.Form()) { r: PropertyWithParent[Resource] =>
+      val resourcesList = Binder.layout(i.getField(_.resources).structObs, LayoutDescription.Form()) { r =>
         r.getCase[SingleResource].map { s =>
-          Binder.textField(s.read.name, s.getField(_.value).read, newValue => {
-            s.getField(_.formValue).set(Val(newValue))
-            s.getField(_.lastAction).set(Val(Action(ActionStatus.Draft, "")))
-          })
+          Binder.textField(s.read.name, s.getField(_.value).read, Sin(
+            s.getField(_.formValue).sin.rMap(Val(_)),
+            s.getField(_.lastAction).sin.rMap(_ => Val(Action(ActionStatus.Draft, "")))))
         }.orElse[Comp] {
           r.getCase[MultiResource].map { m =>
-            createMultiResource(presenter, p.read.name, i.read.id, m)(po)
+            createMultiResource(presenter, p.read.name, i.read.id, m)
           }
         }.get
       }.bind(po)
@@ -99,11 +98,11 @@ object ObjectPanelView {
       instance
     }
 
-  def createMultiResource(presenter: ObjectsPanelPresenter, o: String, instance: Int, m: PropertyWithParent[MultiResource])(implicit po: PropertyObservers): Comp =
-    Binder.layout(m.getField(_.value), LayoutDescription.Form(BaseSettings(m.read.name))) { ri: PropertyWithParent[ResourceInstance] =>
-      Binder.textField(ri.read.idx.toString, ri.getField(_.value).read, newValue => {
-        ri.getField(_.formValue).set(Val(newValue))
-        ri.getField(_.lastAction).set(Val(Action(ActionStatus.Draft, "")))
-      })
+  def createMultiResource(presenter: ObjectsPanelPresenter, o: String, instance: Int, m: PropertyWithParent[MultiResource]): Comp =
+    Binder.layout(m.getField(_.value).structObs, LayoutDescription.Form(BaseSettings(m.read.name))) { ri =>
+      Binder.textField(ri.read.idx.toString, ri.getField(_.value).read, Sin(
+        ri.getField(_.formValue).sin.rMap(Val(_)),
+        ri.getField(_.lastAction).sin.rMap(_ => Val(Action(ActionStatus.Draft, ""))))
+      )
     }
 }

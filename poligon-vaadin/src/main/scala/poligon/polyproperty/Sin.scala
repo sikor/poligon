@@ -1,17 +1,29 @@
 package poligon.polyproperty
 
 import poligon.polyproperty.PropertyObserver.PropertyObservers
+import poligon.polyproperty.Sin.MapSin
+
+trait Sin[T] {
+  def rMap[R](f: R => T): Sin[R] = new MapSin[T, R](this, v => f(v))
+
+
+  def set(v: T)(implicit po: PropertyObservers): Unit
+}
 
 object Sin {
 
-  type Sin[T] = MapSin[_, T]
+  def apply[T: PropertyCodec](property: PropertyWithParent[T]) = new PropertySin[T](property)
 
-  def apply[T: PropertyCodec](property: PropertyWithParent[T]) = new MapSin[T, T](property, identity)
+  def apply[T](sub: Sin[T]*): Sin[T] = new Sin[T] {
+    def set(v: T)(implicit po: PropertyObservers): Unit = sub.foreach(_.set(v))
+  }
 
-  class MapSin[S: PropertyCodec, T](property: PropertyWithParent[S], map: T => S) {
-    def rMap[R](f: R => T): Sin[R] = new MapSin[S, R](property, v => map(f(v)))
+  class MapSin[S, T](child: Sin[S], map: T => S) extends Sin[T] {
+    def set(v: T)(implicit po: PropertyObservers): Unit = child.set(map(v))
+  }
 
-    def set(v: T)(implicit po: PropertyObservers): Unit = property.set(map(v))
+  class PropertySin[T: PropertyCodec](property: PropertyWithParent[T]) extends Sin[T] {
+    def set(v: T)(implicit po: PropertyObservers): Unit = property.set(v)
   }
 
 }
