@@ -1,7 +1,6 @@
 package poligon
 package polyproperty
 
-import poligon.polyproperty.Obs.Obs
 import poligon.polyproperty.Property.SortedMapProperty
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, EntryPatch}
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec
@@ -115,11 +114,14 @@ object PropertyWithParent {
     private def seqSortedMap: SeqSortedMap[K, Property[V]] = {
       p.property.asInstanceOf[SortedMapProperty[K, V, BSortedMap[K, V]]].value
     }
+
+    def structObs: Obs[Struct[V]] = Obs.struct(p)
   }
 
   class StructuralChangeWithParents[K, V, T] private[PropertyWithParent](val property: PropertyWithParent[T],
                                                                          val modifications: EntryPatch[K, PropertyWithParent[V]])
 
+  type Struct[T] = StructuralChangeWithParents[_, T, _]
 
   def listenStructure[K, V, T](p: PropertyWithParent[T], init: Boolean = false)
                               (listener: StructuralChangeWithParents[K, V, T] => Unit)

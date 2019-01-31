@@ -3,7 +3,6 @@ package poligon.exampleapp.properties
 import com.avsystem.commons.misc.OptArg
 import com.vaadin.ui._
 import poligon.exampleapp.properties.Binder.LayoutDescription.{Horizontal, Vertical}
-import poligon.polyproperty.Obs.Obs
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Removed}
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec
 import poligon.polyproperty._
@@ -96,7 +95,7 @@ object Binder {
     Comp.dynamic {
       o =>
         val l = label
-        property.listen(v => l.setValue(v), init = true)(o)
+        property.listen(v => l.setValue(v))(o)
         l
     }
 
@@ -129,7 +128,7 @@ object Binder {
               po.deregisterSubObservers(s.getContent)
               s.setContent(component)
           }
-      }, init = true)(po)
+      })(po)
       wrapper
   }
 }
