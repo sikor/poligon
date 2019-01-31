@@ -3,6 +3,7 @@ package poligon.exampleapp.properties
 import com.avsystem.commons.misc.OptArg
 import com.vaadin.ui._
 import poligon.exampleapp.properties.Binder.LayoutDescription.{Horizontal, Vertical}
+import poligon.polyproperty.Obs.Obs
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Removed}
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec
 import poligon.polyproperty._
@@ -87,8 +88,8 @@ object Binder {
     field
   }
 
-  def textField(caption: String, property: PropertyWithParent[String]): Comp = Comp.dynamic {
-      ???
+  def textField(caption: String, property: PropertyWithParent[String]): Comp = Comp.dynamic { implicit po =>
+    textField(caption, property.read, v => property.set(v)).bind(po)
   }
 
   private def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: => P): Comp =

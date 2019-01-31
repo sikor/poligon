@@ -1,6 +1,7 @@
 package poligon
 package polyproperty
 
+import poligon.polyproperty.Obs.Obs
 import poligon.polyproperty.Property.SortedMapProperty
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, EntryPatch}
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec
@@ -49,7 +50,7 @@ object PropertyWithParent {
       }
     }
 
-    def obs: Obs[T] = new PropertyObs[T](p, c)
+    def obs: Obs[T] = Obs(p)
 
     def map[R](f: T => R): Obs[R] = obs.map(f)
   }
