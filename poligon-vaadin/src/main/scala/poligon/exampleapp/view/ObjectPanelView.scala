@@ -2,13 +2,15 @@ package poligon.exampleapp.view
 
 import com.vaadin.ui._
 import com.vaadin.ui.themes.ValoTheme
-import poligon.exampleapp.properties.Binder.BaseSettings
-import poligon.exampleapp.properties.Binder.LayoutBuilder.Form
+import poligon.exampleapp.properties.Binder.{BaseSettings, LayoutSettings}
+import poligon.exampleapp.properties.Binder.LayoutBuilder.{Form, Horizontal, Vertical}
 import poligon.exampleapp.properties.{Binder, Comp}
 import poligon.exampleapp.view.ObjectsPanelPresenter._
 import poligon.polyproperty.Property.Diff.Val
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty.{PropertyWithParent, Sin}
+
+import scala.collection.SortedMap
 
 //TODO: styling: https://github.com/vaadin/framework/tree/master/uitest/src/main/java/com/vaadin/tests/themes/valo
 /*
@@ -22,6 +24,20 @@ Plan:
 8. Class for handling form data with validation
  */
 object ObjectPanelView {
+
+  def createObjectPanelView2(presenter: ObjectsPanelPresenter): Comp = Binder.layout(
+    Binder.label("Objects", ValoTheme.LABEL_H1),
+    Binder.layout(
+      Binder.textField("object name", presenter.newObjectName),
+      Binder.button("add object", presenter.model.put.rMap(_ => {
+        val objectName = presenter.newObjectName.read
+        (objectName, SomeObject(objectName, SortedMap.empty))
+      })),
+      Binder.dynLayout(presenter.model.structObs) { p =>
+        createObjectTile(presenter, p)
+      }
+    )(Horizontal())
+  )(Vertical(layoutSettings = LayoutSettings(spacing = true)))
 
   def createObjectPanelView(presenter: ObjectsPanelPresenter): Comp = Comp.dynamic { implicit po =>
     val objects = new VerticalLayout()
