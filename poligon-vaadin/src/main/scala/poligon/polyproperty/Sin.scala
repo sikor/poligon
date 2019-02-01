@@ -18,6 +18,10 @@ object Sin {
     def push(v: T)(implicit po: PropertyObservers): Unit = sub.foreach(_.push(v))
   }
 
+  def mul[T](sub: Sin[T]*): Sin[T] = apply(sub: _*)
+
+  def static[T](f: T => Unit): Sin[T] = new FunSin[T](_ => v => f(v))
+
   class FunSin[T](f: PropertyObservers => T => Unit) extends Sin[T] {
     def push(v: T)(implicit po: PropertyObservers): Unit = f(po)(v)
   }

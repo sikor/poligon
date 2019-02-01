@@ -1,13 +1,12 @@
 package poligon.exampleapp.view
 
-import com.vaadin.ui._
 import com.vaadin.ui.themes.ValoTheme
-import poligon.exampleapp.properties.Binder.{BaseSettings, LayoutSettings}
 import poligon.exampleapp.properties.Binder.LayoutBuilder.{Form, Horizontal, Vertical}
+import poligon.exampleapp.properties.Binder.{BaseSettings, LayoutSettings}
 import poligon.exampleapp.properties.{Binder, Comp}
+import poligon.exampleapp.view.ObjectsPanelPresenter.ActionStatus.Success
 import poligon.exampleapp.view.ObjectsPanelPresenter._
 import poligon.polyproperty.Property.Diff.Val
-import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty.{PropertyWithParent, Sin}
 
 import scala.collection.SortedMap
@@ -25,7 +24,7 @@ Plan:
  */
 object ObjectPanelView {
 
-  def createObjectPanelView2(presenter: ObjectsPanelPresenter): Comp = Binder.layout(
+  def createObjectPanelView(presenter: ObjectsPanelPresenter): Comp = Binder.layout(
     Binder.label("Objects", ValoTheme.LABEL_H1),
     Binder.layout(
       Binder.textField("object name", presenter.newObjectName),
@@ -39,53 +38,41 @@ object ObjectPanelView {
     )(Horizontal())
   )(Vertical(layoutSettings = LayoutSettings(spacing = true)))
 
-  def createObjectPanelView(presenter: ObjectsPanelPresenter): Comp = Comp.dynamic { implicit po =>
-    val objects = new VerticalLayout()
-    objects.setSpacing(true)
-    val objectName = new TextField("object name")
-    val addObjectButton = new Button("add object")
-    addObjectButton.addClickListener(_ => presenter.addObject(objectName.getValue)(po))
-    val objectsLabel = new Label("Objects")
-    objectsLabel.addStyleName(ValoTheme.LABEL_H1)
-    objects.addComponent(objectsLabel)
-    objects.addComponent(new HorizontalLayout(objectName, addObjectButton))
-    val objectsList = Binder.dynLayout(presenter.model.structObs) { p =>
-      createObjectTile(presenter, p)
-    }.bind(po)
-    objects.addComponent(objectsList)
-    objects
+  def createObjectTile(presenter: ObjectsPanelPresenter, p: PropertyWithParent[SomeObject]): Comp = {
+    def newInstanceNum = p.getField(_.newInstanceNumber).read.toOpt.get
+
+    Binder.layout(
+      Binder.layout(
+        Binder.dynLabel(p.map(o => s"Object ${o.name} (status: ${o.lastAction})"), ValoTheme.LABEL_H2),
+        Binder.button("remove", presenter.model.remove.rMap(_ => p.read.name))
+      )(Horizontal()),
+      Binder.layout(
+        Binder.textField("instance number", "", p.getField(_.newInstanceNumber).set
+          .rMap(s => Val(s.toInt))),
+        Binder.button("add instance", Sin.mul(
+          p.getField(_.instances).put.rMap(_ => (newInstanceNum, ObjectInstance(newInstanceNum, SortedMap.empty))),
+          p.getField(_.lastAction).set.rMap(_ => Val(Action(Success, s"instance added: $newInstanceNum")))
+        ))
+      )(Horizontal()),
+      Binder.dynLayout(p.getField(_.instances).structObs) { i =>
+        createInstanceTile(presenter, p, i)
+      }
+    )(Vertical(layoutSettings = LayoutSettings(spacing = true)))
   }
 
-  def createObjectTile(presenter: ObjectsPanelPresenter, p: PropertyWithParent[SomeObject]): Comp =
-    Comp.dynamic { implicit po: PropertyObservers =>
-      val objectTile = new VerticalLayout()
-      objectTile.setSpacing(true)
-      val removeObjectButton = new Button("remove")
-      removeObjectButton.addClickListener(_ => presenter.removeObject(p.read.name)(po))
-      val instanceNum = new Slider("instance number")
-      val addInstanceButton = new Button("add instance")
-      val objectName = Binder.dynLabel(p.map(o => s"Object ${o.name} (status: ${o.lastAction})"), ValoTheme.LABEL_H2).bind(po)
-      objectTile.addComponent(new HorizontalLayout(objectName, removeObjectButton))
-      addInstanceButton.addClickListener(_ => presenter.addInstance(p.read.name, instanceNum.getValue.toInt)(po))
-      objectTile.addComponent(new HorizontalLayout(instanceNum, addInstanceButton))
-      val instancesList = Binder.dynLayout(p.getField(_.instances).structObs) { i =>
-        createInstanceTile(presenter, p, i)
-      }.bind(po)
-      objectTile.addComponent(instancesList)
-      objectTile
-    }
-
   def createInstanceTile(presenter: ObjectsPanelPresenter, p: PropertyWithParent[SomeObject], i: PropertyWithParent[ObjectInstance]): Comp =
-    Comp.dynamic { implicit po: PropertyObservers =>
-      val instance = new VerticalLayout()
-      instance.setSpacing(true)
-      instance.addComponent(Binder.dynLabel(i.map(instance => s"Instance ${instance.id}"), ValoTheme.LABEL_H3).bind(po))
-      val resourceName = new TextField("resource name")
-      val resourceValue = new TextField("resource value")
-      val addResourceButton = new Button("add resource")
-      addResourceButton.addClickListener(_ => presenter.addResource(p.read.name, i.read.id, resourceName.getValue, resourceValue.getValue)(po))
-      instance.addComponent(new HorizontalLayout(resourceName, resourceValue, addResourceButton))
-      val resourcesList = Binder.dynLayout(i.getField(_.resources).structObs, Form()) { r =>
+    Binder.layout(
+      Binder.dynLabel(i.map(instance => s"Instance ${instance.id}"), ValoTheme.LABEL_H3),
+      Binder.layout(
+        Binder.textField("resource name", "", i.getField(_.newResourceName).set.rMap(s => Val(s))),
+        Binder.textField("resource value", "", i.getField(_.newResourceValue).set.rMap(s => Val(s))),
+        Binder.button("add resource", i.getField(_.resources).put.rMap { _ =>
+          val newResourceName = i.getField(_.newResourceName).read.toOpt.get
+          val newResourceValue = i.getField(_.newResourceValue).read.toOpt.get
+          newResourceName -> SingleResource(newResourceName, newResourceValue)
+        })
+      )(Horizontal()),
+      Binder.dynLayout(i.getField(_.resources).structObs, Form()) { r =>
         r.getCase[SingleResource].map { s =>
           Binder.textField(s.read.name, s.getField(_.value).read, Sin(
             s.getField(_.formValue).set.rMap(Val(_)),
@@ -95,25 +82,23 @@ object ObjectPanelView {
             createMultiResource(presenter, p.read.name, i.read.id, m)
           }
         }.get
-      }.bind(po)
-      instance.addComponent(resourcesList)
-      val button = new Button("Save")
-      button.addClickListener { _ =>
-        val resourcesSnap = i.getField(_.resources).read
-        resourcesSnap.values.foreach {
-          case s: SingleResource =>
-            s.formValue.toOpt.foreach(v =>
-              presenter.dmService.setValue(List(p.read.name, i.read.id.toString, s.name), v))
-          case m: MultiResource =>
-            m.value.values.foreach(ri =>
-              ri.formValue.toOpt.foreach(v =>
-                presenter.dmService.setValue(List(p.read.name, i.read.id.toString, m.name, ri.idx.toString), v)))
-        }
-        presenter.model.refresh.push(())
-      }
-      instance.addComponent(button)
-      instance
-    }
+      },
+      Binder.button("Save", Sin.mul(
+        Sin.static { _ =>
+          val resourcesSnap = i.getField(_.resources).read
+          resourcesSnap.values.flatMap {
+            case s: SingleResource =>
+              s.formValue.toOpt.map(v =>
+                presenter.dmService.setValue(List(p.read.name, i.read.id.toString, s.name), v))
+            case m: MultiResource =>
+              m.value.values.flatMap(ri =>
+                ri.formValue.toOpt.map(v =>
+                  presenter.dmService.setValue(List(p.read.name, i.read.id.toString, m.name, ri.idx.toString), v)))
+          }
+        },
+        presenter.model.refresh
+      ))
+    )(Vertical(layoutSettings = LayoutSettings(spacing = true)))
 
   def createMultiResource(presenter: ObjectsPanelPresenter, o: String, instance: Int, m: PropertyWithParent[MultiResource]): Comp =
     Binder.dynLayout(m.getField(_.value).structObs, Form(baseSettings = BaseSettings(m.read.name))) { ri =>

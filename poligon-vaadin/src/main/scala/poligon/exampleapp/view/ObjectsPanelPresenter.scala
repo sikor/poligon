@@ -3,11 +3,9 @@ package poligon.exampleapp.view
 import poligon.exampleapp.services.DmService
 import poligon.exampleapp.services.DmService.{DmTree, Node, Value}
 import poligon.exampleapp.view.MainView.MainViewContentPresenter.ObjectsPanelContent
-import poligon.exampleapp.view.ObjectsPanelPresenter.ActionStatus.Success
 import poligon.exampleapp.view.ObjectsPanelPresenter._
 import poligon.polyproperty.Property.Diff
-import poligon.polyproperty.Property.Diff.{NoOp, Val}
-import poligon.polyproperty.PropertyObserver.PropertyObservers
+import poligon.polyproperty.Property.Diff.NoOp
 import poligon.polyproperty._
 
 import scala.collection.SortedMap
@@ -53,9 +51,11 @@ object ObjectsPanelPresenter {
 
   case class ObjectInstance(id: Int,
                             resources: SortedMap[String, Resource],
-                            lastAction: Diff[Action] = NoOp)
+                            lastAction: Diff[Action] = NoOp,
+                            newResourceName: Diff[String] = NoOp,
+                            newResourceValue: Diff[String] = NoOp)
 
-  case class SomeObject(name: String, instances: SortedMap[Int, ObjectInstance], lastAction: Diff[Action] = NoOp)
+  case class SomeObject(name: String, instances: SortedMap[Int, ObjectInstance], lastAction: Diff[Action] = NoOp, newInstanceNumber: Diff[Int] = NoOp)
 
   object ObjectInstance extends HasRecordPropertyCodec[ObjectInstance]
 
@@ -89,31 +89,4 @@ object ObjectsPanelPresenter {
 class ObjectsPanelPresenter(val dmService: DmService) extends ObjectsPanelContent {
   val model: PropertyWithParent[SortedMap[String, SomeObject]] = PropertyWithParent(() => dmToObjects(dmService.getDm))
   val newObjectName = PropertyWithParent("")
-
-  def addObject(o: String)(implicit po: PropertyObservers): Unit = {
-    model.put(o, SomeObject(o, SortedMap.empty))
-  }
-
-  def addInstance(o: String, i: Int)(implicit po: PropertyObservers): Unit = {
-    val objectModel = findObject(o)
-    objectModel.getField(_.instances).put(i, ObjectInstance(i, SortedMap.empty))
-    objectModel.getField(_.lastAction).set(Val(Action(Success, s"instance added: $i")))
-  }
-
-  def addResource(o: String, i: Int, r: String, value: String)(implicit po: PropertyObservers): Unit = {
-    findObjectInstance(o, i)
-      .getField(_.resources).put(r, SingleResource(r, value))
-  }
-
-  def removeObject(o: String)(implicit po: PropertyObservers): Unit = {
-    model.remove(o)
-  }
-
-  private def findObjectInstance(o: String, instance: Int) = {
-    findObject(o).getField(_.instances)(instance)
-  }
-
-  private def findObject(o: String) = {
-    model(o)
-  }
 }
