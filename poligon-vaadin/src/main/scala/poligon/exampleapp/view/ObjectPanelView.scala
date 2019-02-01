@@ -72,8 +72,8 @@ object ObjectPanelView {
       val resourcesList = Binder.dynLayout(i.getField(_.resources).structObs, Form()) { r =>
         r.getCase[SingleResource].map { s =>
           Binder.textField(s.read.name, s.getField(_.value).read, Sin(
-            s.getField(_.formValue).sin.rMap(Val(_)),
-            s.getField(_.lastAction).sin.rMap(_ => Val(Action(ActionStatus.Draft, "")))))
+            s.getField(_.formValue).set.rMap(Val(_)),
+            s.getField(_.lastAction).set.rMap(_ => Val(Action(ActionStatus.Draft, "")))))
         }.orElse[Comp] {
           r.getCase[MultiResource].map { m =>
             createMultiResource(presenter, p.read.name, i.read.id, m)
@@ -93,7 +93,7 @@ object ObjectPanelView {
               ri.formValue.toOpt.foreach(v =>
                 presenter.dmService.setValue(List(p.read.name, i.read.id.toString, m.name, ri.idx.toString), v)))
         }
-        presenter.model.refresh
+        presenter.model.refresh.push(())
       }
       instance.addComponent(button)
       instance
@@ -102,8 +102,8 @@ object ObjectPanelView {
   def createMultiResource(presenter: ObjectsPanelPresenter, o: String, instance: Int, m: PropertyWithParent[MultiResource]): Comp =
     Binder.dynLayout(m.getField(_.value).structObs, Form(baseSettings = BaseSettings(m.read.name))) { ri =>
       Binder.textField(ri.read.idx.toString, ri.getField(_.value).read, Sin(
-        ri.getField(_.formValue).sin.rMap(Val(_)),
-        ri.getField(_.lastAction).sin.rMap(_ => Val(Action(ActionStatus.Draft, ""))))
+        ri.getField(_.formValue).set.rMap(Val(_)),
+        ri.getField(_.lastAction).set.rMap(_ => Val(Action(ActionStatus.Draft, ""))))
       )
     }
 }

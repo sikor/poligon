@@ -26,13 +26,13 @@ object PropertyWithParent {
   implicit class GeneralPropertyExt[T](p: PropertyWithParent[T])(implicit c: PropertyCodec[T]) {
     def read: T = c.readProperty(p.property.asInstanceOf[c.PropertyType])
 
-    def refresh(implicit po: PropertyObservers): Unit = {
-      p.refresher().foreach(d => set(d))
-    }
+    def refresh: Sin[Unit] = Sin(implicit po => _ => p.refresher().foreach(d => set.push(d)))
 
     def set(value: T)(implicit observed: PropertyObservers): Unit = {
       PropertyChanger.set(p, value)
     }
+
+    def set: Sin[T] = Sin(implicit po => value => PropertyChanger.set(p, value))
 
     def listen(listener: T => Unit, init: Boolean = false)(implicit o: PropertyObservers): Unit = {
       o.observe(p.property, new PropertyObserver[T] {
@@ -50,8 +50,6 @@ object PropertyWithParent {
     }
 
     def obs: Obs[T] = Obs(p)
-
-    def sin: Sin[T] = Sin(p)
 
     def map[R](f: T => R): Obs[R] = obs.map(f)
   }
@@ -79,13 +77,23 @@ object PropertyWithParent {
       PropertyChanger.insert[T](p, index, value: _*)
     }
 
+    def insert: Sin[(Int, Seq[T])] = Sin(implicit po => {
+      case (index, value) => PropertyChanger.insert(p, index, value: _*)
+    })
+
     def append(value: T*)(implicit observed: PropertyObservers): Unit = {
       PropertyChanger.append[T](p, value: _*)
     }
 
+    def append: Sin[Seq[T]] = Sin(implicit po => v => append(v: _*))
+
     def remove(index: Int, count: Int)(implicit observed: PropertyObservers): Unit = {
       PropertyChanger.remove[T](p, index, count)
     }
+
+    def remove: Sin[(Int, Int)] = Sin(implicit po => {
+      case (index, count) => remove(index, count)
+    })
 
     def structObs: Obs[Struct[T]] = Obs.struct(p)
   }
@@ -104,9 +112,15 @@ object PropertyWithParent {
       PropertyChanger.put(key, value, p, c)
     }
 
+    def put: Sin[(K, V)] = Sin(implicit po => {
+      case (k, v) => put(k, v)
+    })
+
     def remove(key: K)(implicit observed: PropertyObservers): Unit = {
       PropertyChanger.remove(key, p, c)
     }
+
+    def remove: Sin[K] = Sin(implicit po => k => remove(k))
 
     private def wrap(s: Property[V]): PropertyWithParent[V] = {
       new PropertyWithParent[V](s, p.opt)

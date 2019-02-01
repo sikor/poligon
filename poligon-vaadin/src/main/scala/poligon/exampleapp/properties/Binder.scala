@@ -82,9 +82,9 @@ object Binder {
   }
 
   def dynLayout[V](
-                 property: Obs[Struct[V]],
-                 layoutDescription: AnyLayoutBuilder = Vertical())(
-                 childFactory: PropertyWithParent[V] => Comp): Comp =
+                    property: Obs[Struct[V]],
+                    layoutDescription: AnyLayoutBuilder = Vertical())(
+                    childFactory: PropertyWithParent[V] => Comp): Comp =
     Comp.dynamic { implicit po =>
       val layout = layoutDescription.build()
 
@@ -114,18 +114,18 @@ object Binder {
   def textField(caption: String, initValue: String, onValueSet: Sin[String]): Comp = Comp.dynamic { implicit po =>
     val field = new TextField()
     field.setValue(initValue)
-    field.addValueChangeListener(_ => onValueSet.set(field.getValue))
+    field.addValueChangeListener(_ => onValueSet.push(field.getValue))
     field.setCaption(caption)
     field
   }
 
   def textField(caption: String, property: PropertyWithParent[String]): Comp =
-    textField(caption, property.read, property.sin)
+    textField(caption, property.read, property.set)
 
 
   def button(caption: String, onClick: Sin[Unit]): Comp = Comp.dynamic { implicit po =>
     val button = new Button(caption)
-    button.addClickListener(_ => onClick.set(()))
+    button.addClickListener(_ => onClick.push(()))
     button
   }
 

@@ -7,23 +7,24 @@ trait Sin[T] {
   def rMap[R](f: R => T): Sin[R] = new MapSin[T, R](this, v => f(v))
 
 
-  def set(v: T)(implicit po: PropertyObservers): Unit
+  def push(v: T)(implicit po: PropertyObservers): Unit
 }
 
 object Sin {
 
-  def apply[T: PropertyCodec](property: PropertyWithParent[T]) = new PropertySin[T](property)
+  def apply[T](f: PropertyObservers => T => Unit): Sin[T] = new FunSin[T](f)
 
   def apply[T](sub: Sin[T]*): Sin[T] = new Sin[T] {
-    def set(v: T)(implicit po: PropertyObservers): Unit = sub.foreach(_.set(v))
+    def push(v: T)(implicit po: PropertyObservers): Unit = sub.foreach(_.push(v))
+  }
+
+  class FunSin[T](f: PropertyObservers => T => Unit) extends Sin[T] {
+    def push(v: T)(implicit po: PropertyObservers): Unit = f(po)(v)
   }
 
   class MapSin[S, T](child: Sin[S], map: T => S) extends Sin[T] {
-    def set(v: T)(implicit po: PropertyObservers): Unit = child.set(map(v))
+    def push(v: T)(implicit po: PropertyObservers): Unit = child.push(map(v))
   }
 
-  class PropertySin[T: PropertyCodec](property: PropertyWithParent[T]) extends Sin[T] {
-    def set(v: T)(implicit po: PropertyObservers): Unit = property.set(v)
-  }
 
 }
