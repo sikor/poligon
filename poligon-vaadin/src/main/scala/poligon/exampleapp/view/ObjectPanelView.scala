@@ -31,11 +31,11 @@ object ObjectPanelView {
       Binder.button("add object", presenter.model.put.rMap(_ => {
         val objectName = presenter.newObjectName.read
         (objectName, SomeObject(objectName, SortedMap.empty))
-      })),
-      Binder.dynLayout(presenter.model.structObs) { p =>
-        createObjectTile(presenter, p)
-      }
-    )(Horizontal())
+      }))
+    )(Horizontal()),
+    Binder.dynLayout(presenter.model.structObs) { p =>
+      createObjectTile(presenter, p)
+    }
   )(Vertical(layoutSettings = LayoutSettings(spacing = true)))
 
   def createObjectTile(presenter: ObjectsPanelPresenter, p: PropertyWithParent[SomeObject]): Comp = {

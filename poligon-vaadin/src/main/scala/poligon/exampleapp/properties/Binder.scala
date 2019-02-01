@@ -103,7 +103,11 @@ object Binder {
       layout
     }
 
-  def label(value: String, styleName: String = ""): Comp = Comp.static(new Label(value))
+  def label(value: String, styleName: String = ""): Comp = Comp.static {
+    val l = new Label(value)
+    l.addStyleName(styleName)
+    l
+  }
 
   def dynLabel(property: Obs[String], styleName: String = ""): Comp = bindSimple(property, {
     val l = new Label()
