@@ -1,49 +1,15 @@
 package poligon.exampleapp.view
 
-import com.vaadin.ui.{MenuBar, VerticalLayout}
-import poligon.exampleapp.properties.Binder.Custom
 import poligon.exampleapp.properties.Binder.LayoutBuilder.Vertical
+import poligon.exampleapp.properties.Binder.{Custom, LayoutSettings}
 import poligon.exampleapp.properties.{Binder, Comp}
-import poligon.exampleapp.view.MainView.MainViewContentPresenter.ObjectsPanelContent
-import poligon.polyproperty.HasSimplePropertyCodec
-import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 object MainView {
 
-  sealed trait MainViewContentPresenter
+  def create(presenter: MainViewPresenter): Comp = Binder.layout(
+    Binder.menuBar(presenter.menuItems2, presenter.currentPage.setEnforcingListeners),
+    ExecuteTasksButton.create(presenter.executeTasksPresenter),
+    Binder.replaceable(presenter.currentPage.obs, Custom)
+  )(Vertical(layoutSettings = LayoutSettings(spacing = true)))
 
-  object MainViewContentPresenter extends HasSimplePropertyCodec[MainViewContentPresenter] {
-
-    trait ObjectsPanelContent extends MainViewContentPresenter {
-      impl: ObjectsPanelPresenter =>
-      def get: ObjectsPanelPresenter = impl
-    }
-
-  }
-
-  private def createContent(presenter: MainViewContentPresenter): Comp = presenter match {
-    case o: ObjectsPanelContent => ObjectPanelView.createObjectPanelView(o.get)
-  }
-
-  def create2(presenter: MainViewPresenter): Comp = Binder.layout(
-
-  )(Vertical())
-
-  def create(presenter: MainViewPresenter): Comp = Comp.dynamic { po: PropertyObservers =>
-    val menuBar = new MenuBar()
-    presenter.menuItems.menu.categories.foreach { c =>
-      val category = menuBar.addItem(c.name, null)
-      c.items.foreach { i =>
-        category.addItem(i.name, _ => presenter.menuItemSelected(c.name, i.name)(po))
-      }
-    }
-
-    val content = Binder.replaceable(presenter.subPresenter.map(createContent), Custom).bind(po)
-
-    val layout = new VerticalLayout()
-    layout.addComponent(menuBar)
-    layout.addComponent(ExecuteTasksButton.create(presenter.executeTasksPresenter).bind(po))
-    layout.addComponent(content)
-    layout
-  }
 }

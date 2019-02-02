@@ -1,9 +1,6 @@
 package poligon.exampleapp.view
 
-import poligon.exampleapp.services.DmService
 import poligon.exampleapp.services.DmService.{DmTree, Node, Value}
-import poligon.exampleapp.view.MainView.MainViewContentPresenter.ObjectsPanelContent
-import poligon.exampleapp.view.ObjectsPanelPresenter._
 import poligon.polyproperty.Property.Diff
 import poligon.polyproperty.Property.Diff.NoOp
 import poligon.polyproperty._
@@ -11,7 +8,7 @@ import poligon.polyproperty._
 import scala.collection.SortedMap
 
 
-object ObjectsPanelPresenter {
+object ObjectPanelModel {
 
   sealed trait ActionStatus
 
@@ -84,9 +81,4 @@ object ObjectsPanelPresenter {
     }
   }
 
-}
-
-class ObjectsPanelPresenter(val dmService: DmService) extends ObjectsPanelContent {
-  val model: PropertyWithParent[SortedMap[String, SomeObject]] = PropertyWithParent(() => dmToObjects(dmService.getDm))
-  val newObjectName = PropertyWithParent("")
 }

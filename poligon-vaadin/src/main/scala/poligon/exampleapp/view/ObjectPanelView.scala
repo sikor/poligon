@@ -4,8 +4,9 @@ import com.vaadin.ui.themes.ValoTheme
 import poligon.exampleapp.properties.Binder.LayoutBuilder.{Form, Horizontal, Vertical}
 import poligon.exampleapp.properties.Binder.{BaseSettings, LayoutSettings}
 import poligon.exampleapp.properties.{Binder, Comp}
-import poligon.exampleapp.view.ObjectsPanelPresenter.ActionStatus.Success
-import poligon.exampleapp.view.ObjectsPanelPresenter._
+import poligon.exampleapp.services.DmService
+import poligon.exampleapp.view.ObjectPanelModel.ActionStatus.Success
+import poligon.exampleapp.view.ObjectPanelModel._
 import poligon.polyproperty.Property.Diff.Val
 import poligon.polyproperty.{PropertyWithParent, Sin}
 
@@ -24,7 +25,15 @@ Plan:
  */
 object ObjectPanelView {
 
-  def createObjectPanelView(presenter: ObjectsPanelPresenter): Comp = Binder.layout(
+  private class ObjectsPanelContext(val dmService: DmService) {
+    val model: PropertyWithParent[SortedMap[String, SomeObject]] = PropertyWithParent(() => dmToObjects(dmService.getDm))
+    val newObjectName = PropertyWithParent("")
+  }
+
+  def create(dmService: DmService): Comp =
+    Comp.factory(createObjectPanelView(new ObjectsPanelContext(dmService)))
+
+  def createObjectPanelView(presenter: ObjectsPanelContext): Comp = Binder.layout(
     Binder.label("Objects", ValoTheme.LABEL_H1),
     Binder.layout(
       Binder.textField("object name", presenter.newObjectName),
@@ -38,7 +47,7 @@ object ObjectPanelView {
     }
   )(Vertical(layoutSettings = LayoutSettings(spacing = true)))
 
-  def createObjectTile(presenter: ObjectsPanelPresenter, p: PropertyWithParent[SomeObject]): Comp = {
+  def createObjectTile(presenter: ObjectsPanelContext, p: PropertyWithParent[SomeObject]): Comp = {
     def newInstanceNum = p.getField(_.newInstanceNumber).read.toOpt.get
 
     Binder.layout(
@@ -60,7 +69,7 @@ object ObjectPanelView {
     )(Vertical(layoutSettings = LayoutSettings(spacing = true)))
   }
 
-  def createInstanceTile(presenter: ObjectsPanelPresenter, p: PropertyWithParent[SomeObject], i: PropertyWithParent[ObjectInstance]): Comp =
+  def createInstanceTile(presenter: ObjectsPanelContext, p: PropertyWithParent[SomeObject], i: PropertyWithParent[ObjectInstance]): Comp =
     Binder.layout(
       Binder.dynLabel(i.map(instance => s"Instance ${instance.id}"), ValoTheme.LABEL_H3),
       Binder.layout(
@@ -100,7 +109,7 @@ object ObjectPanelView {
       ))
     )(Vertical(layoutSettings = LayoutSettings(spacing = true)))
 
-  def createMultiResource(presenter: ObjectsPanelPresenter, o: String, instance: Int, m: PropertyWithParent[MultiResource]): Comp =
+  def createMultiResource(presenter: ObjectsPanelContext, o: String, instance: Int, m: PropertyWithParent[MultiResource]): Comp =
     Binder.dynLayout(m.getField(_.value).structObs, Form(baseSettings = BaseSettings(m.read.name))) { ri =>
       Binder.textField(ri.read.idx.toString, ri.getField(_.value).read, Sin(
         ri.getField(_.formValue).set.rMap(Val(_)),

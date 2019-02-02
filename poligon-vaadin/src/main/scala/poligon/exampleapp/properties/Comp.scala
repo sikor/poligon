@@ -2,6 +2,7 @@ package poligon.exampleapp.properties
 
 import com.vaadin.ui.Component
 import poligon.exampleapp.properties.Comp.{DynamicComp, StaticComp}
+import poligon.polyproperty.HasSimplePropertyCodec
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 
@@ -25,7 +26,7 @@ sealed trait Comp {
   }
 }
 
-object Comp {
+object Comp extends HasSimplePropertyCodec[Comp] {
 
 
   class StaticComp(factory: => Component) extends Comp {
@@ -41,4 +42,5 @@ object Comp {
 
   def static(factory: => Component): StaticComp = new StaticComp(factory)
 
+  def factory(factory: => Comp): Comp = dynamic(po => factory.bind(po))
 }

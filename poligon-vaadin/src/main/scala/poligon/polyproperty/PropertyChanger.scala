@@ -20,7 +20,7 @@ import scala.collection.SortedMap
   * It might be interested only in the structure change.
   **/
 object PropertyChanger {
-  def set[T: PropertyCodec](property: PropertyWithParent[T], value: T)(implicit po: PropertyObservers): Unit = {
+  def set[T: PropertyCodec](property: PropertyWithParent[T], value: T)(implicit po: PropertyObservers): Seq[PropertyChange] = {
     val childrenChanges = PropertyCodec.updateProperty(value, property.property)
     val changes = withParents(property, childrenChanges)
     callListeners(changes, po)
@@ -90,7 +90,7 @@ object PropertyChanger {
     }
   }
 
-  private def callListeners(changes: Seq[PropertyChange], po: PropertyObservers): Unit = {
+  private def callListeners(changes: Seq[PropertyChange], po: PropertyObservers): Seq[PropertyChange] = {
     changes.foreach {
       case v: ValueChange =>
         po.propertyChanged(v.property)
@@ -102,5 +102,6 @@ object PropertyChanger {
           case _ =>
         }
     }
+    changes
   }
 }
