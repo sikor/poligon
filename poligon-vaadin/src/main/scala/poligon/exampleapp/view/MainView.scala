@@ -2,6 +2,7 @@ package poligon.exampleapp.view
 
 import com.vaadin.ui.{MenuBar, VerticalLayout}
 import poligon.exampleapp.properties.Binder.Custom
+import poligon.exampleapp.properties.Binder.LayoutBuilder.Vertical
 import poligon.exampleapp.properties.{Binder, Comp}
 import poligon.exampleapp.view.MainView.MainViewContentPresenter.ObjectsPanelContent
 import poligon.polyproperty.HasSimplePropertyCodec
@@ -24,17 +25,19 @@ object MainView {
     case o: ObjectsPanelContent => ObjectPanelView.createObjectPanelView(o.get)
   }
 
+  def create2(presenter: MainViewPresenter): Comp = Binder.layout(
+
+  )(Vertical())
+
   def create(presenter: MainViewPresenter): Comp = Comp.dynamic { po: PropertyObservers =>
     val menuBar = new MenuBar()
-    presenter.model.listen({ model =>
-      menuBar.removeItems()
-      model.menu.categories.foreach { c =>
-        val category = menuBar.addItem(c.name, null)
-        c.items.foreach { i =>
-          category.addItem(i.name, _ => presenter.menuItemSelected(c.name, i.name)(po))
-        }
+    presenter.menuItems.menu.categories.foreach { c =>
+      val category = menuBar.addItem(c.name, null)
+      c.items.foreach { i =>
+        category.addItem(i.name, _ => presenter.menuItemSelected(c.name, i.name)(po))
       }
-    }, init = true)(po)
+    }
+
     val content = Binder.replaceable(presenter.subPresenter.map(createContent), Custom).bind(po)
 
     val layout = new VerticalLayout()

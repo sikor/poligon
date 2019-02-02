@@ -4,8 +4,11 @@ import com.avsystem.commons.misc.OptArg
 import com.vaadin.ui._
 import poligon.exampleapp.properties.Binder.LayoutBuilder.Vertical
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Removed}
+import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty.PropertyWithParent.Struct
 import poligon.polyproperty._
+
+import scala.collection.mutable
 
 
 /**
@@ -131,6 +134,40 @@ object Binder {
     val button = new Button(caption)
     button.addClickListener(_ => onClick.push(()))
     button
+  }
+
+  private case class MenuCommand[T](value: T, sin: Sin[T], po: PropertyObservers) extends MenuBar.Command {
+    def menuSelected(selectedItem: MenuBar#MenuItem): Unit = {
+      sin.push(value)(po)
+    }
+  }
+
+  def menuBar[T](menuItems: Seq[(List[String], T)], itemSelected: Sin[T]): Comp = Comp.dynamic { implicit po =>
+    val menuBar = new MenuBar()
+    val menuItemsCache = new mutable.HashMap[Vector[String], MenuBar#MenuItem]()
+    menuItems.foreach { case (key, value) =>
+      var notContainedPrefix = Vector[String]()
+      val notContainedSuffix = key.dropWhile { i =>
+        notContainedPrefix = notContainedPrefix :+ i
+        menuItemsCache.contains(notContainedPrefix)
+      }
+
+      var currentPrefix = notContainedPrefix.dropRight(1)
+      var currentItem = menuItemsCache.get(currentPrefix)
+      notContainedSuffix.foreach { nc =>
+        val newItem = currentItem match {
+          case Some(parent) => parent.addItem(nc, null)
+          case None => menuBar.addItem(nc, null)
+        }
+        val newPrefix = currentPrefix :+ nc
+        menuItemsCache.put(newPrefix, newItem)
+        currentPrefix = newPrefix
+        currentItem = Some(newItem)
+      }
+
+      currentItem.get.setCommand(MenuCommand(value, itemSelected, po))
+    }
+    menuBar
   }
 
   private def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: => P): Comp =

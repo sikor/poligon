@@ -21,7 +21,7 @@ object MainViewPresenter {
 }
 
 class MainViewPresenter(val executeTasksPresenter: ExecuteTasksPresenter, dmService: DmService) {
-  val model = PropertyWithParent(MainViewModel(Menu(Seq(MenuCategory("category 1", Seq(MenuItem("object panel")))))))
+  val menuItems = MainViewModel(Menu(Seq(MenuCategory("category 1", Seq(MenuItem("object panel"))))))
   val subPresenter: PropertyWithParent[MainViewContentPresenter] = PropertyWithParent(new ObjectsPanelPresenter(dmService))
 
   private val creators: Map[String, MainViewPresenter => MainViewContentPresenter] =

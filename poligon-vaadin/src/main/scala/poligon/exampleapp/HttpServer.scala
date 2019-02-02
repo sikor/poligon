@@ -17,9 +17,8 @@ import scala.concurrent.ExecutionContextExecutor
 
 /**
   * Next:
-  * - two nested menus
-  * - refreshing all values without rebuilding panel, refresh button above the objects panel (parent of presenter calls it)
-  * - server push imitation using refresher
+  * - Rewrite all views to Comp
+  * - Implement task service to force objects view to refresh and handle async commands
   */
 object HttpServer {
 
