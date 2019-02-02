@@ -130,6 +130,15 @@ object Binder {
     textField(caption, property.read, property.set)
 
 
+  def button(caption: Obs[String], onClick: Sin[Unit], enabled: Obs[Boolean]): Comp = Comp.dynamic { implicit po =>
+    val button = new Button()
+    caption.listen { s =>
+      button.setCaption(s)
+    }
+    button.addClickListener(_ => onClick.push(()))
+    button
+  }
+
   def button(caption: String, onClick: Sin[Unit]): Comp = Comp.dynamic { implicit po =>
     val button = new Button(caption)
     button.addClickListener(_ => onClick.push(()))

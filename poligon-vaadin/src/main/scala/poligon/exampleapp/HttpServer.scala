@@ -5,12 +5,13 @@ import com.typesafe.scalalogging.StrictLogging
 import com.vaadin.annotations.{Push, Theme}
 import com.vaadin.server._
 import com.vaadin.ui.UI
-import poligon.exampleapp.services.DmService
-import poligon.exampleapp.view.{ExecuteTasksPresenter, ExecuteTasksService, MainView, MainViewPresenter}
+import poligon.exampleapp.services.{DmService, ExecuteTasksService}
+import poligon.exampleapp.view.{ExecuteTasksPresenter, MainView}
 import javax.servlet.{ServletConfig, ServletException}
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.session.{DefaultSessionIdManager, SessionHandler}
 import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
+import poligon.exampleapp.view.MainView.MainViewContext
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 import scala.concurrent.ExecutionContextExecutor
@@ -36,7 +37,7 @@ object HttpServer {
 
     override def init(request: VaadinRequest): Unit = {
       implicit val po: PropertyObservers = new PropertyObservers(Opt.Empty)
-      val presenter = new MainViewPresenter(new ExecuteTasksPresenter(executeTasksService), dmService)
+      val presenter = new MainViewContext(new ExecuteTasksPresenter(executeTasksService), dmService)
       val view = MainView.create(presenter).bind(po)
       setContent(view)
     }
