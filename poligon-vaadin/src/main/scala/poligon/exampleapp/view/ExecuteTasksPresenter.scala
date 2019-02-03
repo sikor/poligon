@@ -4,8 +4,7 @@ import com.typesafe.scalalogging.StrictLogging
 import poligon.exampleapp.services.ExecuteTasksService
 import poligon.exampleapp.view.ExecuteTasksPresenter.ExecuteTasksStatus
 import poligon.exampleapp.view.ExecuteTasksPresenter.ExecuteTasksStatus.{InProgress, NotStarted}
-import poligon.polyproperty.PropertyObserver.PropertyObservers
-import poligon.polyproperty.{HasSimplePropertyCodec, PropertyWithParent}
+import poligon.polyproperty.{HasSimplePropertyCodec, PropertyWithParent, Sin}
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
@@ -32,7 +31,7 @@ object ExecuteTasksPresenter {
 class ExecuteTasksPresenter(service: ExecuteTasksService)(implicit ec: ExecutionContext) extends StrictLogging {
   val executeTaskStatus: PropertyWithParent[ExecuteTasksStatus] = PropertyWithParent(NotStarted)
 
-  def executeTasks(implicit observed: PropertyObservers): Unit = {
+  def executeTasks: Sin[Unit] = Sin(implicit po => _ => {
     executeTaskStatus.set(InProgress)
     service.executeTasks().onComplete {
       case Success(b) =>
@@ -46,7 +45,5 @@ class ExecuteTasksPresenter(service: ExecuteTasksService)(implicit ec: Execution
         logger.error("et failed", ex)
         executeTaskStatus.set(ExecuteTasksStatus.Failed)
     }
-  }
-
-
+  })
 }

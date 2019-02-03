@@ -16,7 +16,7 @@ object ExecuteTasksButton {
       button.setEnabled(s == NotStarted)
     }, true)(observed)
 
-    button.addClickListener(_ => presenter.executeTasks(observed))
+    button.addClickListener(_ => presenter.executeTasks.push(())(observed))
     button
   }
 }

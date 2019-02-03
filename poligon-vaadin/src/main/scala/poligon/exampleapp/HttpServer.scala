@@ -18,7 +18,12 @@ import scala.concurrent.ExecutionContextExecutor
 
 /**
   * Next:
-  * - Rewrite all views to Comp
+  * - Rewrite ExecuteTasks to Comp:
+  * -- Async service should be easily callable from View and model updated
+  * -- Situation when view is not present anymore when data arrive should be somehow handled
+  * -- Situation when calling service from one place also updates other fragments of UI that rely on these data
+  * -- View should not be blocked while waiting for data
+  * -- Also consider registering on async push data (more generalised case)
   * - Implement task service to force objects view to refresh and handle async commands
   */
 object HttpServer {

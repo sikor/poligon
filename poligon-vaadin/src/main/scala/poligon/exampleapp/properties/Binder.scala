@@ -135,15 +135,15 @@ object Binder {
     caption.listen { s =>
       button.setCaption(s)
     }
+    enabled.listen { e =>
+      button.setEnabled(e)
+    }
     button.addClickListener(_ => onClick.push(()))
     button
   }
 
-  def button(caption: String, onClick: Sin[Unit]): Comp = Comp.dynamic { implicit po =>
-    val button = new Button(caption)
-    button.addClickListener(_ => onClick.push(()))
-    button
-  }
+  def button(caption: String, onClick: Sin[Unit]): Comp =
+    button(Obs.constant(caption), onClick, Obs.constant(true))
 
   private case class MenuCommand[T](value: T, sin: Sin[T], po: PropertyObservers) extends MenuBar.Command {
     def menuSelected(selectedItem: MenuBar#MenuItem): Unit = {

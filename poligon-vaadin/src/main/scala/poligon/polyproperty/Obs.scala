@@ -15,6 +15,10 @@ object Obs {
 
   def apply[T: PropertyCodec](property: PropertyWithParent[T]): Obs[T] = new PropertyObs[T](property)
 
+  def constant[T](value: T): Obs[T] = new Obs[T] {
+    def listen(listener: T => Unit)(implicit obs: PropertyObservers): Unit = listener(value)
+  }
+
   def struct[K, V, T](property: PropertyWithParent[T])(implicit codec: StructuralPropertyCodec[K, V, T]): Obs[Struct[V]] =
     new StructObs[K, V, T](property)
 
