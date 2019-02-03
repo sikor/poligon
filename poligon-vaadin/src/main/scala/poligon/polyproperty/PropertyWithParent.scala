@@ -5,7 +5,7 @@ import poligon.polyproperty.Property.SortedMapProperty
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, EntryPatch}
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.StructuralChange
-import poligon.polyproperty.PropertyObserver.PropertyObservers
+import poligon.polyproperty.PropertyObserver.{PropertyObservers, RootPropertyObservers}
 
 import scala.collection.SortedMap
 
@@ -28,7 +28,7 @@ object PropertyWithParent {
 
     def refresh: Sin[Unit] = Sin(implicit po => _ => p.refresher().foreach(d => set.push(d)))
 
-    def set(value: T)(implicit observed: PropertyObservers): Unit = {
+    def set(value: T)(implicit observed: RootPropertyObservers): Unit = {
       PropertyChanger.set(p, value)
     }
 
@@ -80,7 +80,7 @@ object PropertyWithParent {
     def getSeq: Seq[PropertyWithParent[T]] =
       SubProperty.getSeq(p.property).map(e => new PropertyWithParent[T](e, p.opt))
 
-    def insert(index: Int, value: T*)(implicit observed: PropertyObservers): Unit = {
+    def insert(index: Int, value: T*)(implicit observed: RootPropertyObservers): Unit = {
       PropertyChanger.insert[T](p, index, value: _*)
     }
 
@@ -88,13 +88,13 @@ object PropertyWithParent {
       case (index, value) => PropertyChanger.insert(p, index, value: _*)
     })
 
-    def append(value: T*)(implicit observed: PropertyObservers): Unit = {
+    def append(value: T*)(implicit observed: RootPropertyObservers): Unit = {
       PropertyChanger.append[T](p, value: _*)
     }
 
     def append: Sin[Seq[T]] = Sin(implicit po => v => append(v: _*))
 
-    def remove(index: Int, count: Int)(implicit observed: PropertyObservers): Unit = {
+    def remove(index: Int, count: Int)(implicit observed: RootPropertyObservers): Unit = {
       PropertyChanger.remove[T](p, index, count)
     }
 
@@ -115,7 +115,7 @@ object PropertyWithParent {
       wrap(seqSortedMap(key))
     }
 
-    def put(key: K, value: V)(implicit observed: PropertyObservers): Unit = {
+    def put(key: K, value: V)(implicit observed: RootPropertyObservers): Unit = {
       PropertyChanger.put(key, value, p, c)
     }
 
@@ -123,7 +123,7 @@ object PropertyWithParent {
       case (k, v) => put(k, v)
     })
 
-    def remove(key: K)(implicit observed: PropertyObservers): Unit = {
+    def remove(key: K)(implicit observed: RootPropertyObservers): Unit = {
       PropertyChanger.remove(key, p, c)
     }
 

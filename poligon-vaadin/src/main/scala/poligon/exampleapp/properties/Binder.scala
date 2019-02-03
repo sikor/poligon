@@ -4,7 +4,7 @@ import com.avsystem.commons.misc.OptArg
 import com.vaadin.ui._
 import poligon.exampleapp.properties.Binder.LayoutBuilder.Vertical
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Removed}
-import poligon.polyproperty.PropertyObserver.PropertyObservers
+import poligon.polyproperty.PropertyObserver.RootPropertyObservers
 import poligon.polyproperty.PropertyWithParent.Struct
 import poligon.polyproperty._
 
@@ -145,7 +145,7 @@ object Binder {
   def button(caption: String, onClick: Sin[Unit]): Comp =
     button(Obs.constant(caption), onClick, Obs.constant(true))
 
-  private case class MenuCommand[T](value: T, sin: Sin[T], po: PropertyObservers) extends MenuBar.Command {
+  private case class MenuCommand[T](value: T, sin: Sin[T])(implicit po: RootPropertyObservers) extends MenuBar.Command {
     def menuSelected(selectedItem: MenuBar#MenuItem): Unit = {
       sin.push(value)(po)
     }
@@ -174,7 +174,7 @@ object Binder {
         currentItem = Some(newItem)
       }
 
-      currentItem.get.setCommand(MenuCommand(value, itemSelected, po))
+      currentItem.get.setCommand(MenuCommand(value, itemSelected))
     }
     menuBar
   }

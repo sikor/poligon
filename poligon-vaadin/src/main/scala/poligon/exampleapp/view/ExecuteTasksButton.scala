@@ -9,14 +9,14 @@ object ExecuteTasksButton {
   def create2(presenter: ExecuteTasksPresenter): Comp =
     Binder.button(presenter.executeTaskStatus.map(s => s.toString), ???, presenter.executeTaskStatus.map(s => s == NotStarted))
 
-  def create(presenter: ExecuteTasksPresenter): Comp = Comp.dynamic { observed =>
+  def create(presenter: ExecuteTasksPresenter): Comp = Comp.dynamic { implicit observed =>
     val button = new Button
     presenter.executeTaskStatus.listen({ s =>
       button.setCaption(s.toString)
       button.setEnabled(s == NotStarted)
     }, true)(observed)
 
-    button.addClickListener(_ => presenter.executeTasks.push(())(observed))
+    button.addClickListener(_ => presenter.executeTasks.push(()))
     button
   }
 }

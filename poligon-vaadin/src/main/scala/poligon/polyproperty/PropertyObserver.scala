@@ -43,28 +43,18 @@ object PropertyObserver {
     }
   }
 
-  class PropertyObservers(private val parent: Opt[PropertyObservers]) {
-    private val root: PropertyObservers = parent.map(_.root).getOrElse(this)
+  def createRoot: PropertyObservers = {
+    val root = new RootPropertyObservers
+    val po = new PropertyObservers(root)
+    root.setPropertyObservers(po)
+    po
+  }
 
-    private val map = new ObserversMap()
-    private val subObservers: mutable.HashMap[AnyRef, PropertyObservers] = new mutable.HashMap()
+  class RootPropertyObservers private[PropertyObserver]() {
 
-    def createSubObservers(): PropertyObservers = {
-      new PropertyObservers(this.opt)
-    }
+    private var po: PropertyObservers = _
 
-    def registerSubObservers(key: AnyRef, po: PropertyObservers): Unit = {
-      require(!subObservers.contains(key))
-      subObservers.put(key, po)
-    }
-
-    def deregisterSubObservers(key: AnyRef): Unit = {
-      subObservers.remove(key)
-    }
-
-    def observe[T](property: Property[T], propertyObserver: PropertyObserver[T]): Unit = {
-      map.observe(property, propertyObserver)
-    }
+    private[PropertyObserver] def setPropertyObservers(p: PropertyObservers): Unit = po = p
 
     def propertyChanged(property: Property[_]): Unit = {
       traverseAll(_.propertyChanged(property))
@@ -84,7 +74,32 @@ object PropertyObserver {
         po.subObservers.values.foreach(visit)
       }
 
-      visit(root)
+      visit(po)
+    }
+  }
+
+  object RootPropertyObservers {
+    implicit def fromPo(implicit po: PropertyObservers): RootPropertyObservers = po.root
+  }
+
+  class PropertyObservers private[PropertyObserver](val root: RootPropertyObservers) {
+
+    private[PropertyObserver] val map = new ObserversMap()
+    private[PropertyObserver] val subObservers: mutable.HashMap[AnyRef, PropertyObservers] = new mutable.HashMap()
+
+    def createSubObservers(): PropertyObservers = new PropertyObservers(root)
+
+    def registerSubObservers(key: AnyRef, po: PropertyObservers): Unit = {
+      require(!subObservers.contains(key))
+      subObservers.put(key, po)
+    }
+
+    def deregisterSubObservers(key: AnyRef): Unit = {
+      subObservers.remove(key)
+    }
+
+    def observe[T](property: Property[T], propertyObserver: PropertyObserver[T]): Unit = {
+      map.observe(property, propertyObserver)
     }
   }
 
