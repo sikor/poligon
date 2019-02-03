@@ -37,10 +37,10 @@ object ObjectPanelView {
     Binder.label("Objects", ValoTheme.LABEL_H1),
     Binder.layout(
       Binder.textField("object name", presenter.newObjectName),
-      Binder.button("add object", presenter.model.put.rMap(_ => {
+      Binder.button(presenter.model.put.rMap(_ => {
         val objectName = presenter.newObjectName.read
         (objectName, SomeObject(objectName, SortedMap.empty))
-      }))
+      }), "add object")
     )(Horizontal()),
     Binder.dynLayout(presenter.model.structObs) { p =>
       createObjectTile(presenter, p)
@@ -53,15 +53,15 @@ object ObjectPanelView {
     Binder.layout(
       Binder.layout(
         Binder.dynLabel(p.map(o => s"Object ${o.name} (status: ${o.lastAction})"), ValoTheme.LABEL_H2),
-        Binder.button("remove", presenter.model.remove.rMap(_ => p.read.name))
+        Binder.button(presenter.model.remove.rMap(_ => p.read.name), "remove")
       )(Horizontal()),
       Binder.layout(
         Binder.textField("instance number", "", p.getField(_.newInstanceNumber).set
           .rMap(s => Val(s.toInt))),
-        Binder.button("add instance", Sin.mul(
+        Binder.button(Sin.mul(
           p.getField(_.instances).put.rMap(_ => (newInstanceNum, ObjectInstance(newInstanceNum, SortedMap.empty))),
           p.getField(_.lastAction).set.rMap(_ => Val(Action(Success, s"instance added: $newInstanceNum")))
-        ))
+        ), "add instance")
       )(Horizontal()),
       Binder.dynLayout(p.getField(_.instances).structObs) { i =>
         createInstanceTile(presenter, p, i)
@@ -75,11 +75,11 @@ object ObjectPanelView {
       Binder.layout(
         Binder.textField("resource name", "", i.getField(_.newResourceName).set.rMap(s => Val(s))),
         Binder.textField("resource value", "", i.getField(_.newResourceValue).set.rMap(s => Val(s))),
-        Binder.button("add resource", i.getField(_.resources).put.rMap { _ =>
+        Binder.button(i.getField(_.resources).put.rMap { _ =>
           val newResourceName = i.getField(_.newResourceName).read.toOpt.get
           val newResourceValue = i.getField(_.newResourceValue).read.toOpt.get
           newResourceName -> SingleResource(newResourceName, newResourceValue)
-        })
+        }, "add resource")
       )(Horizontal()),
       Binder.dynLayout(i.getField(_.resources).structObs, Form()) { r =>
         r.getCase[SingleResource].map { s =>
@@ -92,7 +92,7 @@ object ObjectPanelView {
           }
         }.get
       },
-      Binder.button("Save", Sin.mul(
+      Binder.button(Sin.mul(
         Sin.static { _ =>
           val resourcesSnap = i.getField(_.resources).read
           resourcesSnap.values.flatMap {
@@ -106,7 +106,7 @@ object ObjectPanelView {
           }
         },
         presenter.model.refresh
-      ))
+      ), "Save")
     )(Vertical(layoutSettings = LayoutSettings(spacing = true)))
 
   def createMultiResource(presenter: ObjectsPanelContext, o: String, instance: Int, m: PropertyWithParent[MultiResource]): Comp =

@@ -9,8 +9,9 @@ import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.session.{DefaultSessionIdManager, SessionHandler}
 import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
 import poligon.exampleapp.services.{DmService, ExecuteTasksService}
+import poligon.exampleapp.view.ExecuteTasksButton.ExecuteTasksContext
+import poligon.exampleapp.view.MainView
 import poligon.exampleapp.view.MainView.MainViewContext
-import poligon.exampleapp.view.{ExecuteTasksPresenter, MainView}
 import poligon.polyproperty.PropertyObserver
 
 import scala.concurrent.ExecutionContextExecutor
@@ -41,7 +42,7 @@ object HttpServer {
 
     override def init(request: VaadinRequest): Unit = {
       val propertyObservers = PropertyObserver.createRoot
-      val presenter = new MainViewContext(new ExecuteTasksPresenter(executeTasksService), dmService)
+      val presenter = new MainViewContext(new ExecuteTasksContext(executeTasksService), dmService)
       val view = MainView.create(presenter).bind(propertyObservers)
       setContent(view)
     }

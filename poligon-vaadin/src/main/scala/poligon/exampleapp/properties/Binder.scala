@@ -130,7 +130,7 @@ object Binder {
     textField(caption, property.read, property.set)
 
 
-  def button(caption: Obs[String], onClick: Sin[Unit], enabled: Obs[Boolean]): Comp = Comp.dynamic { implicit po =>
+  def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): Comp = Comp.dynamic { implicit po =>
     val button = new Button()
     caption.listen { s =>
       button.setCaption(s)
@@ -142,8 +142,8 @@ object Binder {
     button
   }
 
-  def button(caption: String, onClick: Sin[Unit]): Comp =
-    button(Obs.constant(caption), onClick, Obs.constant(true))
+  def button(onClick: Sin[Unit], caption: String): Comp =
+    button(onClick, Obs.constant(caption), Obs.constant(true))
 
   private case class MenuCommand[T](value: T, sin: Sin[T])(implicit po: RootPropertyObservers) extends MenuBar.Command {
     def menuSelected(selectedItem: MenuBar#MenuItem): Unit = {
