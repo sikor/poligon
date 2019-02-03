@@ -144,6 +144,8 @@ object PropertyCodec {
     val codec = PropertyCodec[T]
     codec.readProperty(property.asInstanceOf[codec.PropertyType])
   }
+
+  def simpleCodec[T]: SimplePropertyCodec[T] = new SimplePropertyCodec[T]
 }
 
 class SimplePropertyCodec[T] extends PropertyCodec[T] {

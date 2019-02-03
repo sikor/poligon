@@ -4,6 +4,7 @@ package polyproperty
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.StructuralChange
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 trait PropertyObserver[T] {
   def propertyChanged(property: Property[T]): Unit
@@ -87,6 +88,8 @@ object PropertyObserver {
     private[PropertyObserver] val map = new ObserversMap()
     private[PropertyObserver] val subObservers: mutable.HashMap[AnyRef, PropertyObservers] = new mutable.HashMap()
 
+    private val cancellableResources = new ArrayBuffer[() => Unit]
+
     def createSubObservers(): PropertyObservers = new PropertyObservers(root)
 
     def registerSubObservers(key: AnyRef, po: PropertyObservers): Unit = {
@@ -95,11 +98,15 @@ object PropertyObserver {
     }
 
     def deregisterSubObservers(key: AnyRef): Unit = {
-      subObservers.remove(key)
+      subObservers.remove(key).foreach(_.cancellableResources.foreach(c => c()))
     }
 
     def observe[T](property: Property[T], propertyObserver: PropertyObserver[T]): Unit = {
       map.observe(property, propertyObserver)
+    }
+
+    def resourceOpened(cancellable: () => Unit): Unit = {
+      cancellableResources.append(cancellable)
     }
   }
 

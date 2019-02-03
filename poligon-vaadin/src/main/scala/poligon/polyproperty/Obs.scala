@@ -39,5 +39,6 @@ object Obs {
       listenStructure[K, V, T](source, init = true)(v => listener(v))
   }
 
+
 }
 

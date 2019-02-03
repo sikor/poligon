@@ -1,11 +1,11 @@
-package poligon.exampleapp.view
+package poligon
+package exampleapp.view
 
 import com.vaadin.ui.themes.ValoTheme
+import poligon.exampleapp.HttpServer.Services
 import poligon.exampleapp.properties.Binder.LayoutBuilder.{Form, Horizontal, Vertical}
 import poligon.exampleapp.properties.Binder.{BaseSettings, LayoutSettings}
 import poligon.exampleapp.properties.{Binder, Comp}
-import poligon.exampleapp.services.DmService
-import poligon.exampleapp.view.ObjectPanelModel.ActionStatus.Success
 import poligon.exampleapp.view.ObjectPanelModel._
 import poligon.polyproperty.Property.Diff.Val
 import poligon.polyproperty.{PropertyWithParent, Sin}
@@ -25,51 +25,52 @@ Plan:
  */
 object ObjectPanelView {
 
-  private class ObjectsPanelContext(val dmService: DmService) {
-    val model: PropertyWithParent[SortedMap[String, SomeObject]] = PropertyWithParent(() => dmToObjects(dmService.getDm))
+  private class ObjectsPanelContext(val services: Services) {
+    val model: PropertyWithParent[SortedMap[String, SomeObject]] = PropertyWithParent(() => dmToObjects(services.dmService.getDm))
     val newObjectName = PropertyWithParent("")
   }
 
-  def create(dmService: DmService): Comp =
-    Comp.factory(createObjectPanelView(new ObjectsPanelContext(dmService)))
+  def create(services: Services): Comp =
+    Comp.factory(createObjectPanelView(new ObjectsPanelContext(services)))
 
-  def createObjectPanelView(presenter: ObjectsPanelContext): Comp = Binder.layout(
+  def createObjectPanelView(ctx: ObjectsPanelContext): Comp = Binder.layout(
     Binder.label("Objects", ValoTheme.LABEL_H1),
+    Binder.dynLabel(ctx.services.currentTimeService.currentTime.map(_.toString).toObs(ctx.services.scheduler)),
     Binder.layout(
-      Binder.textField("object name", presenter.newObjectName),
-      Binder.button(presenter.model.put.rMap(_ => {
-        val objectName = presenter.newObjectName.read
+      Binder.textField("object name", ctx.newObjectName),
+      Binder.button(ctx.model.put.rMap(_ => {
+        val objectName = ctx.newObjectName.read
         (objectName, SomeObject(objectName, SortedMap.empty))
       }), "add object")
     )(Horizontal()),
-    Binder.dynLayout(presenter.model.structObs) { p =>
-      createObjectTile(presenter, p)
+    Binder.dynLayout(ctx.model.structObs) { p =>
+      createObjectTile(ctx, p)
     }
   )(Vertical(layoutSettings = LayoutSettings(spacing = true)))
 
-  def createObjectTile(presenter: ObjectsPanelContext, p: PropertyWithParent[SomeObject]): Comp = {
+  def createObjectTile(ctx: ObjectsPanelContext, p: PropertyWithParent[SomeObject]): Comp = {
     def newInstanceNum = p.getField(_.newInstanceNumber).read.toOpt.get
 
     Binder.layout(
       Binder.layout(
         Binder.dynLabel(p.map(o => s"Object ${o.name} (status: ${o.lastAction})"), ValoTheme.LABEL_H2),
-        Binder.button(presenter.model.remove.rMap(_ => p.read.name), "remove")
+        Binder.button(ctx.model.remove.rMap(_ => p.read.name), "remove")
       )(Horizontal()),
       Binder.layout(
         Binder.textField("instance number", "", p.getField(_.newInstanceNumber).set
           .rMap(s => Val(s.toInt))),
         Binder.button(Sin.mul(
           p.getField(_.instances).put.rMap(_ => (newInstanceNum, ObjectInstance(newInstanceNum, SortedMap.empty))),
-          p.getField(_.lastAction).set.rMap(_ => Val(Action(Success, s"instance added: $newInstanceNum")))
+          p.getField(_.lastAction).set.rMap(_ => Val(Action(ActionStatus.Success, s"instance added: $newInstanceNum")))
         ), "add instance")
       )(Horizontal()),
       Binder.dynLayout(p.getField(_.instances).structObs) { i =>
-        createInstanceTile(presenter, p, i)
+        createInstanceTile(ctx, p, i)
       }
     )(Vertical(layoutSettings = LayoutSettings(spacing = true)))
   }
 
-  def createInstanceTile(presenter: ObjectsPanelContext, p: PropertyWithParent[SomeObject], i: PropertyWithParent[ObjectInstance]): Comp =
+  def createInstanceTile(ctx: ObjectsPanelContext, p: PropertyWithParent[SomeObject], i: PropertyWithParent[ObjectInstance]): Comp =
     Binder.layout(
       Binder.dynLabel(i.map(instance => s"Instance ${instance.id}"), ValoTheme.LABEL_H3),
       Binder.layout(
@@ -88,7 +89,7 @@ object ObjectPanelView {
             s.getField(_.lastAction).set.rMap(_ => Val(Action(ActionStatus.Draft, "")))))
         }.orElse[Comp] {
           r.getCase[MultiResource].map { m =>
-            createMultiResource(presenter, p.read.name, i.read.id, m)
+            createMultiResource(ctx, p.read.name, i.read.id, m)
           }
         }.get
       },
@@ -98,18 +99,18 @@ object ObjectPanelView {
           resourcesSnap.values.flatMap {
             case s: SingleResource =>
               s.formValue.toOpt.map(v =>
-                presenter.dmService.setValue(List(p.read.name, i.read.id.toString, s.name), v))
+                ctx.services.dmService.setValue(List(p.read.name, i.read.id.toString, s.name), v))
             case m: MultiResource =>
               m.value.values.flatMap(ri =>
                 ri.formValue.toOpt.map(v =>
-                  presenter.dmService.setValue(List(p.read.name, i.read.id.toString, m.name, ri.idx.toString), v)))
+                  ctx.services.dmService.setValue(List(p.read.name, i.read.id.toString, m.name, ri.idx.toString), v)))
           }
         },
-        presenter.model.refresh
+        ctx.model.refresh
       ), "Save")
     )(Vertical(layoutSettings = LayoutSettings(spacing = true)))
 
-  def createMultiResource(presenter: ObjectsPanelContext, o: String, instance: Int, m: PropertyWithParent[MultiResource]): Comp =
+  def createMultiResource(ctx: ObjectsPanelContext, o: String, instance: Int, m: PropertyWithParent[MultiResource]): Comp =
     Binder.dynLayout(m.getField(_.value).structObs, Form(baseSettings = BaseSettings(m.read.name))) { ri =>
       Binder.textField(ri.read.idx.toString, ri.getField(_.value).read, Sin(
         ri.getField(_.formValue).set.rMap(Val(_)),
