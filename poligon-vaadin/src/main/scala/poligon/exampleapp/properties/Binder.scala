@@ -1,6 +1,7 @@
 package poligon.exampleapp.properties
 
 import com.avsystem.commons.misc.OptArg
+import com.vaadin.data.Property
 import com.vaadin.ui._
 import poligon.exampleapp.properties.Binder.LayoutBuilder.Vertical
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Removed}
@@ -145,6 +146,12 @@ object Binder {
   def button(onClick: Sin[Unit], caption: String): Comp =
     button(onClick, Obs.constant(caption), Obs.constant(true))
 
+  def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): Comp = Comp.dynamic { implicit po =>
+    val cb = new CheckBox(caption, initValue)
+    cb.addValueChangeListener((_: Property.ValueChangeEvent) => value.push(cb.getValue))
+    cb
+  }
+
   private case class MenuCommand[T](value: T, sin: Sin[T])(implicit po: RootPropertyObservers) extends MenuBar.Command {
     def menuSelected(selectedItem: MenuBar#MenuItem): Unit = {
       sin.push(value)(po)
@@ -198,7 +205,7 @@ object Binder {
     def getContent: Component = getCompositionRoot
   }
 
-  def replaceable(property: Obs[Comp], wrapperDescription: WrapperDescription): Comp = Comp.dynamic {
+  def replaceable(property: Obs[Comp], wrapperDescription: WrapperDescription = Custom): Comp = Comp.dynamic {
     implicit po =>
       val wrapper = wrapperDescription match {
         case Panel => new Panel()

@@ -28,6 +28,7 @@ object ObjectPanelView {
   private class ObjectsPanelContext(val services: Services) {
     val model: PropertyWithParent[SortedMap[String, SomeObject]] = PropertyWithParent(() => dmToObjects(services.dmService.getDm))
     val newObjectName = PropertyWithParent("")
+    val currentTimeOn = PropertyWithParent(true)
   }
 
   def create(services: Services): Comp =
@@ -35,7 +36,14 @@ object ObjectPanelView {
 
   def createObjectPanelView(ctx: ObjectsPanelContext): Comp = Binder.layout(
     Binder.label("Objects", ValoTheme.LABEL_H1),
-    Binder.dynLabel(ctx.services.currentTimeService.currentTime.map(_.toString).toObs(ctx.services.scheduler)),
+    Binder.replaceable(ctx.currentTimeOn.obs.map { isOn =>
+      if (isOn) {
+        Binder.dynLabel(ctx.services.currentTimeService.currentTime.map(_.toString).toObs(ctx.services.scheduler))
+      } else {
+        Binder.dynLabel(ctx.services.currentTimeService.currentTime.map(_.toString).take(1).toObs(ctx.services.scheduler))
+      }
+    }),
+    Binder.checkBox("Current time on", ctx.currentTimeOn.read, ctx.currentTimeOn.set),
     Binder.layout(
       Binder.textField("object name", ctx.newObjectName),
       Binder.button(ctx.model.put.rMap(_ => {
