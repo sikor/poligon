@@ -60,6 +60,10 @@ lazy val `poligon-vaadin` = project.dependsOn(`poligon-macros` % "compile->compi
   .settings(libraryDependencies += "org.eclipse.jetty" % "jetty-servlet" % "9.4.12.v20180830")
   .settings(libraryDependencies += "org.eclipse.jetty" % "jetty-continuation" % "9.4.12.v20180830")
 
+lazy val `poligon-scalajs` = project
+  .enablePlugins(ScalaJSPlugin)
+  .settings(scalaJSUseMainModuleInitializer := true)
+
 lazy val `poligon-workout` = project.dependsOn(`poligon-macros` % "compile->compile;test->test")
 
 lazy val poligon = project.in(file("."))
