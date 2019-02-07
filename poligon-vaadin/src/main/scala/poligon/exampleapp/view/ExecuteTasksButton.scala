@@ -1,7 +1,7 @@
 package poligon.exampleapp.view
 
 import com.typesafe.scalalogging.StrictLogging
-import poligon.exampleapp.properties.{Binder, Comp}
+import poligon.exampleapp.components.{Binder, Comp}
 import poligon.exampleapp.services.ExecuteTasksService
 import poligon.exampleapp.view.ExecuteTasksButton.ExecuteTasksStatus.{InProgress, NotStarted}
 import poligon.polyproperty.{HasSimplePropertyCodec, PropertyWithParent, Sin}

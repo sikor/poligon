@@ -3,9 +3,9 @@ package exampleapp.view
 
 import com.vaadin.ui.themes.ValoTheme
 import poligon.exampleapp.HttpServer.Services
-import poligon.exampleapp.properties.Binder.LayoutBuilder.{Form, Horizontal, Vertical}
-import poligon.exampleapp.properties.Binder.{BaseSettings, LayoutSettings}
-import poligon.exampleapp.properties.{Binder, Comp}
+import poligon.exampleapp.components.Binder.LayoutBuilder.{Form, Horizontal, Vertical}
+import poligon.exampleapp.components.Binder.{BaseSettings, LayoutSettings}
+import poligon.exampleapp.components.{Binder, Comp}
 import poligon.exampleapp.view.ObjectPanelModel._
 import poligon.polyproperty.Property.Diff.Val
 import poligon.polyproperty.{PropertyWithParent, Sin}

@@ -1,7 +1,7 @@
-package poligon.exampleapp.properties
+package poligon.exampleapp.components
 
 import com.vaadin.ui.Component
-import poligon.exampleapp.properties.Comp.{DynamicComp, StaticComp}
+import poligon.exampleapp.components.Comp.{DynamicComp, StaticComp}
 import poligon.polyproperty.HasSimplePropertyCodec
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 

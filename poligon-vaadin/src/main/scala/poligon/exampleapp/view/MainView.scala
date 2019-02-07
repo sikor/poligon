@@ -2,9 +2,9 @@ package poligon
 package exampleapp.view
 
 import poligon.exampleapp.HttpServer.Services
-import poligon.exampleapp.properties.Binder.LayoutBuilder.Vertical
-import poligon.exampleapp.properties.Binder.{Custom, LayoutSettings}
-import poligon.exampleapp.properties.{Binder, Comp}
+import poligon.exampleapp.components.Binder.LayoutBuilder.Vertical
+import poligon.exampleapp.components.Binder.{Custom, LayoutSettings}
+import poligon.exampleapp.components.{Binder, Comp}
 import poligon.exampleapp.view.ExecuteTasksButton.ExecuteTasksContext
 import poligon.polyproperty.PropertyWithParent
 

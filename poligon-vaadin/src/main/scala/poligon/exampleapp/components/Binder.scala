@@ -1,9 +1,9 @@
-package poligon.exampleapp.properties
+package poligon.exampleapp.components
 
 import com.avsystem.commons.misc.OptArg
 import com.vaadin.data.Property
 import com.vaadin.ui._
-import poligon.exampleapp.properties.Binder.LayoutBuilder.Vertical
+import poligon.exampleapp.components.Binder.LayoutBuilder.Vertical
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Removed}
 import poligon.polyproperty.PropertyObserver.RootPropertyObservers
 import poligon.polyproperty.PropertyWithParent.Struct
