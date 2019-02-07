@@ -4,9 +4,8 @@ import com.avsystem.commons.misc.OptArg
 import poligon.polyproperty.PropertyWithParent.Struct
 import poligon.polyproperty._
 
-trait Binder {
+trait Binder extends CompT {
 
-  type Comp
 
   case class BaseSettings(caption: OptArg[String] = OptArg.Empty)
 
