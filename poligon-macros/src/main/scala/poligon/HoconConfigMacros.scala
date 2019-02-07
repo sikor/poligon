@@ -1,7 +1,6 @@
 package poligon
 
 import com.avsystem.commons.macros.MacroCommons
-import com.avsystem.commons.misc.Opt
 
 import scala.reflect.macros.blackbox
 
@@ -28,16 +27,16 @@ class HoconConfigMacros(val c: blackbox.Context) extends MacroCommons {
   val ThisPkg = q"_root_.poligon"
 
   class BeanDefSignature {
-    def unapply(s: Symbol): Opt[MethodSymbol] = {
+    def unapply(s: Symbol): Option[MethodSymbol] = {
       if (s.isMethod) {
         val methodSymbol = s.asMethod
         if (methodSymbol.typeSignature.paramLists.isEmpty && methodSymbol.returnType <:< BeanDefTpe && methodSymbol.isPublic) {
-          Opt(methodSymbol)
+          Some(methodSymbol)
         } else {
-          Opt.Empty
+          None
         }
       } else {
-        Opt.Empty
+        None
       }
     }
   }
