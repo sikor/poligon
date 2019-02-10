@@ -41,7 +41,7 @@ object Binder {
     }
   }
 
-  case class LayoutSettings(spacing: Boolean = false) {
+  case class LayoutSettings(spacing: Boolean = false, caption: String = "") {
     def setOn(layout: AbstractOrderedLayout): Unit = {
       layout.setSpacing(spacing)
     }

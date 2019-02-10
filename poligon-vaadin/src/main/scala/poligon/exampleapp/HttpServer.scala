@@ -16,6 +16,7 @@ import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
 import poligon.exampleapp.services.{CurrentTimeService, DmService, ExecuteTasksService}
 import poligon.exampleapp.view.MainView
 import poligon.polyproperty.PropertyObserver
+import poligon.vaadincomp.VaadinCompFactory
 
 import scala.concurrent.ExecutionContextExecutorService
 
@@ -68,7 +69,9 @@ object HttpServer {
     override def init(request: VaadinRequest): Unit = {
       val services = new Services(executeTasksService, dmService, currentTimeService, monixScheduler)
       val propertyObservers = PropertyObserver.createRoot
-      val view = MainView.create(services).bind(propertyObservers)
+      val view = MainView.create(services)
+        .createComponent(VaadinCompFactory)
+        .bind(propertyObservers)
       setContent(view)
     }
   }

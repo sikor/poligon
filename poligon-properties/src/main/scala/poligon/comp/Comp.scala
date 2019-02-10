@@ -2,17 +2,17 @@ package poligon.comp
 
 import com.avsystem.commons.misc.OptArg
 import poligon.comp.Comp.LayoutModification.{Added, Removed}
-import poligon.polyproperty.{Obs, PropertyWithParent, Sin}
+import poligon.polyproperty.{HasSimplePropertyCodec, Obs, PropertyWithParent, Sin}
 
 trait Comp {
   def createComponent(factory: CompFactory): factory.BindableComp
 }
 
-object Comp {
+object Comp extends HasSimplePropertyCodec[Comp] {
 
   case class BaseSettings(caption: OptArg[String] = OptArg.Empty)
 
-  case class LayoutSettings(layoutType: LayoutType = Vertical, spacing: Boolean = true)
+  case class LayoutSettings(layoutType: LayoutType = Vertical, spacing: Boolean = true, caption: String = "")
 
   sealed trait LayoutType
 
@@ -35,6 +35,10 @@ object Comp {
 
     case class Removed[V](index: Int) extends LayoutModification[V]
 
+  }
+
+  def factory(highLevelFactory: => Comp): Comp = new Comp {
+    def createComponent(factory: CompFactory): factory.BindableComp = highLevelFactory.createComponent(factory)
   }
 
   def dynLayout[V](
