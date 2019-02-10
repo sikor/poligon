@@ -3,9 +3,7 @@ package poligon.comp
 import poligon.comp.CompDescription.{LayoutModification, LayoutSettings}
 import poligon.polyproperty._
 
-trait CompFactory {
-
-  type Comp
+trait CompFactory extends HasBindableComp {
 
   def layout(property: Obs[Seq[LayoutModification[Comp]]],
              layoutDescription: LayoutSettings = LayoutSettings()): Comp

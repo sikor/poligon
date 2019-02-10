@@ -186,7 +186,7 @@ object Binder {
     menuBar
   }
 
-  private def bindSimple[T: PropertyCodec, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: => P): Comp =
+  private def bindSimple[T, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: => P): Comp =
     Comp.dynamic { o =>
       val l = label
       property.listen(v => l.setValue(v))(o)

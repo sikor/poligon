@@ -3,7 +3,7 @@ package poligon.comp
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 
-trait CompT {
+trait HasBindableComp {
 
   type ComponentT
 
