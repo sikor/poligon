@@ -3,8 +3,8 @@ package poligon
 import monix.execution.Scheduler
 import monix.reactive.Observable
 import poligon.Extensions.{ObservableExtensions, StructObsExtensions, TraversableOnceExtensions}
-import poligon.comp.CompDescription
-import poligon.comp.CompDescription.LayoutModification
+import poligon.comp.Comp
+import poligon.comp.Comp.LayoutModification
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Removed}
 import poligon.polyproperty.{Obs, PropertyWithParent}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
@@ -48,10 +48,10 @@ object Extensions {
   }
 
   class StructObsExtensions[V](private val obs: Obs[Struct[V]]) extends AnyVal {
-    def toLayoutMod(f: PropertyWithParent[V] => CompDescription): Obs[Seq[LayoutModification[CompDescription]]] =
+    def toLayoutMod(f: PropertyWithParent[V] => Comp): Obs[Seq[LayoutModification[Comp]]] =
       obs.map(s => s.modifications.map {
         case Added(entry) => LayoutModification.Added(entry.index, f(entry.value))
-        case Removed(entry) => LayoutModification.Removed[CompDescription](entry.index)
+        case Removed(entry) => LayoutModification.Removed[Comp](entry.index)
       })
   }
 

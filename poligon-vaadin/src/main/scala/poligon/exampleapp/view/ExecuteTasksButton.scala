@@ -1,7 +1,7 @@
 package poligon.exampleapp.view
 
 import com.typesafe.scalalogging.StrictLogging
-import poligon.exampleapp.components.{Binder, Comp}
+import poligon.exampleapp.components.{Binder, BindableComp}
 import poligon.exampleapp.services.ExecuteTasksService
 import poligon.exampleapp.view.ExecuteTasksButton.ExecuteTasksStatus.{InProgress, NotStarted}
 import poligon.polyproperty.{HasSimplePropertyCodec, PropertyWithParent, Sin}
@@ -45,7 +45,7 @@ object ExecuteTasksButton {
     })
   }
 
-  def create(presenter: ExecuteTasksContext): Comp =
+  def create(presenter: ExecuteTasksContext): BindableComp =
     Binder.button(
       presenter.executeTasks,
       presenter.executeTaskStatus.map(s => s.toString),

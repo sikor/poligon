@@ -7,7 +7,7 @@ trait HasBindableComp {
 
   type ComponentT
 
-  sealed trait Comp {
+  sealed trait BindableComp {
 
     def looseBind(parentPo: PropertyObservers): ComponentT = {
       this match {
@@ -29,11 +29,11 @@ trait HasBindableComp {
   }
 
 
-  class StaticComp(factory: => ComponentT) extends Comp {
+  class StaticComp(factory: => ComponentT) extends BindableComp {
     def staticBind: ComponentT = factory
   }
 
-  trait DynamicComp extends Comp {
+  trait DynamicComp extends BindableComp {
     def bindDynamic(po: PropertyObservers): ComponentT
   }
 
@@ -42,5 +42,5 @@ trait HasBindableComp {
 
   def static(factory: => ComponentT): StaticComp = new StaticComp(factory)
 
-  def factory(factory: => Comp): Comp = dynamic(po => factory.bind(po))
+  def factory(factory: => BindableComp): BindableComp = dynamic(po => factory.bind(po))
 }

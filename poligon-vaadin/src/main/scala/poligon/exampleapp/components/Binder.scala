@@ -81,15 +81,15 @@ object Binder {
 
   }
 
-  def layout(comps: Comp*)(builder: AnyLayoutBuilder = Vertical()): Comp = Comp.dynamic { implicit po =>
+  def layout(comps: BindableComp*)(builder: AnyLayoutBuilder = Vertical()): BindableComp = BindableComp.dynamic { implicit po =>
     builder.create(comps.map(_.bind(po)): _*)
   }
 
   def dynLayout[V](
                     property: Obs[Struct[V]],
                     layoutDescription: AnyLayoutBuilder = Vertical())(
-                    childFactory: PropertyWithParent[V] => Comp): Comp =
-    Comp.dynamic { implicit po =>
+                    childFactory: PropertyWithParent[V] => BindableComp): BindableComp =
+    BindableComp.dynamic { implicit po =>
       val layout = layoutDescription.build()
 
       property.listen { patch =>
@@ -107,19 +107,19 @@ object Binder {
       layout
     }
 
-  def label(value: String, styleName: String = ""): Comp = Comp.static {
+  def label(value: String, styleName: String = ""): BindableComp = BindableComp.static {
     val l = new Label(value)
     l.addStyleName(styleName)
     l
   }
 
-  def dynLabel(property: Obs[String], styleName: String = ""): Comp = bindSimple(property, {
+  def dynLabel(property: Obs[String], styleName: String = ""): BindableComp = bindSimple(property, {
     val l = new Label()
     l.addStyleName(styleName)
     l
   })
 
-  def textField(caption: String, initValue: String, onValueSet: Sin[String]): Comp = Comp.dynamic { implicit po =>
+  def textField(caption: String, initValue: String, onValueSet: Sin[String]): BindableComp = BindableComp.dynamic { implicit po =>
     val field = new TextField()
     field.setValue(initValue)
     field.addValueChangeListener(_ => onValueSet.push(field.getValue))
@@ -127,11 +127,11 @@ object Binder {
     field
   }
 
-  def textField(caption: String, property: PropertyWithParent[String]): Comp =
+  def textField(caption: String, property: PropertyWithParent[String]): BindableComp =
     textField(caption, property.read, property.set)
 
 
-  def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): Comp = Comp.dynamic { implicit po =>
+  def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): BindableComp = BindableComp.dynamic { implicit po =>
     val button = new Button()
     caption.listen { s =>
       button.setCaption(s)
@@ -143,10 +143,10 @@ object Binder {
     button
   }
 
-  def button(onClick: Sin[Unit], caption: String): Comp =
+  def button(onClick: Sin[Unit], caption: String): BindableComp =
     button(onClick, Obs.constant(caption), Obs.constant(true))
 
-  def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): Comp = Comp.dynamic { implicit po =>
+  def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): BindableComp = BindableComp.dynamic { implicit po =>
     val cb = new CheckBox(caption, initValue)
     cb.addValueChangeListener((_: Property.ValueChangeEvent) => value.push(cb.getValue))
     cb
@@ -158,7 +158,7 @@ object Binder {
     }
   }
 
-  def menuBar[T](menuItems: Seq[(List[String], T)], itemSelected: Sin[T]): Comp = Comp.dynamic { implicit po =>
+  def menuBar[T](menuItems: Seq[(List[String], T)], itemSelected: Sin[T]): BindableComp = BindableComp.dynamic { implicit po =>
     val menuBar = new MenuBar()
     val menuItemsCache = new mutable.HashMap[Vector[String], MenuBar#MenuItem]()
     menuItems.foreach { case (key, value) =>
@@ -186,8 +186,8 @@ object Binder {
     menuBar
   }
 
-  private def bindSimple[T, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: => P): Comp =
-    Comp.dynamic { o =>
+  private def bindSimple[T, P <: com.vaadin.data.Property[T] with Component](property: Obs[T], label: => P): BindableComp =
+    BindableComp.dynamic { o =>
       val l = label
       property.listen(v => l.setValue(v))(o)
       l
@@ -205,7 +205,7 @@ object Binder {
     def getContent: Component = getCompositionRoot
   }
 
-  def replaceable(property: Obs[Comp], wrapperDescription: WrapperDescription = Custom): Comp = Comp.dynamic {
+  def replaceable(property: Obs[BindableComp], wrapperDescription: WrapperDescription = Custom): BindableComp = BindableComp.dynamic {
     implicit po =>
       val wrapper = wrapperDescription match {
         case Panel => new Panel()

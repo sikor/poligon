@@ -1,12 +1,12 @@
 package poligon.exampleapp.components
 
 import com.vaadin.ui.Component
-import poligon.exampleapp.components.Comp.{DynamicComp, StaticComp}
+import poligon.exampleapp.components.BindableComp.{DynamicComp, StaticComp}
 import poligon.polyproperty.HasSimplePropertyCodec
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 
-sealed trait Comp {
+sealed trait BindableComp {
   def looseBind(parentPo: PropertyObservers): Component = {
     this match {
       case s: StaticComp => s.staticBind
@@ -26,14 +26,14 @@ sealed trait Comp {
   }
 }
 
-object Comp extends HasSimplePropertyCodec[Comp] {
+object BindableComp extends HasSimplePropertyCodec[BindableComp] {
 
 
-  class StaticComp(factory: => Component) extends Comp {
+  class StaticComp(factory: => Component) extends BindableComp {
     def staticBind: Component = factory
   }
 
-  trait DynamicComp extends Comp {
+  trait DynamicComp extends BindableComp {
     def bindDynamic(po: PropertyObservers): Component
   }
 
@@ -42,5 +42,5 @@ object Comp extends HasSimplePropertyCodec[Comp] {
 
   def static(factory: => Component): StaticComp = new StaticComp(factory)
 
-  def factory(factory: => Comp): Comp = dynamic(po => factory.bind(po))
+  def factory(factory: => BindableComp): BindableComp = dynamic(po => factory.bind(po))
 }

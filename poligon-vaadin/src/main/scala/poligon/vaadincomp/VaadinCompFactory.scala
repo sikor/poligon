@@ -2,8 +2,8 @@ package poligon.vaadincomp
 
 import com.vaadin.data.Property
 import com.vaadin.ui.{Form => _, _}
-import poligon.comp.CompDescription.LayoutModification.{Added, Removed}
-import poligon.comp.CompDescription._
+import poligon.comp.Comp.LayoutModification.{Added, Removed}
+import poligon.comp.Comp._
 import poligon.comp.CompFactory
 import poligon.polyproperty.PropertyObserver.RootPropertyObservers
 import poligon.polyproperty.{Obs, Sin}
@@ -14,8 +14,8 @@ import scala.collection.mutable
 object VaadinCompFactory extends CompFactory {
   type ComponentT = Component
 
-  def layout(property: Obs[Seq[LayoutModification[Comp]]],
-             layoutDescription: LayoutSettings): Comp = dynamic { implicit po =>
+  def layout(property: Obs[Seq[LayoutModification[BindableComp]]],
+             layoutDescription: LayoutSettings): BindableComp = dynamic { implicit po =>
     val layout = layoutDescription.layoutType match {
       case Vertical => new VerticalLayout()
       case Horizontal => new HorizontalLayout()
@@ -38,13 +38,13 @@ object VaadinCompFactory extends CompFactory {
     layout
   }
 
-  def label(property: Obs[String], styleName: String): Comp = bindSimple(property, {
+  def label(property: Obs[String], styleName: String): BindableComp = bindSimple(property, {
     val l = new Label()
     l.addStyleName(styleName)
     l
   })
 
-  def textField(caption: String, initValue: String, onValueSet: Sin[String]): Comp = dynamic { implicit po =>
+  def textField(caption: String, initValue: String, onValueSet: Sin[String]): BindableComp = dynamic { implicit po =>
     val field = new TextField()
     field.setValue(initValue)
     field.addValueChangeListener(_ => onValueSet.push(field.getValue))
@@ -52,7 +52,7 @@ object VaadinCompFactory extends CompFactory {
     field
   }
 
-  def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): Comp = dynamic { implicit po =>
+  def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): BindableComp = dynamic { implicit po =>
     val button = new Button()
     caption.listen { s =>
       button.setCaption(s)
@@ -64,7 +64,7 @@ object VaadinCompFactory extends CompFactory {
     button
   }
 
-  def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): Comp = dynamic { implicit po =>
+  def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): BindableComp = dynamic { implicit po =>
     val cb = new CheckBox(caption, initValue)
     cb.addValueChangeListener((_: Property.ValueChangeEvent) => value.push(cb.getValue))
     cb
@@ -76,7 +76,7 @@ object VaadinCompFactory extends CompFactory {
     }
   }
 
-  def menuBar[T](menuItems: Seq[(List[String], T)], itemSelected: Sin[T]): Comp = dynamic { implicit po =>
+  def menuBar[T](menuItems: Seq[(List[String], T)], itemSelected: Sin[T]): BindableComp = dynamic { implicit po =>
     val menuBar = new MenuBar()
     val menuItemsCache = new mutable.HashMap[Vector[String], MenuBar#MenuItem]()
     menuItems.foreach { case (key, value) =>
@@ -110,7 +110,7 @@ object VaadinCompFactory extends CompFactory {
     def getContent: Component = getCompositionRoot
   }
 
-  def replaceable(property: Obs[Comp]): Comp = dynamic { implicit po =>
+  def replaceable(property: Obs[BindableComp]): BindableComp = dynamic { implicit po =>
     val wrapper = new SimpleCustomComponent()
     property.listen { comp =>
       val component = comp.looseBind(po)
@@ -121,7 +121,7 @@ object VaadinCompFactory extends CompFactory {
   }
 
   private def bindSimple[T, P <: com.vaadin.data.Property[T] with Component]
-  (property: Obs[T], label: => P): Comp = dynamic { o =>
+  (property: Obs[T], label: => P): BindableComp = dynamic { o =>
     val l = label
     property.listen(v => l.setValue(v))(o)
     l

@@ -5,7 +5,7 @@ import com.vaadin.ui.themes.ValoTheme
 import poligon.exampleapp.HttpServer.Services
 import poligon.exampleapp.components.Binder.LayoutBuilder.{Form, Horizontal, Vertical}
 import poligon.exampleapp.components.Binder.{BaseSettings, LayoutSettings}
-import poligon.exampleapp.components.{Binder, Comp}
+import poligon.exampleapp.components.{Binder, BindableComp}
 import poligon.exampleapp.view.ObjectPanelModel._
 import poligon.polyproperty.Property.Diff.Val
 import poligon.polyproperty.{PropertyWithParent, Sin}
@@ -31,10 +31,10 @@ object ObjectPanelView {
     val currentTimeOn = PropertyWithParent(true)
   }
 
-  def create(services: Services): Comp =
-    Comp.factory(createObjectPanelView(new ObjectsPanelContext(services)))
+  def create(services: Services): BindableComp =
+    BindableComp.factory(createObjectPanelView(new ObjectsPanelContext(services)))
 
-  def createObjectPanelView(ctx: ObjectsPanelContext): Comp = Binder.layout(
+  def createObjectPanelView(ctx: ObjectsPanelContext): BindableComp = Binder.layout(
     Binder.label("Objects", ValoTheme.LABEL_H1),
     Binder.replaceable(ctx.currentTimeOn.obs.map { isOn =>
       if (isOn) {
@@ -56,7 +56,7 @@ object ObjectPanelView {
     }
   )(Vertical(layoutSettings = LayoutSettings(spacing = true)))
 
-  def createObjectTile(ctx: ObjectsPanelContext, p: PropertyWithParent[SomeObject]): Comp = {
+  def createObjectTile(ctx: ObjectsPanelContext, p: PropertyWithParent[SomeObject]): BindableComp = {
     def newInstanceNum = p.getField(_.newInstanceNumber).read.toOpt.get
 
     Binder.layout(
@@ -78,7 +78,7 @@ object ObjectPanelView {
     )(Vertical(layoutSettings = LayoutSettings(spacing = true)))
   }
 
-  def createInstanceTile(ctx: ObjectsPanelContext, p: PropertyWithParent[SomeObject], i: PropertyWithParent[ObjectInstance]): Comp =
+  def createInstanceTile(ctx: ObjectsPanelContext, p: PropertyWithParent[SomeObject], i: PropertyWithParent[ObjectInstance]): BindableComp =
     Binder.layout(
       Binder.dynLabel(i.map(instance => s"Instance ${instance.id}"), ValoTheme.LABEL_H3),
       Binder.layout(
@@ -95,7 +95,7 @@ object ObjectPanelView {
           Binder.textField(s.read.name, s.getField(_.value).read, Sin(
             s.getField(_.formValue).set.rMap(Val(_)),
             s.getField(_.lastAction).set.rMap(_ => Val(Action(ActionStatus.Draft, "")))))
-        }.orElse[Comp] {
+        }.orElse[BindableComp] {
           r.getCase[MultiResource].map { m =>
             createMultiResource(p.read.name, i.read.id, m)
           }
@@ -118,7 +118,7 @@ object ObjectPanelView {
       ), "Save")
     )(Vertical(layoutSettings = LayoutSettings(spacing = true)))
 
-  def createMultiResource(o: String, instance: Int, m: PropertyWithParent[MultiResource]): Comp =
+  def createMultiResource(o: String, instance: Int, m: PropertyWithParent[MultiResource]): BindableComp =
     Binder.dynLayout(m.getField(_.value).structObs, Form(baseSettings = BaseSettings(m.read.name))) { ri =>
       Binder.textField(ri.read.idx.toString, ri.getField(_.value).read, Sin(
         ri.getField(_.formValue).set.rMap(Val(_)),
