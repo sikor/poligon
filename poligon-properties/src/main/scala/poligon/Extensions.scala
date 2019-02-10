@@ -2,9 +2,13 @@ package poligon
 
 import monix.execution.Scheduler
 import monix.reactive.Observable
-import poligon.Extensions.{ObservableExtensions, TraversableOnceExtensions}
-import poligon.polyproperty.Obs
+import poligon.Extensions.{ObservableExtensions, StructObsExtensions, TraversableOnceExtensions}
+import poligon.comp.CompDescription
+import poligon.comp.CompDescription.LayoutModification
+import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Removed}
+import poligon.polyproperty.{Obs, PropertyWithParent}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
+import poligon.polyproperty.PropertyWithParent.Struct
 
 import scala.collection.immutable.{SortedMap, TreeMap}
 
@@ -15,6 +19,9 @@ trait Extensions {
 
   implicit def observableExtensions[T](observable: Observable[T]): ObservableExtensions[T] =
     new ObservableExtensions[T](observable)
+
+  implicit def structObsExtensions[V](obs: Obs[Struct[V]]): StructObsExtensions[V] =
+    new StructObsExtensions[V](obs)
 }
 
 object Extensions {
@@ -38,6 +45,14 @@ object Extensions {
 
   class ObservableExtensions[T](private val observable: Observable[T]) extends AnyVal {
     def toObs(implicit s: Scheduler): Obs[T] = new ObservableObs[T](observable)
+  }
+
+  class StructObsExtensions[V](private val obs: Obs[Struct[V]]) extends AnyVal {
+    def toLayoutMod(f: PropertyWithParent[V] => CompDescription): Obs[Seq[LayoutModification[CompDescription]]] =
+      obs.map(s => s.modifications.map {
+        case Added(entry) => LayoutModification.Added(entry.index, f(entry.value))
+        case Removed(entry) => LayoutModification.Removed[CompDescription](entry.index)
+      })
   }
 
 }
