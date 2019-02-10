@@ -1,11 +1,10 @@
-package poligon
-package exampleapp.view
+package poligon.exampleapp.view
 
 import poligon.comp.Comp
-import poligon.exampleapp.HttpServer.Services
 import poligon.exampleapp.view.ExecuteTasksButton.ExecuteTasksContext
 import poligon.polyproperty.PropertyWithParent
 import Comp._
+import poligon.exampleapp.services.Services
 
 object MainView {
 

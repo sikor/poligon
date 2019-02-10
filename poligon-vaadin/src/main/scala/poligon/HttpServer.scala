@@ -1,4 +1,4 @@
-package poligon.exampleapp
+package poligon
 
 import java.util
 import java.util.concurrent.{AbstractExecutorService, TimeUnit}
@@ -8,12 +8,12 @@ import com.vaadin.annotations.{Push, Theme}
 import com.vaadin.server._
 import com.vaadin.ui.UI
 import javax.servlet.{ServletConfig, ServletException}
+import monix.execution.ExecutionModel
 import monix.execution.schedulers.ExecutorScheduler
-import monix.execution.{ExecutionModel, Scheduler}
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.session.{DefaultSessionIdManager, SessionHandler}
 import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
-import poligon.exampleapp.services.{CurrentTimeService, DmService, ExecuteTasksService}
+import poligon.exampleapp.services.{CurrentTimeService, DmService, ExecuteTasksService, Services}
 import poligon.exampleapp.view.MainView
 import poligon.polyproperty.PropertyObserver
 import poligon.vaadincomp.VaadinCompFactory
@@ -32,11 +32,6 @@ import scala.concurrent.ExecutionContextExecutorService
   * - Implement task service to force objects view to refresh and handle async commands
   */
 object HttpServer {
-
-  class Services(val executeTasksService: ExecuteTasksService,
-                 val dmService: DmService,
-                 val currentTimeService: CurrentTimeService,
-                 val scheduler: Scheduler)
 
   @Theme("valo")
   @Push

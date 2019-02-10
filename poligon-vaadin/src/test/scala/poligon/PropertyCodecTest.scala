@@ -1,7 +1,5 @@
 package poligon
 
-import java.time.Instant
-
 import org.scalatest.FunSuite
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Modification, Removed}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
@@ -26,7 +24,7 @@ sealed trait IntOrString
 
 case class Case1(i: Int) extends IntOrString
 
-case class Case2(s: String, instants: Seq[Instant]) extends IntOrString
+case class Case2(s: String, instants: Seq[JDate]) extends IntOrString
 
 case object NoneOfThis extends IntOrString
 
@@ -39,7 +37,7 @@ class PropertyCodecTest extends FunSuite {
     "string",
     2.3,
     MalyModel(12),
-    Case2("aaa", Vector(Instant.now(), Instant.now().plusSeconds(10))),
+    Case2("aaa", Vector(new JDate(), new JDate())),
     BardzoProsty("bardzo prosty"),
     NoneOfThis)
 
@@ -59,7 +57,7 @@ class PropertyCodecTest extends FunSuite {
       MalyModel(13),
       Case1(32),
       BardzoProsty("bardzo prosty 2"),
-      Case2("aaa2", Vector(Instant.now(), Instant.now().plusSeconds(10))))
+      Case2("aaa2", Vector(new JDate(), new JDate())))
     PropertyCodec.updateProperty(newValue, prop)
     val deser = FajnyModel.propertyCodec.readProperty(prop)
     println(Property.print(prop))

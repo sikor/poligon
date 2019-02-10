@@ -80,6 +80,7 @@ object PropertyCodec {
 
   }
 
+  implicit val dateCodec: SimplePropertyCodec[JDate] = SimplePropertyCodec.materialize[JDate]
   implicit val booleanCodec: SimplePropertyCodec[Boolean] = SimplePropertyCodec.materialize[Boolean]
   implicit val stringCodec: SimplePropertyCodec[String] = SimplePropertyCodec.materialize[String]
   implicit val byteCodec: SimplePropertyCodec[Byte] = SimplePropertyCodec.materialize[Byte]

@@ -1,10 +1,9 @@
 package poligon
 package exampleapp.view
 
-import com.vaadin.ui.themes.ValoTheme
 import poligon.comp.Comp
 import poligon.comp.Comp._
-import poligon.exampleapp.HttpServer.Services
+import poligon.exampleapp.services.Services
 import poligon.exampleapp.view.ObjectPanelModel._
 import poligon.polyproperty.Property.Diff.Val
 import poligon.polyproperty.{PropertyWithParent, Sin}
@@ -34,7 +33,7 @@ object ObjectPanelView {
     factory(createObjectPanelView(new ObjectsPanelContext(services)))
 
   def createObjectPanelView(ctx: ObjectsPanelContext): Comp = layout(
-    label("Objects", ValoTheme.LABEL_H1),
+    label("Objects", "h1"),
     replaceable(ctx.currentTimeOn.obs.map { isOn =>
       if (isOn) {
         dynLabel(ctx.services.currentTimeService.currentTime.map(_.toString).toObs(ctx.services.scheduler))
@@ -58,7 +57,7 @@ object ObjectPanelView {
 
     layout(
       layout(
-        dynLabel(p.map(o => s"Object ${o.name} (status: ${o.lastAction})"), ValoTheme.LABEL_H2),
+        dynLabel(p.map(o => s"Object ${o.name} (status: ${o.lastAction})"), "h2"),
         button(ctx.model.remove.rMap(_ => p.read.name), "remove")
       )(Comp.LayoutSettings(Comp.Horizontal)),
       layout(
@@ -75,7 +74,7 @@ object ObjectPanelView {
 
   def createInstanceTile(ctx: ObjectsPanelContext, p: PropertyWithParent[SomeObject], i: PropertyWithParent[ObjectInstance]): Comp =
     layout(
-      dynLabel(i.map(instance => s"Instance ${instance.id}"), ValoTheme.LABEL_H3),
+      dynLabel(i.map(instance => s"Instance ${instance.id}"), "h3"),
       layout(
         textField("resource name", "", i.getField(_.newResourceName).set.rMap(s => Val(s))),
         textField("resource value", "", i.getField(_.newResourceValue).set.rMap(s => Val(s))),

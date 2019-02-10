@@ -1,6 +1,5 @@
 package poligon.exampleapp.view
 
-import com.typesafe.scalalogging.StrictLogging
 import poligon.comp.Comp
 import Comp._
 import poligon.exampleapp.services.ExecuteTasksService
@@ -26,21 +25,19 @@ object ExecuteTasksButton {
 
   }
 
-  class ExecuteTasksContext(service: ExecuteTasksService)(implicit ec: ExecutionContext) extends StrictLogging {
+  class ExecuteTasksContext(service: ExecuteTasksService)(implicit ec: ExecutionContext) {
     val executeTaskStatus: PropertyWithParent[ExecuteTasksStatus] = PropertyWithParent(NotStarted)
 
     def executeTasks: Sin[Unit] = Sin(implicit po => _ => {
       executeTaskStatus.set(InProgress)
       service.executeTasks().onComplete {
         case Success(b) =>
-          logger.info(s"Tasks executed success: $b")
           if (b) {
             executeTaskStatus.set(ExecuteTasksStatus.Success)
           } else {
             executeTaskStatus.set(ExecuteTasksStatus.Failed)
           }
         case Failure(ex) =>
-          logger.error("et failed", ex)
           executeTaskStatus.set(ExecuteTasksStatus.Failed)
       }
     })

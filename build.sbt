@@ -55,7 +55,21 @@ lazy val `poligon-functional` = project.dependsOn(`poligon-macros` % "compile->c
   .settings(libraryDependencies += "org.scalaj" %% "scalaj-http" % "2.4.1")
   .settings(libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.4.2")
 
-lazy val `poligon-vaadin` = project.dependsOn(`poligon-properties` % "compile->compile;test->test")
+lazy val `poligon-properties` = project.dependsOn(`poligon-macros`)
+  .settings(libraryDependencies += "com.avsystem.commons" %% "commons-core" % commonsVersion)
+  .settings(libraryDependencies += "io.monix" %% "monix" % "2.3.3")
+  .settings(libraryDependencies += "org.scalatest" % "scalatest_2.12" % "3.0.4" % Test)
+  .enablePlugins(ScalaJSPlugin)
+
+lazy val `poligon-exampleapp` = project.dependsOn(`poligon-properties` % "compile->compile;test->test")
+  .enablePlugins(ScalaJSPlugin)
+  .settings(scalaJSUseMainModuleInitializer := true)
+
+lazy val `poligon-scalajs` = project.dependsOn(`poligon-exampleapp` % "compile->compile;test->test")
+  .enablePlugins(ScalaJSPlugin)
+  .settings(scalaJSUseMainModuleInitializer := true)
+
+lazy val `poligon-vaadin` = project.dependsOn(`poligon-exampleapp` % "compile->compile;test->test")
   .settings(libraryDependencies ++= basicDeps.value)
   .settings(libraryDependencies += "com.vaadin" % "vaadin-server" % "7.7.15")
   .settings(libraryDependencies += "com.vaadin" % "vaadin-client-compiled" % "7.7.15")
@@ -64,16 +78,6 @@ lazy val `poligon-vaadin` = project.dependsOn(`poligon-properties` % "compile->c
   .settings(libraryDependencies += "org.eclipse.jetty" % "jetty-server" % "9.4.12.v20180830")
   .settings(libraryDependencies += "org.eclipse.jetty" % "jetty-servlet" % "9.4.12.v20180830")
   .settings(libraryDependencies += "org.eclipse.jetty" % "jetty-continuation" % "9.4.12.v20180830")
-
-lazy val `poligon-scalajs` = project.dependsOn(`poligon-properties` % "compile->compile;test->test")
-  .enablePlugins(ScalaJSPlugin)
-  .settings(scalaJSUseMainModuleInitializer := true)
-
-lazy val `poligon-properties` = project.dependsOn(`poligon-macros`)
-  .settings(libraryDependencies += "com.avsystem.commons" %% "commons-core" % commonsVersion)
-  .settings(libraryDependencies += "io.monix" %% "monix" % "2.3.3")
-  .settings(libraryDependencies += "org.scalatest" % "scalatest_2.12" % "3.0.4" % Test)
-  .enablePlugins(ScalaJSPlugin)
 
 
 lazy val `poligon-workout` = project.dependsOn(`poligon-macros` % "compile->compile;test->test")
