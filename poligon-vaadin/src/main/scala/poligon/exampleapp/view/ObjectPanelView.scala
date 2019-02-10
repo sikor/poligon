@@ -97,7 +97,7 @@ object ObjectPanelView {
             s.getField(_.lastAction).set.rMap(_ => Val(Action(ActionStatus.Draft, "")))))
         }.orElse[Comp] {
           r.getCase[MultiResource].map { m =>
-            createMultiResource(ctx, p.read.name, i.read.id, m)
+            createMultiResource(p.read.name, i.read.id, m)
           }
         }.get
       },
@@ -118,7 +118,7 @@ object ObjectPanelView {
       ), "Save")
     )(Vertical(layoutSettings = LayoutSettings(spacing = true)))
 
-  def createMultiResource(ctx: ObjectsPanelContext, o: String, instance: Int, m: PropertyWithParent[MultiResource]): Comp =
+  def createMultiResource(o: String, instance: Int, m: PropertyWithParent[MultiResource]): Comp =
     Binder.dynLayout(m.getField(_.value).structObs, Form(baseSettings = BaseSettings(m.read.name))) { ri =>
       Binder.textField(ri.read.idx.toString, ri.getField(_.value).read, Sin(
         ri.getField(_.formValue).set.rMap(Val(_)),
