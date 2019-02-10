@@ -145,6 +145,9 @@ object PropertyWithParent {
 
   type Struct[T] = StructuralChangeWithParents[_, T, _]
 
+  object StructuralChangeWithParents {
+  }
+
   def listenStructure[K, V, T](p: PropertyWithParent[T], init: Boolean = false)
                               (listener: StructuralChangeWithParents[K, V, T] => Unit)
                               (implicit
