@@ -97,7 +97,12 @@ object PropertyObserver {
     }
 
     def deregisterSubObservers(key: Any): Unit = {
-      subObservers.remove(key).foreach(_.cancellableResources.foreach(c => c()))
+      subObservers.remove(key).foreach(_.deregisterRecursively())
+    }
+
+    private def deregisterRecursively(): Unit = {
+      cancellableResources.foreach(c => c())
+      subObservers.values.foreach(_.deregisterRecursively())
     }
 
     def observe[T](property: Property[T], propertyObserver: PropertyObserver[T]): Unit = {

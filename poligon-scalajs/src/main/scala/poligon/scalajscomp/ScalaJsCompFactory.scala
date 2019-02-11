@@ -4,7 +4,7 @@ import org.scalajs.dom
 import org.scalajs.dom.Element
 import org.scalajs.dom.raw.Node
 import poligon.comp.Comp.LayoutModification.{Added, Removed}
-import poligon.comp.Comp.{LayoutModification, LayoutSettings}
+import poligon.comp.Comp.{Form, Horizontal, LayoutModification, LayoutSettings, Vertical}
 import poligon.comp.CompFactory
 import poligon.polyproperty.{Obs, Sin}
 
@@ -13,24 +13,78 @@ object ScalaJsCompFactory extends CompFactory {
 
   type ComponentT = Element
 
+  trait LayoutBuilder {
+    def container: Element
+
+    def addElement(index: Int, element: Element): Unit
+
+    def removeElement(index: Int): Node
+  }
+
+  class VerticalLayoutBuilder extends LayoutBuilder {
+    val container: Element = dom.document.createElement("div")
+    container.setAttribute("class", "container")
+
+    def addElement(index: Int, element: Element): Unit = {
+      val row = dom.document.createElement("div")
+      row.setAttribute("class", "row")
+      val col = dom.document.createElement("div")
+      col.setAttribute("class", "col")
+      row.appendChild(col)
+      if (container.childNodes.length == index) {
+        container.appendChild(row)
+      } else {
+        container.insertBefore(row, container.childNodes(index))
+      }
+    }
+
+    def removeElement(index: Int): Node = {
+      container.removeChild(container.childNodes(index))
+    }
+  }
+
+  class HorizontalLayoutBuilder extends LayoutBuilder {
+    val container: Element = dom.document.createElement("div")
+    container.setAttribute("class", "container")
+    private val row = dom.document.createElement("div")
+    row.setAttribute("class", "row")
+
+    def addElement(index: Int, element: Element): Unit = {
+      val col = dom.document.createElement("div")
+      col.setAttribute("class", "col")
+      if (row.childNodes.length == index) {
+        row.appendChild(col)
+      } else {
+        row.insertBefore(col, row.childNodes(index))
+      }
+    }
+
+    def removeElement(index: Int): Node = {
+      row.removeChild(row.childNodes(index))
+    }
+  }
+
   def layout(
               property: Obs[Seq[LayoutModification[BindableComp]]],
               layoutDescription: LayoutSettings): BindableComp =
     dynamic { implicit po =>
-      val container = dom.document.createElement("div")
-      container.setAttribute("class", "container")
+      val builder = layoutDescription.layoutType match {
+        case Horizontal =>
+          new HorizontalLayoutBuilder
+        case Vertical | Form =>
+          new VerticalLayoutBuilder
+      }
       property.listen { modifications =>
         modifications.foreach {
           case Removed(index) =>
-            val removedComponent: Node = container.childNodes(index)
+            val removedComponent: Node = builder.removeElement(index)
             po.deregisterSubObservers(removedComponent)
-            container.removeChild(removedComponent)
           case Added(index, added) =>
-            //            val c = added.looseBind(po)
-            ???
+            val c = added.looseBind(po)
+            builder.addElement(index, c)
         }
       }
-      container
+      builder.container
     }
 
   def label(property: Obs[String], styleName: String): BindableComp = ???
