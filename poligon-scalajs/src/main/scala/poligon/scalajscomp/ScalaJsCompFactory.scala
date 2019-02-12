@@ -7,6 +7,8 @@ import poligon.comp.Comp.LayoutModification.{Added, Removed}
 import poligon.comp.Comp.{Form, Horizontal, LayoutModification, LayoutSettings, Vertical}
 import poligon.comp.CompFactory
 import poligon.polyproperty.{Obs, Sin}
+import scalatags.JsDom.{all => st}
+import scalatags.JsDom.all._
 
 object ScalaJsCompFactory extends CompFactory {
 
@@ -64,6 +66,15 @@ object ScalaJsCompFactory extends CompFactory {
     }
   }
 
+  class MenuBuilder {
+    val menu = st.ul(
+      cls := "dropdown-menu",
+      role := "menu",
+      st.aria.labelledby := "dropdownMenu")(
+
+    )
+  }
+
   def layout(
               property: Obs[Seq[LayoutModification[BindableComp]]],
               layoutDescription: LayoutSettings): BindableComp =
@@ -87,15 +98,48 @@ object ScalaJsCompFactory extends CompFactory {
       builder.container
     }
 
-  def label(property: Obs[String], styleName: String): BindableComp = ???
+  def label(property: Obs[String], styleName: String): BindableComp = dynamic { implicit po =>
+    val l = dom.document.createElement("span")
+    l.setAttribute("class", styleName)
+    property.listen(s => l.innerHTML = s)
+    l
+  }
 
-  def textField(caption: String, initValue: String, onValueSet: Sin[String]): BindableComp = ???
+  def textField(caption: String, initValue: String, onValueSet: Sin[String]): BindableComp =
+    dynamic { implicit po =>
+      val input = st.input(st.`type` := "text", st.cls := "form-control", st.id := caption).render
+      input.onchange = { _ => onValueSet.push(input.value) }
+      st.div(st.cls := "form-group")(
+        st.label(st.`for` := caption)("Name:"),
+        input
+      ).render
+    }
 
-  def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): BindableComp = ???
+  def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): BindableComp =
+    dynamic { implicit po =>
+      val b = st.button(st.cls := "btn").render
+      b.onclick = { _ => onClick.push(()) }
+      caption.listen(v => b.innerHTML = v)
+      enabled.listen(enabled => b.disabled = !enabled)
+      b
+    }
 
-  def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): BindableComp = ???
+  def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): BindableComp =
+    dynamic { implicit po =>
+      val in = st.input(st.`type` := "checkbox", st.value := initValue).render
+      in.onchange = { _ => value.push(in.value.toBoolean) }
+      st.div(cls := "checkbox")(
+        st.label(in, "caption")
+      ).render
+    }
 
-  def menuBar[T](menuItems: Seq[(List[String], T)], itemSelected: Sin[T]): BindableComp = ???
+  def menuBar[T](menuItems: Seq[(List[String], T)], itemSelected: Sin[T]): BindableComp =
+    dynamic { implicit po =>
+      ???
+    }
 
-  def replaceable(property: Obs[BindableComp]): BindableComp = ???
+  def replaceable(property: Obs[BindableComp]): BindableComp =
+    dynamic { implicit po =>
+      ???
+    }
 }

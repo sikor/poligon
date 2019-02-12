@@ -68,6 +68,7 @@ lazy val `poligon-exampleapp` = project.dependsOn(`poligon-properties` % "compil
 lazy val `poligon-scalajs` = project.dependsOn(`poligon-exampleapp` % "compile->compile;test->test")
   .enablePlugins(ScalaJSPlugin)
   .settings(libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "0.9.2")
+  .settings(libraryDependencies += "com.lihaoyi" %%% "scalatags" % "0.6.7")
   .settings(scalaJSUseMainModuleInitializer := true)
 
 lazy val `poligon-vaadin` = project.dependsOn(`poligon-exampleapp` % "compile->compile;test->test")
