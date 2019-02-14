@@ -116,9 +116,10 @@ object ScalaJsCompFactory extends CompFactory {
 
   def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): BindableComp =
     dynamic { implicit po =>
-      val in = st.input(st.`type` := "checkbox", st.value := initValue).render
-      in.onchange = { _ =>
-        value.push(in.value.toBoolean)
+      val in = st.input(st.`type` := "checkbox", st.value := caption).render
+      in.checked = initValue
+      in.onclick = { _ =>
+        value.push(in.checked)
       }
       st.div(cls := "checkbox")(
         st.label(in, caption)
