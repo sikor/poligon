@@ -56,8 +56,8 @@ lazy val `poligon-functional` = project.dependsOn(`poligon-macros` % "compile->c
   .settings(libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.4.2")
 
 lazy val `poligon-properties` = project.dependsOn(`poligon-macros`)
-  .settings(libraryDependencies += "com.avsystem.commons" %% "commons-core" % commonsVersion)
-  .settings(libraryDependencies += "io.monix" %% "monix" % "2.3.3")
+  .settings(libraryDependencies += "com.avsystem.commons" %%% "commons-core" % commonsVersion)
+  .settings(libraryDependencies += "io.monix" %%% "monix" % "2.3.3")
   .settings(libraryDependencies += "org.scalatest" % "scalatest_2.12" % "3.0.4" % Test)
   .enablePlugins(ScalaJSPlugin)
 

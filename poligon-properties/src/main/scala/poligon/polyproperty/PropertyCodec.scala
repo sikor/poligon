@@ -2,6 +2,8 @@ package poligon
 package polyproperty
 
 
+import java.util.Date
+
 import com.avsystem.commons.annotation.positioned
 import com.avsystem.commons.meta._
 import com.avsystem.commons.misc.{ApplierUnapplier, ValueOf}
@@ -80,7 +82,7 @@ object PropertyCodec {
 
   }
 
-  implicit val dateCodec: SimplePropertyCodec[JDate] = SimplePropertyCodec.materialize[JDate]
+  implicit val dateCodec: SimplePropertyCodec[Date] = SimplePropertyCodec.materialize[Date]
   implicit val booleanCodec: SimplePropertyCodec[Boolean] = SimplePropertyCodec.materialize[Boolean]
   implicit val stringCodec: SimplePropertyCodec[String] = SimplePropertyCodec.materialize[String]
   implicit val byteCodec: SimplePropertyCodec[Byte] = SimplePropertyCodec.materialize[Byte]

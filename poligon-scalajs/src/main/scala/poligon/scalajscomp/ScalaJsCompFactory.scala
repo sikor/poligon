@@ -1,7 +1,6 @@
 package poligon.scalajscomp
 
 import com.avsystem.commons.SharedExtensions.MapOps.Entry
-import org.scalajs.dom
 import org.scalajs.dom.Element
 import org.scalajs.dom.raw.Node
 import poligon.comp.Comp.LayoutModification.{Added, Removed}
@@ -9,8 +8,8 @@ import poligon.comp.Comp.MenuTree.{MenuItem, MenuLink, MenuNode, MenuValue}
 import poligon.comp.Comp.{Form, Horizontal, LayoutModification, LayoutSettings, MenuTree, Vertical}
 import poligon.comp.CompFactory
 import poligon.polyproperty.{Obs, Sin}
-import scalatags.JsDom.{all => st}
 import scalatags.JsDom.all._
+import scalatags.JsDom.{all => st}
 
 object ScalaJsCompFactory extends CompFactory {
 
@@ -25,15 +24,14 @@ object ScalaJsCompFactory extends CompFactory {
   }
 
   class VerticalLayoutBuilder extends LayoutBuilder {
-    val container: Element = dom.document.createElement("div")
-    container.setAttribute("class", "container")
+    val container: Element = st.div(st.cls := "container").render
 
     def addElement(index: Int, element: Element): Unit = {
-      val row = dom.document.createElement("div")
-      row.setAttribute("class", "row")
-      val col = dom.document.createElement("div")
-      col.setAttribute("class", "col")
-      row.appendChild(col)
+      val row = st.div(st.cls := "row")(
+        st.div(st.cls := "col")(
+          element
+        )
+      ).render
       if (container.childNodes.length == index) {
         container.appendChild(row)
       } else {
@@ -47,14 +45,15 @@ object ScalaJsCompFactory extends CompFactory {
   }
 
   class HorizontalLayoutBuilder extends LayoutBuilder {
-    val container: Element = dom.document.createElement("div")
-    container.setAttribute("class", "container")
-    private val row = dom.document.createElement("div")
-    row.setAttribute("class", "row")
+    private val row = st.div(st.cls := "row").render
+    val container: Element = st.div(st.cls := "container")(
+      row
+    ).render
 
     def addElement(index: Int, element: Element): Unit = {
-      val col = dom.document.createElement("div")
-      col.setAttribute("class", "col")
+      val col = st.div(st.cls := "col")(
+        element
+      ).render
       if (row.childNodes.length == index) {
         row.appendChild(col)
       } else {
@@ -91,8 +90,7 @@ object ScalaJsCompFactory extends CompFactory {
     }
 
   def label(property: Obs[String], styleName: String): BindableComp = dynamic { implicit po =>
-    val l = dom.document.createElement("span")
-    l.setAttribute("class", styleName)
+    val l = st.span(st.cls := styleName).render
     property.listen(s => l.innerHTML = s)
     l
   }
@@ -102,7 +100,7 @@ object ScalaJsCompFactory extends CompFactory {
       val input = st.input(st.`type` := "text", st.cls := "form-control", st.id := caption).render
       input.onchange = { _ => onValueSet.push(input.value) }
       st.div(st.cls := "form-group")(
-        st.label(st.`for` := caption)("Name:"),
+        st.label(st.`for` := caption)(caption),
         input
       ).render
     }
@@ -119,9 +117,11 @@ object ScalaJsCompFactory extends CompFactory {
   def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): BindableComp =
     dynamic { implicit po =>
       val in = st.input(st.`type` := "checkbox", st.value := initValue).render
-      in.onchange = { _ => value.push(in.value.toBoolean) }
+      in.onchange = { _ =>
+        value.push(in.value.toBoolean)
+      }
       st.div(cls := "checkbox")(
-        st.label(in, "caption")
+        st.label(in, caption)
       ).render
     }
 
@@ -159,7 +159,11 @@ object ScalaJsCompFactory extends CompFactory {
         val currentContent = wrapper.firstChild
         val newContent = c.looseBind(po)
         po.deregisterSubObservers(currentContent)
-        wrapper.replaceChild(newContent, currentContent)
+        if (currentContent != null) {
+          wrapper.replaceChild(newContent, currentContent)
+        } else {
+          wrapper.appendChild(newContent)
+        }
       }
       wrapper
     }

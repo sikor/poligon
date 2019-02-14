@@ -1,14 +1,23 @@
 package poligon
 
+import monix.execution.Scheduler
 import org.scalajs.dom
-import org.scalajs.dom.raw.{Element, HTMLElement}
+import poligon.exampleapp.services.{CurrentTimeService, DmService, ExecuteTasksService, Services}
+import poligon.exampleapp.view.MainView
+import poligon.polyproperty.PropertyObserver
+import poligon.scalajscomp.ScalaJsCompFactory
 
 object Main {
+
   def main(args: Array[String]): Unit = {
-    val element: Element = dom.document.createElement("div")
-    element.textContent = "Hello world"
-    val parent: HTMLElement = dom.document.body
-    parent.appendChild(element)
-    println("Hello world!")
+    val executeTasksService = new ExecuteTasksService
+    val currentTimeService = new CurrentTimeService
+    val dmService = new DmService
+    val services = new Services(executeTasksService, dmService, currentTimeService, Scheduler.Implicits.global)
+    val propertyObservers = PropertyObserver.createRoot
+    val view = MainView.create(services)
+      .createComponent(ScalaJsCompFactory)
+      .bind(propertyObservers)
+    dom.document.body.appendChild(view)
   }
 }
