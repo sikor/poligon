@@ -2,6 +2,7 @@ package poligon.comp
 
 import com.avsystem.commons.misc.OptArg
 import poligon.comp.Comp.LayoutModification.{Added, Removed}
+import poligon.comp.Comp.MenuTree.MenuItem
 import poligon.polyproperty.{HasSimplePropertyCodec, Obs, PropertyWithParent, Sin}
 
 trait Comp {
@@ -45,8 +46,10 @@ object Comp extends HasSimplePropertyCodec[Comp] {
       }
     }
 
-    def toTree[T](list: Seq[(List[String], MenuItem[T])]): Vector[MenuTree[T]] = {
-        ???
+    def toTree[T](list: Seq[(List[String], MenuItem[T])]): MenuNode[T] = {
+      list.foldLeft(MenuNode[T](Map.empty)) { (node, item) =>
+        addToTree(node, item._1, item._2)
+      }
     }
 
   }
@@ -112,7 +115,7 @@ object Comp extends HasSimplePropertyCodec[Comp] {
       def createComponent(factory: CompFactory): factory.BindableComp = factory.checkBox(caption, initValue, value)
     }
 
-  def menuBar[T](menuItems: Seq[(List[String], T)], itemSelected: Sin[T]): Comp =
+  def menuBar[T](menuItems: Seq[(List[String], MenuItem[T])], itemSelected: Sin[T]): Comp =
     new Comp {
       def createComponent(factory: CompFactory): factory.BindableComp = factory.menuBar(menuItems, itemSelected)
     }

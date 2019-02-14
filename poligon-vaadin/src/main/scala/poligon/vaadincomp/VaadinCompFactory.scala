@@ -3,6 +3,7 @@ package poligon.vaadincomp
 import com.vaadin.data.Property
 import com.vaadin.ui.{Form => _, _}
 import poligon.comp.Comp.LayoutModification.{Added, Removed}
+import poligon.comp.Comp.MenuTree.{MenuItem, MenuValue}
 import poligon.comp.Comp._
 import poligon.comp.CompFactory
 import poligon.polyproperty.PropertyObserver.RootPropertyObservers
@@ -70,13 +71,13 @@ object VaadinCompFactory extends CompFactory {
     cb
   }
 
-  private case class MenuCommand[T](value: T, sin: Sin[T])(implicit po: RootPropertyObservers) extends MenuBar.Command {
+  private case class MenuCommand[T](value: MenuItem[T], sin: Sin[T])(implicit po: RootPropertyObservers) extends MenuBar.Command {
     def menuSelected(selectedItem: MenuBar#MenuItem): Unit = {
-      sin.push(value)(po)
+      sin.push(value.asInstanceOf[MenuValue[T]].value)(po)
     }
   }
 
-  def menuBar[T](menuItems: Seq[(List[String], T)], itemSelected: Sin[T]): BindableComp = dynamic { implicit po =>
+  def menuBar[T](menuItems: Seq[(List[String], MenuItem[T])], itemSelected: Sin[T]): BindableComp = dynamic { implicit po =>
     val menuBar = new MenuBar()
     val menuItemsCache = new mutable.HashMap[Vector[String], MenuBar#MenuItem]()
     menuItems.foreach { case (key, value) =>

@@ -1,5 +1,6 @@
 package poligon.comp
 
+import poligon.comp.Comp.MenuTree.MenuItem
 import poligon.comp.Comp.{LayoutModification, LayoutSettings}
 import poligon.polyproperty._
 
@@ -16,7 +17,7 @@ trait CompFactory extends HasBindableComp {
 
   def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): BindableComp
 
-  def menuBar[T](menuItems: Seq[(List[String], T)], itemSelected: Sin[T]): BindableComp
+  def menuBar[T](menuItems: Seq[(List[String], MenuItem[T])], itemSelected: Sin[T]): BindableComp
 
   def replaceable(property: Obs[BindableComp]): BindableComp
 }

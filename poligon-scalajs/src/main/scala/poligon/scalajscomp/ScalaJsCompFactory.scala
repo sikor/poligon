@@ -1,10 +1,12 @@
 package poligon.scalajscomp
 
+import com.avsystem.commons.SharedExtensions.MapOps.Entry
 import org.scalajs.dom
 import org.scalajs.dom.Element
 import org.scalajs.dom.raw.Node
 import poligon.comp.Comp.LayoutModification.{Added, Removed}
-import poligon.comp.Comp.{Form, Horizontal, LayoutModification, LayoutSettings, Vertical}
+import poligon.comp.Comp.MenuTree.{MenuItem, MenuLink, MenuNode, MenuValue}
+import poligon.comp.Comp.{Form, Horizontal, LayoutModification, LayoutSettings, MenuTree, Vertical}
 import poligon.comp.CompFactory
 import poligon.polyproperty.{Obs, Sin}
 import scalatags.JsDom.{all => st}
@@ -66,15 +68,6 @@ object ScalaJsCompFactory extends CompFactory {
     }
   }
 
-  class MenuBuilder {
-    val menu = st.ul(
-      cls := "dropdown-menu",
-      role := "menu",
-      st.aria.labelledby := "dropdownMenu")(
-
-    )
-  }
-
   def layout(
               property: Obs[Seq[LayoutModification[BindableComp]]],
               layoutDescription: LayoutSettings): BindableComp =
@@ -133,9 +126,31 @@ object ScalaJsCompFactory extends CompFactory {
       ).render
     }
 
-  def menuBar[T](menuItems: Seq[(List[String], T)], itemSelected: Sin[T]): BindableComp =
+  private def dropDownMenu[T](menuNode: MenuNode[T], onSelect: T => Unit): Element = {
+    val menu = st.ul(cls := "dropdown-menu")(
+      menuNode.children.entries.map[Modifier] { case Entry(menuName, m) =>
+        m match {
+          case MenuValue(v) =>
+            val li = st.li(st.a(st.href := "#", st.tabindex := -1)(menuName)).render
+            li.onclick = { _ => onSelect(v) }
+            li
+          case MenuLink(str) =>
+            st.li(st.a(st.href := str, st.tabindex := -1)(menuName))
+          case n: MenuNode[T] =>
+            st.li(st.cls := "dropdown-submenu")(
+              st.a(st.href := "#", st.tabindex := -1)(menuName),
+              dropDownMenu(n, onSelect)
+            )
+        }
+      }.toSeq: _*
+    )
+    menu.render
+  }
+
+  def menuBar[T](menuItems: Seq[(List[String], MenuItem[T])], itemSelected: Sin[T]): BindableComp =
     dynamic { implicit po =>
-      ???
+      val menuTree = MenuTree.toTree(menuItems)
+      dropDownMenu[T](menuTree, item => itemSelected.push(item))
     }
 
   def replaceable(property: Obs[BindableComp]): BindableComp =
