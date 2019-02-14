@@ -14,7 +14,6 @@ import scalatags.JsDom.all._
 
 object ScalaJsCompFactory extends CompFactory {
 
-
   type ComponentT = Element
 
   trait LayoutBuilder {
@@ -155,6 +154,13 @@ object ScalaJsCompFactory extends CompFactory {
 
   def replaceable(property: Obs[BindableComp]): BindableComp =
     dynamic { implicit po =>
-      ???
+      val wrapper = st.div().render
+      property.listen { c =>
+        val currentContent = wrapper.firstChild
+        val newContent = c.looseBind(po)
+        po.deregisterSubObservers(currentContent)
+        wrapper.replaceChild(newContent, currentContent)
+      }
+      wrapper
     }
 }
