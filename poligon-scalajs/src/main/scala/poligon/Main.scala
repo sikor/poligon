@@ -10,7 +10,7 @@ import poligon.scalajscomp.ScalaJsCompFactory
 object Main {
 
   def main(args: Array[String]): Unit = {
-    val executeTasksService = new ExecuteTasksService
+    val executeTasksService = new ExecuteTasksService(Scheduler.Implicits.global)
     val currentTimeService = new CurrentTimeService
     val dmService = new DmService
     val services = new Services(executeTasksService, dmService, currentTimeService, Scheduler.Implicits.global)

@@ -35,8 +35,7 @@ object HttpServer {
 
   @Theme("valo")
   @Push
-  class PoligonUI(executeTasksService: ExecuteTasksService,
-                  dmService: DmService,
+  class PoligonUI(dmService: DmService,
                   currentTimeService: CurrentTimeService) extends UI with StrictLogging {
 
     private object UIExecutor extends AbstractExecutorService with ExecutionContextExecutorService {
@@ -62,6 +61,7 @@ object HttpServer {
       ExecutorScheduler(UIExecutor, (ex: Throwable) => UIExecutor.reportFailure(ex), ExecutionModel.Default)
 
     override def init(request: VaadinRequest): Unit = {
+      val executeTasksService = new ExecuteTasksService(monixScheduler)
       val services = new Services(executeTasksService, dmService, currentTimeService, monixScheduler)
       val propertyObservers = PropertyObserver.createRoot
       val view = MainView.create(services)
@@ -72,14 +72,13 @@ object HttpServer {
   }
 
   def main(args: Array[String]): Unit = {
-    val executeTasksService = new ExecuteTasksService
     val currentTimeService = new CurrentTimeService
     val dmService = new DmService
     val server = new Server(8080)
     val servletContextHandler = new ServletContextHandler()
     servletContextHandler.setContextPath("/*")
     servletContextHandler.addServlet(new ServletHolder(new PoligonServlet(() =>
-      new PoligonUI(executeTasksService, dmService, currentTimeService), classOf[PoligonUI])), "/*")
+      new PoligonUI(dmService, currentTimeService), classOf[PoligonUI])), "/*")
     val idManager = new DefaultSessionIdManager(server)
     server.setSessionIdManager(idManager)
     val sessionHandler = new SessionHandler

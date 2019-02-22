@@ -7,13 +7,13 @@ import monix.execution.Scheduler
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise}
 
-class ExecuteTasksService {
+class ExecuteTasksService(scheduler: Scheduler) {
 
   def executeTasks(): Future[Boolean] = {
     val p = Promise[Boolean]
-    Scheduler.Implicits.global.scheduleOnce(5.seconds)(() =>
+    scheduler.scheduleOnce(5.seconds) {
       p.success(ThreadLocalRandom.current().nextBoolean())
-    )
+    }
     p.future
   }
 

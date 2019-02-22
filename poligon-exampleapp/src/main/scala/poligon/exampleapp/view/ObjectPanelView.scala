@@ -11,16 +11,6 @@ import poligon.polyproperty.{PropertyWithParent, Sin}
 import scala.collection.SortedMap
 
 //TODO: styling: https://github.com/vaadin/framework/tree/master/uitest/src/main/java/com/vaadin/tests/themes/valo
-/*
-Plan:
-1. Handle recursive listeners calls
-2. Update action statuses after callback from backend (show memory leaks handling)
-3. Move propertyobservers to presenters constructors
-4. rename propertywithparent.
-6. Nice styling of demo
-7. implicit propertyobservers or some more high level way to compose components
-8. Class for handling form data with validation
- */
 object ObjectPanelView {
 
   private class ObjectsPanelContext(val services: Services) {
