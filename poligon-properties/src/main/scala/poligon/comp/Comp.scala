@@ -5,6 +5,18 @@ import poligon.comp.Comp.LayoutModification.{Added, Removed}
 import poligon.comp.Comp.MenuTree.MenuItem
 import poligon.polyproperty.{HasSimplePropertyCodec, Obs, PropertyWithParent, Sin}
 
+/**
+  * TODO:
+  * 1. i18n - Options:
+  * 1.1 components takes translation keys
+  * 1.2 components takes translated strings
+  * Currently components must display its values immediately, so they must handle progress spinners themselves.
+  * We should allow components to wait for some async resource and use global spinner for that - blocking UI.
+  * 2. dependency injection
+  * 3. routing
+  * 4. Obs flatMap?
+  * 5. Try Get rid of replaceable - should be needed only in app root
+  */
 trait Comp {
   def createComponent(factory: CompFactory): factory.BindableComp
 }

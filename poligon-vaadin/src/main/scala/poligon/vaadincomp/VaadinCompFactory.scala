@@ -122,9 +122,9 @@ object VaadinCompFactory extends CompFactory {
   }
 
   private def bindSimple[T, P <: com.vaadin.data.Property[T] with Component]
-  (property: Obs[T], label: => P): BindableComp = dynamic { o =>
+  (property: Obs[T], label: => P): BindableComp = dynamic { implicit o =>
     val l = label
-    property.listen(v => l.setValue(v))(o)
+    property.listen(v => l.setValue(v))
     l
   }
 }

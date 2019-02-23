@@ -18,6 +18,7 @@ object MainView {
   def create(services: Services): Comp = Comp.factory(create(new MainViewContext(services)))
 
   private def create(ctx: MainViewContext): Comp = layout(
+    label("Hello!"),
     menuBar(ctx.menuItems, ctx.currentPage.setEnforcingListeners),
     ExecuteTasksButton.create(ctx.executeTasksContext),
     replaceable(ctx.currentPage.obs)

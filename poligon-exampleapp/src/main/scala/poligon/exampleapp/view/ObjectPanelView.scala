@@ -10,7 +10,6 @@ import poligon.polyproperty.{PropertyWithParent, Sin}
 
 import scala.collection.SortedMap
 
-//TODO: styling: https://github.com/vaadin/framework/tree/master/uitest/src/main/java/com/vaadin/tests/themes/valo
 object ObjectPanelView {
 
   private class ObjectsPanelContext(val services: Services) {
