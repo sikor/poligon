@@ -17,9 +17,9 @@ object Sin {
     def push(v: T)(implicit po: RootPropertyObservers): Unit = sub.foreach(_.push(v))
   }
 
-  def mul[T](sub: Sin[T]*): Sin[T] = apply(sub: _*)
+  def combine[T](sub: Sin[T]*): Sin[T] = apply(sub: _*)
 
-  def static[T](f: T => Unit): Sin[T] = new FunSin[T](_ => v => f(v))
+  def eval[T](f: T => Unit): Sin[T] = new FunSin[T](_ => v => f(v))
 
   class FunSin[T](f: RootPropertyObservers => T => Unit) extends Sin[T] {
     def push(v: T)(implicit po: RootPropertyObservers): Unit = f(po)(v)

@@ -70,7 +70,7 @@ object Comp extends HasSimplePropertyCodec[Comp] {
 
   def layout(comps: Comp*)(settings: LayoutSettings = LayoutSettings()): Comp =
     dynLayout(
-      Obs.constant(comps.iterator.zipWithIndex.map { case (desc, index) => Added(index, desc) }.toSeq),
+      Obs.constant(comps.iterator.zipWithIndex.map { case (comp, index) => Added(index, comp) }.toSeq),
       settings)
 
   def label(value: String, styleName: String = ""): Comp =

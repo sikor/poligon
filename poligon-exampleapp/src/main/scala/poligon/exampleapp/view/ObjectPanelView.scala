@@ -53,7 +53,7 @@ object ObjectPanelView {
       layout(
         textField("instance number", "", p.getField(_.newInstanceNumber).set
           .rMap(s => Val(s.toInt))),
-        button(Sin.mul(
+        button(Sin.combine(
           p.getField(_.instances).put.rMap(_ => (newInstanceNum, ObjectInstance(newInstanceNum, SortedMap.empty))),
           p.getField(_.lastAction).set.rMap(_ => Val(Action(ActionStatus.Success, s"instance added: $newInstanceNum")))
         ), "add instance")
@@ -85,8 +85,8 @@ object ObjectPanelView {
           }
         }.get
       }, LayoutSettings(Form)),
-      button(Sin.mul(
-        Sin.static { _ =>
+      button(Sin.combine(
+        Sin.eval { _ =>
           val resourcesSnap = i.getField(_.resources).read
           resourcesSnap.values.flatMap {
             case s: SingleResource =>
