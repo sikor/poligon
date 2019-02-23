@@ -13,7 +13,7 @@ import monix.execution.schedulers.ExecutorScheduler
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.session.{DefaultSessionIdManager, SessionHandler}
 import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
-import poligon.exampleapp.services.{CurrentTimeService, DmService, ExecuteTasksService, Services}
+import poligon.exampleapp.services._
 import poligon.exampleapp.view.MainView
 import poligon.polyproperty.PropertyObserver
 import poligon.vaadincomp.VaadinCompFactory
@@ -62,7 +62,7 @@ object HttpServer {
 
     override def init(request: VaadinRequest): Unit = {
       val executeTasksService = new ExecuteTasksService(monixScheduler)
-      val services = new Services(executeTasksService, dmService, currentTimeService, monixScheduler)
+      val services = new Services(new FutureTranslator, executeTasksService, dmService, currentTimeService, monixScheduler)
       val propertyObservers = PropertyObserver.createRoot
       val view = MainView.create(services)
         .createComponent(VaadinCompFactory)
