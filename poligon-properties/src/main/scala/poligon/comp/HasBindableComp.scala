@@ -7,40 +7,16 @@ trait HasBindableComp {
 
   type ComponentT
 
-  sealed trait BindableComp {
-
-    def looseBind(parentPo: PropertyObservers): ComponentT = {
-      this match {
-        case s: StaticComp => s.staticBind
-        case d: DynamicComp =>
-          val po = parentPo.createSubObservers()
-          val c = d.bindDynamic(po)
-          parentPo.registerSubObservers(c, po)
-          c
-      }
-    }
-
+  class BindableComp(private val create: PropertyObservers => ComponentT) {
     def bind(parentPo: PropertyObservers): ComponentT = {
-      this match {
-        case s: StaticComp => s.staticBind
-        case d: DynamicComp => d.bindDynamic(parentPo)
-      }
+      val po = parentPo.createSubObservers()
+      val c = create(po)
+      parentPo.registerSubObservers(c, po)
+      c
     }
   }
 
+  def dynamic(factory: PropertyObservers => ComponentT): BindableComp =
+    new BindableComp((po: PropertyObservers) => factory(po))
 
-  class StaticComp(factory: => ComponentT) extends BindableComp {
-    def staticBind: ComponentT = factory
-  }
-
-  trait DynamicComp extends BindableComp {
-    def bindDynamic(po: PropertyObservers): ComponentT
-  }
-
-
-  def dynamic(factory: PropertyObservers => ComponentT): DynamicComp = (po: PropertyObservers) => factory(po)
-
-  def static(factory: => ComponentT): StaticComp = new StaticComp(factory)
-
-  def factory(factory: => BindableComp): BindableComp = dynamic(po => factory.bind(po))
 }

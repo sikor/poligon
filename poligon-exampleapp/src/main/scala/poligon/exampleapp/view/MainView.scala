@@ -5,7 +5,8 @@ import poligon.comp.Comp
 import poligon.exampleapp.view.ExecuteTasksButton.ExecuteTasksContext
 import poligon.polyproperty.PropertyWithParent
 import Comp._
-import poligon.comp.Comp.MenuTree.MenuValue
+import poligon.comp.CompFamily.{LayoutSettings, Vertical}
+import poligon.comp.CompFamily.MenuTree.MenuValue
 import poligon.exampleapp.services.Services
 
 object MainView {

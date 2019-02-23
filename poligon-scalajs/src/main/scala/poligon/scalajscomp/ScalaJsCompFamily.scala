@@ -3,15 +3,15 @@ package poligon.scalajscomp
 import com.avsystem.commons.SharedExtensions.MapOps.Entry
 import org.scalajs.dom.Element
 import org.scalajs.dom.raw.Node
-import poligon.comp.Comp.LayoutModification.{Added, Removed}
-import poligon.comp.Comp.MenuTree.{MenuItem, MenuLink, MenuNode, MenuValue}
-import poligon.comp.Comp.{Form, Horizontal, LayoutModification, LayoutSettings, MenuTree, Vertical}
-import poligon.comp.CompFactory
+import poligon.comp.CompFamily
+import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
+import poligon.comp.CompFamily.MenuTree.{MenuItem, MenuLink, MenuNode, MenuValue}
+import poligon.comp.CompFamily._
 import poligon.polyproperty.{Obs, Sin}
 import scalatags.JsDom.all._
 import scalatags.JsDom.{all => st}
 
-object ScalaJsCompFactory extends CompFactory {
+object ScalaJsCompFamily extends CompFamily {
 
   type ComponentT = Element
 
@@ -82,7 +82,7 @@ object ScalaJsCompFactory extends CompFactory {
             val removedComponent: Node = builder.removeElement(index)
             po.deregisterSubObservers(removedComponent)
           case Added(index, added) =>
-            val c = added.looseBind(po)
+            val c = added.bind(po)
             builder.addElement(index, c)
         }
       }
@@ -158,7 +158,7 @@ object ScalaJsCompFactory extends CompFactory {
       val wrapper = st.div().render
       property.listen { c =>
         val currentContent = wrapper.firstChild
-        val newContent = c.looseBind(po)
+        val newContent = c.bind(po)
         po.deregisterSubObservers(currentContent)
         if (currentContent != null) {
           wrapper.replaceChild(newContent, currentContent)

@@ -2,17 +2,17 @@ package poligon.vaadincomp
 
 import com.vaadin.data.Property
 import com.vaadin.ui.{Form => _, _}
-import poligon.comp.Comp.LayoutModification.{Added, Removed}
-import poligon.comp.Comp.MenuTree.{MenuItem, MenuValue}
-import poligon.comp.Comp._
-import poligon.comp.CompFactory
+import poligon.comp.CompFamily
+import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
+import poligon.comp.CompFamily.MenuTree.{MenuItem, MenuValue}
+import poligon.comp.CompFamily._
 import poligon.polyproperty.PropertyObserver.RootPropertyObservers
 import poligon.polyproperty.{Obs, Sin}
 
 import scala.collection.mutable
 
 
-object VaadinCompFactory extends CompFactory {
+object VaadinCompFamily extends CompFamily {
   type ComponentT = Component
 
   def layout(property: Obs[Seq[LayoutModification[BindableComp]]],
@@ -31,7 +31,7 @@ object VaadinCompFactory extends CompFactory {
           po.deregisterSubObservers(removedComponent)
           layout.removeComponent(removedComponent)
         case Added(index, added) =>
-          val c = added.looseBind(po)
+          val c = added.bind(po)
           layout.addComponent(c, index)
       }
     }
@@ -114,7 +114,7 @@ object VaadinCompFactory extends CompFactory {
   def replaceable(property: Obs[BindableComp]): BindableComp = dynamic { implicit po =>
     val wrapper = new SimpleCustomComponent()
     property.listen { comp =>
-      val component = comp.looseBind(po)
+      val component = comp.bind(po)
       po.deregisterSubObservers(wrapper.getContent)
       wrapper.setContent(component)
     }

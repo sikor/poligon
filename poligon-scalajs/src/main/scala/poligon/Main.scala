@@ -5,7 +5,7 @@ import org.scalajs.dom
 import poligon.exampleapp.services._
 import poligon.exampleapp.view.MainView
 import poligon.polyproperty.PropertyObserver
-import poligon.scalajscomp.ScalaJsCompFactory
+import poligon.scalajscomp.ScalaJsCompFamily
 
 object Main {
 
@@ -16,7 +16,7 @@ object Main {
     val services = new Services(new FutureTranslator, executeTasksService, dmService, currentTimeService, Scheduler.Implicits.global)
     val propertyObservers = PropertyObserver.createRoot
     val view = MainView.create(services)
-      .createComponent(ScalaJsCompFactory)
+      .createComponent(ScalaJsCompFamily)
       .bind(propertyObservers)
     dom.document.body.appendChild(view)
   }

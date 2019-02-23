@@ -4,7 +4,7 @@ import monix.execution.Scheduler
 import monix.reactive.Observable
 import poligon.Extensions.{FutureExtensions, ObservableExtensions, StructObsExtensions, TraversableOnceExtensions}
 import poligon.comp.Comp
-import poligon.comp.Comp.LayoutModification
+import poligon.comp.CompFamily.LayoutModification
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Removed}
 import poligon.polyproperty.{Obs, PropertyWithParent}
 import poligon.polyproperty.PropertyObserver.PropertyObservers

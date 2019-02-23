@@ -3,6 +3,7 @@ package exampleapp.view
 
 import poligon.comp.Comp
 import poligon.comp.Comp._
+import poligon.comp.CompFamily.{Form, Horizontal, LayoutSettings}
 import poligon.exampleapp.services.Services
 import poligon.exampleapp.view.ObjectPanelModel._
 import poligon.polyproperty.Property.Diff.Val
@@ -37,7 +38,7 @@ object ObjectPanelView {
         val objectName = ctx.newObjectName.read
         (objectName, SomeObject(objectName, SortedMap.empty))
       }), "add object")
-    )(Comp.LayoutSettings(Comp.Horizontal)),
+    )(LayoutSettings(Horizontal)),
     dynLayout(ctx.model.structObs.toLayoutMod(createObjectTile(ctx, _)))
   )()
 
@@ -48,7 +49,7 @@ object ObjectPanelView {
       layout(
         dynLabel(p.map(o => s"Object ${o.name} (status: ${o.lastAction})"), "h2"),
         button(ctx.model.remove.rMap(_ => p.read.name), "remove")
-      )(Comp.LayoutSettings(Comp.Horizontal)),
+      )(LayoutSettings(Horizontal)),
       layout(
         textField("instance number", "", p.getField(_.newInstanceNumber).set
           .rMap(s => Val(s.toInt))),
@@ -56,7 +57,7 @@ object ObjectPanelView {
           p.getField(_.instances).put.rMap(_ => (newInstanceNum, ObjectInstance(newInstanceNum, SortedMap.empty))),
           p.getField(_.lastAction).set.rMap(_ => Val(Action(ActionStatus.Success, s"instance added: $newInstanceNum")))
         ), "add instance")
-      )(Comp.LayoutSettings(Comp.Horizontal)),
+      )(LayoutSettings(Horizontal)),
       dynLayout(p.getField(_.instances).structObs.toLayoutMod(createInstanceTile(ctx, p, _)))
     )()
   }
@@ -72,7 +73,7 @@ object ObjectPanelView {
           val newResourceValue = i.getField(_.newResourceValue).read.toOpt.get
           newResourceName -> SingleResource(newResourceName, newResourceValue)
         }, "add resource")
-      )(Comp.LayoutSettings(Comp.Horizontal)),
+      )(LayoutSettings(Horizontal)),
       dynLayout(i.getField(_.resources).structObs.toLayoutMod { r =>
         r.getCase[SingleResource].map { s =>
           textField(s.read.name, s.getField(_.value).read, Sin(
@@ -83,7 +84,7 @@ object ObjectPanelView {
             createMultiResource(p.read.name, i.read.id, m)
           }
         }.get
-      }, Comp.LayoutSettings(Comp.Form)),
+      }, LayoutSettings(Form)),
       button(Sin.mul(
         Sin.static { _ =>
           val resourcesSnap = i.getField(_.resources).read
@@ -106,5 +107,5 @@ object ObjectPanelView {
       textField(ri.read.idx.toString, ri.getField(_.value).read, Sin(
         ri.getField(_.formValue).set.rMap(Val(_)),
         ri.getField(_.lastAction).set.rMap(_ => Val(Action(ActionStatus.Draft, ""))))
-      )), Comp.LayoutSettings(Comp.Form, caption = m.read.name))
+      )), LayoutSettings(Form, caption = m.read.name))
 }
