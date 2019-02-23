@@ -7,7 +7,7 @@ trait HasBindableComp {
 
   type ComponentT
 
-  class BindableComp(private val create: PropertyObservers => ComponentT) {
+  class BindableComp(val create: PropertyObservers => ComponentT) {
     def bind(parentPo: PropertyObservers): ComponentT = {
       val po = parentPo.createSubObservers()
       val c = create(po)

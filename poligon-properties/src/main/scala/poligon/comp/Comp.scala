@@ -1,5 +1,6 @@
 package poligon.comp
 
+import monix.eval.Task
 import poligon.comp.CompFamily.LayoutModification.Added
 import poligon.comp.CompFamily.MenuTree.MenuItem
 import poligon.comp.CompFamily.{LayoutModification, LayoutSettings}
@@ -67,6 +68,16 @@ object Comp extends HasSimplePropertyCodec[Comp] {
       def createComponent(family: CompFamily): family.BindableComp =
         family.replaceable(property.map(c => c.createComponent(family)))
     }
+
+  def asyncComp(compTask: Task[Comp]): Comp = new Comp {
+    def createComponent(family: CompFamily): family.BindableComp = {
+      val prop = PropertyWithParent(label("loading ..."))
+      family.dynamic { implicit po =>
+        compTask.foreachL(comp => prop.set(comp))
+        replaceable(prop.obs).createComponent(family).create(po)
+      }
+    }
+  }
 
   def layout(comps: Comp*)(settings: LayoutSettings = LayoutSettings()): Comp =
     dynLayout(
