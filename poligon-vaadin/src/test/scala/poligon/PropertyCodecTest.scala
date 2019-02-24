@@ -1,5 +1,6 @@
 package poligon
 
+import monix.eval.Task
 import org.scalatest.FunSuite
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Modification, Removed}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
@@ -107,7 +108,7 @@ class PropertyCodecTest extends FunSuite {
   }
 
   test("sorted map update") {
-    implicit val po: PropertyObservers = PropertyObserver.createRoot
+    implicit val po: PropertyObservers = PropertyObserver.createRoot(t => t.runAsync(monix.execution.Scheduler.Implicits.global))
     val p = PropertyWithParent[SortedMap[String, String]](TreeMap("a" -> "a", "b" -> "b", "c" -> "c", "d" -> "d", "y" -> "y"))
     PropertyWithParent.listenStructure[String, String, SortedMap[String, String]](p) { ch =>
       assert(ch.modifications.size == 5)
@@ -116,6 +117,7 @@ class PropertyCodecTest extends FunSuite {
       assertModification(ch.modifications(2), isAdded = false, 4, "c")
       assertModification(ch.modifications(3), isAdded = true, 5, "x")
       assertModification(ch.modifications(4), isAdded = false, 6, "y")
+      Task.unit
     }
     val newValue = TreeMap("0" -> "0", "a" -> "a", "aa" -> "aa", "b" -> "b", "d" -> "d", "x" -> "x")
     p.set(newValue)
@@ -134,11 +136,12 @@ class PropertyCodecTest extends FunSuite {
   }
 
   private def sortedMapInsert(key: String, expIndex: Int): Unit = {
-    implicit val po: PropertyObservers = PropertyObserver.createRoot
+    implicit val po: PropertyObservers = PropertyObserver.createRoot(t => t.runAsync(monix.execution.Scheduler.Implicits.global))
     val p = PropertyWithParent[SortedMap[String, String]](TreeMap("a" -> "a", "b" -> "b"))
     PropertyWithParent.listenStructure[String, String, SortedMap[String, String]](p) { ch =>
       assert(ch.modifications.size == 1)
       assertModification(ch.modifications.head, isAdded = true, expIndex, key)
+      Task.unit
     }
     p.put(key, key)
     assert(p.read == TreeMap("a" -> "a", "b" -> "b") + (key -> key))

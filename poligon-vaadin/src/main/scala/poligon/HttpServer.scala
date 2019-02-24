@@ -63,7 +63,7 @@ object HttpServer {
     override def init(request: VaadinRequest): Unit = {
       val executeTasksService = new ExecuteTasksService(monixScheduler)
       val services = new Services(new FutureTranslator, executeTasksService, dmService, currentTimeService, monixScheduler)
-      val propertyObservers = PropertyObserver.createRoot
+      val propertyObservers = PropertyObserver.createRoot(t => t.runAsync(monixScheduler))
       MainView.create(services)
         .createComponent(VaadinCompFamily)
         .foreach { c =>

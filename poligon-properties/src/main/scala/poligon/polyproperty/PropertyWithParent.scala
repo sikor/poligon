@@ -1,6 +1,7 @@
 package poligon
 package polyproperty
 
+import monix.eval.Task
 import poligon.polyproperty.Property.SortedMapProperty
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, EntryPatch}
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec
@@ -41,15 +42,19 @@ object PropertyWithParent {
       }
     })
 
-    def listen(listener: T => Unit, init: Boolean = false)(implicit o: PropertyObservers): Unit = {
+    def listen(listener: T => Task[Unit], init: Boolean = false)(implicit o: PropertyObservers): Unit = {
       o.observe(p.property, new PropertyObserver[T] {
-        override def propertyChanged(property: Property[T]): Unit = {
+        override def propertyChanged(property: Property[T]): Task[Unit] = {
           listener(read)
         }
 
-        override def propertyRemoved(property: Property[T]): Unit = {}
+        override def propertyRemoved(property: Property[T]): Task[Unit] = {
+          Task.unit
+        }
 
-        override def structureChange(patch: StructuralChange[_, _, T]): Unit = {}
+        override def structureChange(patch: StructuralChange[_, _, T]): Task[Unit] = {
+          Task.unit
+        }
       })
       if (init) {
         listener(read)
@@ -146,16 +151,20 @@ object PropertyWithParent {
   type Struct[T] = StructuralChangeWithParents[_, T, _]
 
   def listenStructure[K, V, T](p: PropertyWithParent[T], init: Boolean = false)
-                              (listener: StructuralChangeWithParents[K, V, T] => Unit)
+                              (listener: StructuralChangeWithParents[K, V, T] => Task[Unit])
                               (implicit
                                o: PropertyObservers,
                                c: StructuralPropertyCodec[K, V, T]): Unit = {
     o.observe(p.property, new PropertyObserver[T] {
-      override def propertyChanged(property: Property[T]): Unit = {}
+      override def propertyChanged(property: Property[T]): Task[Unit] = {
+        Task.unit
+      }
 
-      override def propertyRemoved(property: Property[T]): Unit = {}
+      override def propertyRemoved(property: Property[T]): Task[Unit] = {
+        Task.unit
+      }
 
-      override def structureChange(patch: StructuralChange[_, _, T]): Unit = {
+      override def structureChange(patch: StructuralChange[_, _, T]): Task[Unit] = {
         val sc = patch.asInstanceOf[StructuralChange[K, V, T]]
         listener(new StructuralChangeWithParents[K, V, T](p, sc.modifications.map(_.map(sp => new PropertyWithParent[V](sp, p.opt)))))
       }

@@ -14,7 +14,7 @@ object Main {
     val currentTimeService = new CurrentTimeService
     val dmService = new DmService
     val services = new Services(new FutureTranslator, executeTasksService, dmService, currentTimeService, Scheduler.Implicits.global)
-    val propertyObservers = PropertyObserver.createRoot
+    val propertyObservers = PropertyObserver.createRoot(t => t.runAsync(Scheduler.Implicits.global))
     MainView.create(services)
       .createComponent(ScalaJsCompFamily)
       .foreach { c =>

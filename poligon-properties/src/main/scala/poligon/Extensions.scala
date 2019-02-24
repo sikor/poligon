@@ -1,14 +1,14 @@
 package poligon
 
-import monix.execution.Scheduler
+import monix.eval.Task
 import monix.reactive.Observable
 import poligon.Extensions.{FutureExtensions, ObservableExtensions, StructObsExtensions, TraversableOnceExtensions}
 import poligon.comp.Comp
 import poligon.comp.CompFamily.LayoutModification
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Removed}
-import poligon.polyproperty.{Obs, PropertyWithParent}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty.PropertyWithParent.Struct
+import poligon.polyproperty.{Obs, PropertyWithParent}
 import poligon.tran.TranslationKey.TranslationKeyOps
 
 import scala.collection.immutable.{SortedMap, TreeMap}
@@ -43,15 +43,15 @@ object Extensions {
     }
   }
 
-  private class ObservableObs[T](source: Observable[T])(implicit s: Scheduler) extends Obs[T] {
-    def listen(listener: T => Unit)(implicit obs: PropertyObservers): Unit = {
-      val cancelable = source.foreach(listener)
-      obs.resourceOpened(() => cancelable.cancel())
+  private class ObservableObs[T](source: Observable[T]) extends Obs[T] {
+    def listenAsync(listener: T => Task[Unit])(implicit obs: PropertyObservers): Unit = {
+      val task = source.mapAsync(listener).completedL
+      obs.runTask(task)
     }
   }
 
   class ObservableExtensions[T](private val observable: Observable[T]) extends AnyVal {
-    def toObs(implicit s: Scheduler): Obs[T] = new ObservableObs[T](observable)
+    def toObs: Obs[T] = new ObservableObs[T](observable)
   }
 
   class StructObsExtensions[V](private val obs: Obs[Struct[V]]) extends AnyVal {
@@ -66,14 +66,15 @@ object Extensions {
   // We relay on Future provider here that there is some timeout. One improvement would be to
   // hold reference only to RootPropertyObserver so leak would occur only when Promise holder lives longer
   // than whole view.
-  private class FutureObs[T](source: Future[T])(implicit ec: ExecutionContext) extends Obs[Try[T]] {
-    def listen(listener: Try[T] => Unit)(implicit obs: PropertyObservers): Unit = {
-      source.onComplete(listener)
+  private class FutureObs[T](source: Future[T]) extends Obs[Try[T]] {
+    def listenAsync(listener: Try[T] => Task[Unit])(implicit obs: PropertyObservers): Unit = {
+      val task = Task.fromFuture(source).materialize.flatMap(listener)
+      obs.runTask(task)
     }
   }
 
   class FutureExtensions[T](private val future: Future[T]) extends AnyVal {
-    def toObs(implicit ec: ExecutionContext): Obs[Try[T]] = new FutureObs[T](future)
+    def toObs: Obs[Try[T]] = new FutureObs[T](future)
   }
 
 }

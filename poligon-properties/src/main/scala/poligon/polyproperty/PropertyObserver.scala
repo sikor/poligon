@@ -1,16 +1,18 @@
 package poligon.polyproperty
 
+import monix.eval.Task
+import monix.execution.Cancelable
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.StructuralChange
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 trait PropertyObserver[T] {
-  def propertyChanged(property: Property[T]): Unit
+  def propertyChanged(property: Property[T]): Task[Unit]
 
-  def propertyRemoved(property: Property[T]): Unit
+  def propertyRemoved(property: Property[T]): Task[Unit]
 
-  def structureChange(patch: StructuralChange[_, _, T]): Unit
+  def structureChange(patch: StructuralChange[_, _, T]): Task[Unit]
 }
 
 object PropertyObserver {
@@ -43,18 +45,20 @@ object PropertyObserver {
     }
   }
 
-  def createRoot: PropertyObservers = {
-    val root = new RootPropertyObservers
+  def createRoot(run: Task[Unit] => Cancelable): PropertyObservers = {
+    val root = new RootPropertyObservers(run)
     val po = new PropertyObservers(root)
     root.setPropertyObservers(po)
     po
   }
 
-  class RootPropertyObservers private[PropertyObserver]() {
+  class RootPropertyObservers private[PropertyObserver](private val runF: Task[Unit] => Cancelable) {
 
     private var po: PropertyObservers = _
 
     private[PropertyObserver] def setPropertyObservers(p: PropertyObservers): Unit = po = p
+
+    private[PropertyObserver] def run(task: Task[Unit]): Cancelable = runF(task)
 
     def propertyChanged(property: Property[_]): Unit = {
       traverseAll(_.propertyChanged(property))
@@ -87,7 +91,8 @@ object PropertyObserver {
     private[PropertyObserver] val map = new ObserversMap()
     private[PropertyObserver] val subObservers: mutable.HashMap[Any, PropertyObservers] = new mutable.HashMap()
 
-    private val cancellableResources = new ArrayBuffer[() => Unit]
+    //TODO: remove cancelable when finished
+    private val cancelables = new ArrayBuffer[Cancelable]
 
     def createSubObservers(): PropertyObservers = new PropertyObservers(root)
 
@@ -101,7 +106,7 @@ object PropertyObserver {
     }
 
     private def deregisterRecursively(): Unit = {
-      cancellableResources.foreach(c => c())
+      cancelables.foreach(c => c.cancel())
       subObservers.values.foreach(_.deregisterRecursively())
     }
 
@@ -109,8 +114,8 @@ object PropertyObserver {
       map.observe(property, propertyObserver)
     }
 
-    def resourceOpened(cancellable: () => Unit): Unit = {
-      cancellableResources.append(cancellable)
+    def runTask(task: Task[Unit]): Unit = {
+      cancelables.append(root.run(task))
     }
   }
 

@@ -26,9 +26,9 @@ object ObjectPanelView {
     label("Objects", "h1"),
     replaceable(ctx.currentTimeOn.obs.map { isOn =>
       if (isOn) {
-        dynLabel(ctx.services.currentTimeService.currentTime.map(_.toString).toObs(ctx.services.scheduler))
+        dynLabel(ctx.services.currentTimeService.currentTime.map(_.toString).toObs)
       } else {
-        dynLabel(ctx.services.currentTimeService.currentTime.map(_.toString).take(1).toObs(ctx.services.scheduler))
+        dynLabel(ctx.services.currentTimeService.currentTime.map(_.toString).take(1).toObs)
       }
     }),
     checkBox("Current time on", ctx.currentTimeOn.read, ctx.currentTimeOn.set),

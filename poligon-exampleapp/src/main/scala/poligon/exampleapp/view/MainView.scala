@@ -22,7 +22,7 @@ object MainView {
   def create(services: Services): Comp = Comp.factory(create(new MainViewContext(services)))
 
   private def create(ctx: MainViewContext): Comp = {
-    val helloText: Obs[String] = ctx.services.translator.translate(Hello).toObs(ctx.services.scheduler).map {
+    val helloText: Obs[String] = ctx.services.translator.translate(Hello).toObs.map {
       case Success(s) => s
       case Failure(ex) => ex.getMessage
     }
