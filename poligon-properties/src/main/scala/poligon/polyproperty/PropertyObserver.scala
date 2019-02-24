@@ -28,16 +28,21 @@ object PropertyObserver {
       observers.addBinding(property.asInstanceOf[Property[_]], propertyObserver.asInstanceOf[AnyPropertyObserver])
     }
 
-    def propertyChanged(property: Property[_]): Unit = {
-      observers.getOpt(property).foreach(_.foreach(l => l.propertyChanged(property.asInstanceOf[Property[Any]])))
+    def propertyChanged(property: Property[_]): Task[Unit] = {
+      visitAll(property, l => l.propertyChanged(property.asInstanceOf[Property[Any]]))
     }
 
-    def propertyRemoved(property: Property[_]): Unit = {
-      observers.remove(property).foreach(_.foreach(l => l.propertyRemoved(property.asInstanceOf[Property[Any]])))
+    def propertyRemoved(property: Property[_]): Task[Unit] = {
+      visitAll(property, l => l.propertyRemoved(property.asInstanceOf[Property[Any]]))
     }
 
-    def structureChange(patch: StructuralChange[_, _, _]): Unit = {
-      observers.get(patch.property).foreach(_.foreach(l => l.structureChange(patch.asInstanceOf[StructuralChange[_, _, Any]])))
+    def structureChange(patch: StructuralChange[_, _, _]): Task[Unit] = {
+      visitAll(patch.property, l => l.structureChange(patch.asInstanceOf[StructuralChange[_, _, Any]]))
+    }
+
+    private def visitAll(property: Property[_], f: AnyPropertyObserver => Task[Unit]): Task[Unit] = {
+      val tasks = observers.get(property).map(_.iterator.map(l => f(l)).toSeq).getOrElse(Seq.empty)
+      Task.gatherUnordered(tasks).map(_ => ())
     }
 
     private[PropertyObserver] def clear(): Unit = {
@@ -60,22 +65,23 @@ object PropertyObserver {
 
     private[PropertyObserver] def run(task: Task[Unit]): Cancelable = runF(task)
 
-    def propertyChanged(property: Property[_]): Unit = {
+    def propertyChanged(property: Property[_]): Task[Unit] = {
       traverseAll(_.propertyChanged(property))
     }
 
-    def propertyRemoved(property: Property[_]): Unit = {
+    def propertyRemoved(property: Property[_]): Task[Unit] = {
       traverseAll(_.propertyRemoved(property))
     }
 
-    def structureChange(patch: StructuralChange[_, _, _]): Unit = {
+    def structureChange(patch: StructuralChange[_, _, _]): Task[Unit] = {
       traverseAll(_.structureChange(patch))
     }
 
-    private def traverseAll(onObserversMap: ObserversMap => Unit): Unit = {
-      def visit(po: PropertyObservers): Unit = {
-        onObserversMap(po.map)
-        po.subObservers.values.foreach(visit)
+    private def traverseAll(onObserversMap: ObserversMap => Task[Unit]): Task[Unit] = {
+      def visit(po: PropertyObservers): Task[Unit] = {
+        val currentAction = onObserversMap(po.map)
+        val childrenActions = po.subObservers.values.map(visit)
+        Task.gatherUnordered(currentAction +: childrenActions.toSeq).map(_ => ())
       }
 
       visit(po)

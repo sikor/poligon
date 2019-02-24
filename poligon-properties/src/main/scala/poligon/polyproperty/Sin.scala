@@ -1,5 +1,6 @@
 package poligon.polyproperty
 
+import monix.eval.Task
 import poligon.polyproperty.PropertyObserver.RootPropertyObservers
 import poligon.polyproperty.Sin.MapSin
 
@@ -20,6 +21,8 @@ object Sin {
   def combine[T](sub: Sin[T]*): Sin[T] = apply(sub: _*)
 
   def eval[T](f: T => Unit): Sin[T] = new FunSin[T](_ => v => f(v))
+
+  def evalAsync[T](f: T => Task[Unit]): Sin[T] = new FunSin[T](_ => v => f(v))
 
   class FunSin[T](f: RootPropertyObservers => T => Unit) extends Sin[T] {
     def push(v: T)(implicit po: RootPropertyObservers): Unit = f(po)(v)

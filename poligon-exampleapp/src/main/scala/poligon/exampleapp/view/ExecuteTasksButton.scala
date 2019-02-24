@@ -28,6 +28,10 @@ object ExecuteTasksButton {
   class ExecuteTasksContext(service: ExecuteTasksService)(implicit ec: ExecutionContext) {
     val executeTaskStatus: PropertyWithParent[ExecuteTasksStatus] = PropertyWithParent(NotStarted)
 
+    def executeTasks2: Sin[Unit] = Sin.eval { _ =>
+//      executeTaskStatus.set()
+    }
+
     def executeTasks: Sin[Unit] = Sin(implicit po => _ => {
       executeTaskStatus.set(InProgress)
       service.executeTasks().onComplete {

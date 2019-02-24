@@ -33,13 +33,10 @@ object PropertyWithParent {
       PropertyChanger.set(p, value)
     }
 
-    def set: Sin[T] = Sin(implicit po => value => PropertyChanger.set(p, value))
+    def set: Sin[T] = Sin(implicit po => value => set(value))
 
     def setEnforcingListeners: Sin[T] = Sin(implicit po => { value =>
-      val changes = PropertyChanger.set(p, value)
-      if (changes.isEmpty) {
-        po.propertyChanged(p.property)
-      }
+      PropertyChanger.set(p, value, enforceListeners = true)
     })
 
     def listen(listener: T => Task[Unit], init: Boolean = false)(implicit o: PropertyObservers): Unit = {
