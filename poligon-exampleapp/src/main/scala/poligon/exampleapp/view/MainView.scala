@@ -14,7 +14,7 @@ object MainView {
   private val Hello = "hello".tr
 
   private class MainViewContext(val services: Services) {
-    val executeTasksContext: ExecuteTasksContext = new ExecuteTasksContext(services.executeTasksService)(services.scheduler)
+    val executeTasksContext: ExecuteTasksContext = new ExecuteTasksContext(services.executeTasksService)
     val menuItems: Seq[(List[String], MenuValue[Comp])] = Seq(List("Menu", "Object Panel") -> MenuValue(ObjectPanelView.create(services)))
     val currentPage: PropertyWithParent[Comp] = PropertyWithParent(ObjectPanelView.create(services))
   }

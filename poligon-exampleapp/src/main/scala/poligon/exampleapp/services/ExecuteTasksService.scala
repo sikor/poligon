@@ -2,19 +2,14 @@ package poligon.exampleapp.services
 
 import java.util.concurrent.ThreadLocalRandom
 
-import monix.execution.Scheduler
+import monix.eval.Task
 
 import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise}
 
-class ExecuteTasksService(scheduler: Scheduler) {
+class ExecuteTasksService {
 
-  def executeTasks(): Future[Boolean] = {
-    val p = Promise[Boolean]
-    scheduler.scheduleOnce(5.seconds) {
-      p.success(ThreadLocalRandom.current().nextBoolean())
-    }
-    p.future
+  def executeTasks(): Task[Boolean] = {
+    Task.eval(ThreadLocalRandom.current().nextBoolean()).delayExecution(5.seconds)
   }
 
 }

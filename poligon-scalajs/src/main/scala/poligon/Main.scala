@@ -10,10 +10,10 @@ import poligon.scalajscomp.ScalaJsCompFamily
 object Main {
 
   def main(args: Array[String]): Unit = {
-    val executeTasksService = new ExecuteTasksService(Scheduler.Implicits.global)
+    val executeTasksService = new ExecuteTasksService
     val currentTimeService = new CurrentTimeService
     val dmService = new DmService
-    val services = new Services(new FutureTranslator, executeTasksService, dmService, currentTimeService, Scheduler.Implicits.global)
+    val services = new Services(new FutureTranslator, executeTasksService, dmService, currentTimeService)
     val propertyObservers = PropertyObserver.createRoot(t => t.runAsync(Scheduler.Implicits.global))
     MainView.create(services)
       .createComponent(ScalaJsCompFamily)

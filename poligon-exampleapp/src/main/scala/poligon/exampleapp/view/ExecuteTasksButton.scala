@@ -1,13 +1,10 @@
 package poligon.exampleapp.view
 
 import poligon.comp.Comp
-import Comp._
+import poligon.comp.Comp._
 import poligon.exampleapp.services.ExecuteTasksService
 import poligon.exampleapp.view.ExecuteTasksButton.ExecuteTasksStatus.{InProgress, NotStarted}
-import poligon.polyproperty.{HasSimplePropertyCodec, PropertyWithParent, Sin}
-
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
+import poligon.polyproperty.{Act, HasSimplePropertyCodec, PropertyWithParent, Sin}
 
 object ExecuteTasksButton {
 
@@ -25,31 +22,25 @@ object ExecuteTasksButton {
 
   }
 
-  class ExecuteTasksContext(service: ExecuteTasksService)(implicit ec: ExecutionContext) {
+  class ExecuteTasksContext(service: ExecuteTasksService) {
     val executeTaskStatus: PropertyWithParent[ExecuteTasksStatus] = PropertyWithParent(NotStarted)
 
-    def executeTasks2: Sin[Unit] = Sin.eval { _ =>
-//      executeTaskStatus.set()
+    def executeTasks: Sin[Unit] = Sin.evalAsync { _ =>
+      for {
+        _ <- executeTaskStatus.setA(InProgress)
+        isSuccess <- Act.fromTask(service.executeTasks())
+        _ <- if (isSuccess) {
+          executeTaskStatus.setA(ExecuteTasksStatus.Success)
+        } else {
+          executeTaskStatus.setA(ExecuteTasksStatus.Failed)
+        }
+      } yield ()
     }
-
-    def executeTasks: Sin[Unit] = Sin(implicit po => _ => {
-      executeTaskStatus.set(InProgress)
-      service.executeTasks().onComplete {
-        case Success(b) =>
-          if (b) {
-            executeTaskStatus.set(ExecuteTasksStatus.Success)
-          } else {
-            executeTaskStatus.set(ExecuteTasksStatus.Failed)
-          }
-        case Failure(ex) =>
-          executeTaskStatus.set(ExecuteTasksStatus.Failed)
-      }
-    })
   }
 
-  def create(presenter: ExecuteTasksContext): Comp =
+  def create(ctx: ExecuteTasksContext): Comp =
     button(
-      presenter.executeTasks,
-      presenter.executeTaskStatus.map(s => s.toString),
-      presenter.executeTaskStatus.map(s => s != InProgress))
+      ctx.executeTasks,
+      ctx.executeTaskStatus.map(s => s.toString),
+      ctx.executeTaskStatus.map(s => s != InProgress))
 }

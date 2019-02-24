@@ -63,7 +63,7 @@ object PropertyObserver {
 
     private[PropertyObserver] def setPropertyObservers(p: PropertyObservers): Unit = po = p
 
-    private[PropertyObserver] def run(task: Task[Unit]): Cancelable = runF(task)
+    def run(task: Task[Unit]): Cancelable = runF(task)
 
     def propertyChanged(property: Property[_]): Task[Unit] = {
       traverseAll(_.propertyChanged(property))

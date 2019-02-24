@@ -29,9 +29,11 @@ object PropertyWithParent {
 
     def refresh: Sin[Unit] = Sin(implicit po => _ => p.refresher().foreach(d => set.push(d)))
 
-    def set(value: T)(implicit observed: RootPropertyObservers): Unit = {
+    def set(value: T)(implicit observed: RootPropertyObservers): Task[Unit] = {
       PropertyChanger.set(p, value)
     }
+
+    def setA(value: T): Act[Unit] = Act.create(r => set(value)(r))
 
     def set: Sin[T] = Sin(implicit po => value => set(value))
 

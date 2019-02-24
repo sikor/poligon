@@ -61,8 +61,8 @@ object HttpServer {
       ExecutorScheduler(UIExecutor, (ex: Throwable) => UIExecutor.reportFailure(ex), ExecutionModel.Default)
 
     override def init(request: VaadinRequest): Unit = {
-      val executeTasksService = new ExecuteTasksService(monixScheduler)
-      val services = new Services(new FutureTranslator, executeTasksService, dmService, currentTimeService, monixScheduler)
+      val executeTasksService = new ExecuteTasksService()
+      val services = new Services(new FutureTranslator, executeTasksService, dmService, currentTimeService)
       val propertyObservers = PropertyObserver.createRoot(t => t.runAsync(monixScheduler))
       MainView.create(services)
         .createComponent(VaadinCompFamily)
