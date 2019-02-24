@@ -87,6 +87,7 @@ lazy val `poligon-functional` = project.dependsOn(`poligon-macros` % "compile->c
   .settings(libraryDependencies ++= basicDeps.value)
   .settings(libraryDependencies += "org.scalaj" %% "scalaj-http" % "2.4.1")
   .settings(libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.4.2")
+  .settings(libraryDependencies += "io.monix" %% "monix" % "2.3.3")
 
 lazy val `poligon-properties` = project.dependsOn(`poligon-macros`)
   .settings(libraryDependencies += "com.avsystem.commons" %% "commons-core" % commonsVersion)
@@ -118,9 +119,6 @@ lazy val `poligon-vaadin` = project.dependsOn(`poligon-exampleapp` % "compile->c
   .settings(libraryDependencies += "org.eclipse.jetty" % "jetty-server" % "9.4.12.v20180830")
   .settings(libraryDependencies += "org.eclipse.jetty" % "jetty-servlet" % "9.4.12.v20180830")
   .settings(libraryDependencies += "org.eclipse.jetty" % "jetty-continuation" % "9.4.12.v20180830")
-
-
-lazy val `poligon-workout` = project.dependsOn(`poligon-macros` % "compile->compile;test->test")
 
 lazy val poligon = project.in(file("."))
   .aggregate(`poligon-macros`, `poligon-scalaConfig`, `poligon-functional`)
