@@ -19,63 +19,70 @@ import poligon.polyproperty.{HasSimplePropertyCodec, Obs, PropertyWithParent, Si
   * 5. Try Get rid of replaceable - should be needed only in app root
   */
 trait Comp {
-  def createComponent(family: CompFamily): family.BindableComp
+  def createComponent[C](family: CompFamily[C]): Task[BindableComp[C]]
 }
 
 object Comp extends HasSimplePropertyCodec[Comp] {
 
+  private trait SimpleComp extends Comp {
+    def createSimple[C](family: CompFamily[C]): BindableComp[C]
+
+    def createComponent[C](family: CompFamily[C]): Task[BindableComp[C]] = Task.now(createSimple(family))
+  }
+
   def factory(highLevelFactory: => Comp): Comp = new Comp {
-    def createComponent(family: CompFamily): family.BindableComp = highLevelFactory.createComponent(family)
+    def createComponent[C](family: CompFamily[C]): Task[BindableComp[C]] = highLevelFactory.createComponent(family)
   }
 
   def dynLayout[V](
                     property: Obs[Seq[LayoutModification[Comp]]],
                     layoutDescription: LayoutSettings = LayoutSettings()): Comp =
     new Comp {
-      def createComponent(family: CompFamily): family.BindableComp =
-        family.layout(
-          property.map(mods => mods.map(mod => mod.map(desc => desc.createComponent(family)))),
-          layoutDescription)
+      def createComponent[C](family: CompFamily[C]): Task[BindableComp[C]] = {
+        val comps = property.map(mods => mods.map(mod => mod
+          .map(desc => desc.createComponent(family))
+          .map(_ => family.label(Obs.constant("not supported")))
+        ))
+        Task.now(family.layout(comps, layoutDescription))
+      }
     }
 
   def dynLabel(property: Obs[String], styleName: String = ""): Comp =
-    new Comp {
-      def createComponent(family: CompFamily): family.BindableComp = family.label(property, styleName)
+    new SimpleComp {
+      def createSimple[C](family: CompFamily[C]): BindableComp[C] = family.label(property, styleName)
     }
 
   def textField(caption: String, initValue: String, onValueSet: Sin[String]): Comp =
-    new Comp {
-      def createComponent(family: CompFamily): family.BindableComp = family.textField(caption, initValue, onValueSet)
+    new SimpleComp {
+      def createSimple[C](family: CompFamily[C]): BindableComp[C] = family.textField(caption, initValue, onValueSet)
     }
 
   def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): Comp =
-    new Comp {
-      def createComponent(family: CompFamily): family.BindableComp = family.button(onClick, caption, enabled)
+    new SimpleComp {
+      def createSimple[C](family: CompFamily[C]): BindableComp[C] = family.button(onClick, caption, enabled)
     }
 
   def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): Comp =
-    new Comp {
-      def createComponent(family: CompFamily): family.BindableComp = family.checkBox(caption, initValue, value)
+    new SimpleComp {
+      def createSimple[C](family: CompFamily[C]): BindableComp[C] = family.checkBox(caption, initValue, value)
     }
 
   def menuBar[T](menuItems: Seq[(List[String], MenuItem[T])], itemSelected: Sin[T]): Comp =
-    new Comp {
-      def createComponent(family: CompFamily): family.BindableComp = family.menuBar(menuItems, itemSelected)
+    new SimpleComp {
+      def createSimple[C](family: CompFamily[C]): BindableComp[C] = family.menuBar(menuItems, itemSelected)
     }
 
   def replaceable(property: Obs[Comp]): Comp =
     new Comp {
-      def createComponent(family: CompFamily): family.BindableComp =
-        family.replaceable(property.map(c => c.createComponent(family)))
+      def createComponent[C](family: CompFamily[C]): Task[BindableComp[C]] = {
+        val c = property.map(c => c.createComponent(family)).map(_ => family.label(Obs.constant("not supported")))
+        Task.now(family.replaceable(c))
+      }
     }
 
   def asyncComp(compTask: Task[Comp]): Comp = new Comp {
-    def createComponent(family: CompFamily): family.BindableComp = {
-      val prop = PropertyWithParent(label("loading ..."))
-      family.dynamic { implicit po =>
-        compTask.foreachL(comp => prop.set(comp))
-        replaceable(prop.obs).createComponent(family).create(po)
-      }
+    def createComponent[C](family: CompFamily[C]): Task[BindableComp[C]] = {
+      compTask.flatMap(c => c.createComponent(family))
     }
   }
 

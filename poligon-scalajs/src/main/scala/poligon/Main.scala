@@ -15,9 +15,11 @@ object Main {
     val dmService = new DmService
     val services = new Services(new FutureTranslator, executeTasksService, dmService, currentTimeService, Scheduler.Implicits.global)
     val propertyObservers = PropertyObserver.createRoot
-    val view = MainView.create(services)
+    MainView.create(services)
       .createComponent(ScalaJsCompFamily)
-      .bind(propertyObservers)
-    dom.document.body.appendChild(view)
+      .foreach { c =>
+        val view = c.bind(propertyObservers)
+        dom.document.body.appendChild(view)
+      }(monix.execution.Scheduler.Implicits.global)
   }
 }

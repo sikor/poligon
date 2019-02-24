@@ -64,10 +64,12 @@ object HttpServer {
       val executeTasksService = new ExecuteTasksService(monixScheduler)
       val services = new Services(new FutureTranslator, executeTasksService, dmService, currentTimeService, monixScheduler)
       val propertyObservers = PropertyObserver.createRoot
-      val view = MainView.create(services)
+      MainView.create(services)
         .createComponent(VaadinCompFamily)
-        .bind(propertyObservers)
-      setContent(view)
+        .foreach { c =>
+          val view = c.bind(propertyObservers)
+          setContent(view)
+        }(monixScheduler)
     }
   }
 

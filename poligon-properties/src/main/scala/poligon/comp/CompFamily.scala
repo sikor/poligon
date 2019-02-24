@@ -4,24 +4,30 @@ import com.avsystem.commons.misc.OptArg
 import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.MenuItem
 import poligon.comp.CompFamily.{LayoutModification, LayoutSettings}
+import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty._
 
-trait CompFamily extends HasBindableComp {
+trait CompFamily[C] {
 
-  def layout(property: Obs[Seq[LayoutModification[BindableComp]]],
-             layoutDescription: LayoutSettings = LayoutSettings()): BindableComp
+  type BComp = BindableComp[C]
 
-  def label(property: Obs[String], styleName: String = ""): BindableComp
+  def dynamic(factory: PropertyObservers => C): BComp =
+    new BindableComp((po: PropertyObservers) => factory(po))
 
-  def textField(caption: String, initValue: String, onValueSet: Sin[String]): BindableComp
+  def layout(property: Obs[Seq[LayoutModification[BindableComp[C]]]],
+             layoutDescription: LayoutSettings = LayoutSettings()): BindableComp[C]
 
-  def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): BindableComp
+  def label(property: Obs[String], styleName: String = ""): BindableComp[C]
 
-  def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): BindableComp
+  def textField(caption: String, initValue: String, onValueSet: Sin[String]): BindableComp[C]
 
-  def menuBar[T](menuItems: Seq[(List[String], MenuItem[T])], itemSelected: Sin[T]): BindableComp
+  def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): BindableComp[C]
 
-  def replaceable(property: Obs[BindableComp]): BindableComp
+  def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): BindableComp[C]
+
+  def menuBar[T](menuItems: Seq[(List[String], MenuItem[T])], itemSelected: Sin[T]): BindableComp[C]
+
+  def replaceable(property: Obs[BindableComp[C]]): BindableComp[C]
 }
 
 object CompFamily {
