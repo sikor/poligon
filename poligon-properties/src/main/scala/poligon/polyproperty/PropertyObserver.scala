@@ -1,7 +1,7 @@
 package poligon.polyproperty
 
 import monix.eval.Task
-import monix.execution.Cancelable
+import monix.execution.{CancelableFuture, Scheduler}
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.StructuralChange
 
 import scala.collection.mutable
@@ -50,20 +50,27 @@ object PropertyObserver {
     }
   }
 
-  def createRoot(run: Task[Unit] => Cancelable): PropertyObservers = {
-    val root = new RootPropertyObservers(run)
+  class TaskRunner(scheduler: Scheduler, onFail: Throwable => Unit = _ => ()) {
+    def runTask(task: Task[Unit]): CancelableFuture[Unit] = {
+      val future = task.runAsync(scheduler)
+      future.failed.foreach { ex => onFail(ex) }(scheduler)
+      future
+    }
+  }
+
+  def createRoot(taskRunner: TaskRunner): PropertyObservers = {
+    val root = new RootPropertyObservers(taskRunner)
     val po = new PropertyObservers(root)
     root.setPropertyObservers(po)
     po
   }
 
-  class RootPropertyObservers private[PropertyObserver](private val runF: Task[Unit] => Cancelable) {
+  class RootPropertyObservers private[PropertyObserver](val taskRunner: TaskRunner) {
 
     private var po: PropertyObservers = _
 
     private[PropertyObserver] def setPropertyObservers(p: PropertyObservers): Unit = po = p
 
-    def run(task: Task[Unit]): Cancelable = runF(task)
 
     def propertyChanged(property: Property[_]): Task[Unit] = {
       traverseAll(_.propertyChanged(property))
@@ -98,7 +105,7 @@ object PropertyObserver {
     private[PropertyObserver] val subObservers: mutable.HashMap[Any, PropertyObservers] = new mutable.HashMap()
 
     //TODO: remove cancelable when finished
-    private val cancelables = new ArrayBuffer[Cancelable]
+    private val cancelables = new ArrayBuffer[CancelableFuture[Unit]]
 
     def createSubObservers(): PropertyObservers = new PropertyObservers(root)
 
@@ -121,7 +128,7 @@ object PropertyObserver {
     }
 
     def runTask(task: Task[Unit]): Unit = {
-      cancelables.append(root.run(task))
+      cancelables.append(root.taskRunner.runTask(task))
     }
   }
 

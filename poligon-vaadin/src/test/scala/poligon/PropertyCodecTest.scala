@@ -3,7 +3,7 @@ package poligon
 import monix.eval.Task
 import org.scalatest.FunSuite
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Modification, Removed}
-import poligon.polyproperty.PropertyObserver.PropertyObservers
+import poligon.polyproperty.PropertyObserver.{PropertyObservers, TaskRunner}
 import poligon.polyproperty._
 
 import scala.collection.SortedMap
@@ -108,7 +108,7 @@ class PropertyCodecTest extends FunSuite {
   }
 
   test("sorted map update") {
-    implicit val po: PropertyObservers = PropertyObserver.createRoot(t => t.runAsync(monix.execution.Scheduler.Implicits.global))
+    implicit val po: PropertyObservers = PropertyObserver.createRoot(new TaskRunner(monix.execution.Scheduler.Implicits.global))
     val p = PropertyWithParent[SortedMap[String, String]](TreeMap("a" -> "a", "b" -> "b", "c" -> "c", "d" -> "d", "y" -> "y"))
     PropertyWithParent.listenStructure[String, String, SortedMap[String, String]](p) { ch =>
       assert(ch.modifications.size == 5)
@@ -136,7 +136,7 @@ class PropertyCodecTest extends FunSuite {
   }
 
   private def sortedMapInsert(key: String, expIndex: Int): Unit = {
-    implicit val po: PropertyObservers = PropertyObserver.createRoot(t => t.runAsync(monix.execution.Scheduler.Implicits.global))
+    implicit val po: PropertyObservers = PropertyObserver.createRoot(new TaskRunner(monix.execution.Scheduler.Implicits.global))
     val p = PropertyWithParent[SortedMap[String, String]](TreeMap("a" -> "a", "b" -> "b"))
     PropertyWithParent.listenStructure[String, String, SortedMap[String, String]](p) { ch =>
       assert(ch.modifications.size == 1)

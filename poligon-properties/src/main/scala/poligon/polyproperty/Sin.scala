@@ -26,7 +26,7 @@ object Sin {
   class ActFunSin[T](f: T => Act[Unit]) extends Sin[T] {
     def push(v: T)(implicit po: RootPropertyObservers): Unit = {
       val task = f(v).run(po)
-      po.run(task)
+      po.taskRunner.runTask(task)
     }
   }
 

@@ -16,9 +16,11 @@ import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
 import poligon.exampleapp.services._
 import poligon.exampleapp.view.MainView
 import poligon.polyproperty.PropertyObserver
+import poligon.polyproperty.PropertyObserver.TaskRunner
 import poligon.vaadincomp.VaadinCompFamily
+import scala.concurrent.duration._
 
-import scala.concurrent.ExecutionContextExecutorService
+import scala.concurrent.{Await, ExecutionContextExecutorService}
 
 /**
   * Next:
@@ -63,13 +65,15 @@ object HttpServer {
     override def init(request: VaadinRequest): Unit = {
       val executeTasksService = new ExecuteTasksService()
       val services = new Services(new FutureTranslator, executeTasksService, dmService, currentTimeService)
-      val propertyObservers = PropertyObserver.createRoot(t => t.runAsync(monixScheduler))
-      MainView.create(services)
+      val taskRunner = new TaskRunner(monixScheduler, fail => logger.error("Failed to run task", fail))
+      val propertyObservers = PropertyObserver.createRoot(taskRunner)
+      val mainView = MainView.create(services)
         .createComponent(VaadinCompFamily)
-        .foreach { c =>
-          val view = c.bind(propertyObservers)
+        .foreachL { comp =>
+          val view = comp.bind(propertyObservers)
           setContent(view)
-        }(monixScheduler)
+        }
+      Await.ready(taskRunner.runTask(mainView), 5.seconds)
     }
   }
 
