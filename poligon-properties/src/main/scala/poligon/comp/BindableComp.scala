@@ -9,9 +9,11 @@ trait BindableComp[C] {
 
   def bind(parentPo: PropertyObservers): Task[C] = {
     val po = parentPo.createSubObservers()
-    val c = create(po)
-    parentPo.registerSubObservers(c, po)
-    c
+    val cTask = create(po)
+    cTask.map { c =>
+      parentPo.registerSubObservers(c, po)
+      c
+    }
   }
 }
 
