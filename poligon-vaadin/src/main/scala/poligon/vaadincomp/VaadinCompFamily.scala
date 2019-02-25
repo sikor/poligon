@@ -53,10 +53,10 @@ object VaadinCompFamily extends CompFamily[Component] {
   def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): BComp = dynamic { implicit po =>
     val button = new Button()
     button.addClickListener(_ => onClick.push(()))
-    val t1 = caption.listen { s =>
+    val t1 = caption.listenNow { s =>
       button.setCaption(s)
     }
-    val t2 = enabled.listen { e =>
+    val t2 = enabled.listenNow { e =>
       button.setEnabled(e)
     }
     Task.gatherUnordered(List(t1, t2)).map(_ => button)
@@ -121,6 +121,6 @@ object VaadinCompFamily extends CompFamily[Component] {
   private def bindSimple[T, P <: com.vaadin.data.Property[T] with Component]
   (property: Obs[T], label: => P): BComp = dynamic { implicit po =>
     val l = label
-    property.listen(v => l.setValue(v)).map(_ => l)
+    property.listenNow(v => l.setValue(v)).map(_ => l)
   }
 }

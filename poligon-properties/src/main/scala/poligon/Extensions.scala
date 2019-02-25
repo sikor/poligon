@@ -44,8 +44,10 @@ object Extensions {
   }
 
   private class ObservableObs[T](source: Observable[T]) extends Obs[T] {
-    def listenAsync(listener: T => Task[Unit])(implicit obs: PropertyObservers): Task[Unit] = {
-      source.mapAsync(listener).completedL
+    def listen(listener: T => Task[Unit])(implicit po: PropertyObservers): Task[Unit] = {
+      val completeTask = source.mapAsync(listener).completedL
+      po.runTask(completeTask)
+      Task.unit
     }
   }
 
@@ -66,7 +68,7 @@ object Extensions {
   // hold reference only to RootPropertyObserver so leak would occur only when Promise holder lives longer
   // than whole view.
   private class FutureObs[T](source: Future[T]) extends Obs[Try[T]] {
-    def listenAsync(listener: Try[T] => Task[Unit])(implicit obs: PropertyObservers): Task[Unit] = {
+    def listen(listener: Try[T] => Task[Unit])(implicit po: PropertyObservers): Task[Unit] = {
       Task.fromFuture(source).materialize.flatMap(listener)
     }
   }

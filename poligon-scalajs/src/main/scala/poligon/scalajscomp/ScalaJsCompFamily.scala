@@ -88,7 +88,7 @@ object ScalaJsCompFamily extends CompFamily[Element] {
 
   def label(property: Obs[String], styleName: String): BComp = dynamic { implicit po =>
     val l = st.span(st.cls := styleName).render
-    property.listen(s => l.innerHTML = s).map(_ => l)
+    property.listenNow(s => l.innerHTML = s).map(_ => l)
   }
 
   def textField(caption: String, initValue: String, onValueSet: Sin[String]): BComp =
@@ -105,8 +105,8 @@ object ScalaJsCompFamily extends CompFamily[Element] {
     dynamic { implicit po =>
       val b = st.button(st.cls := "btn").render
       b.onclick = { _ => onClick.push(()) }
-      val t1 = caption.listen(v => b.innerHTML = v)
-      val t2 = enabled.listen(enabled => b.disabled = !enabled)
+      val t1 = caption.listenNow(v => b.innerHTML = v)
+      val t2 = enabled.listenNow(enabled => b.disabled = !enabled)
       Task.gatherUnordered(List(t1, t2)).map(_ => b)
     }
 
