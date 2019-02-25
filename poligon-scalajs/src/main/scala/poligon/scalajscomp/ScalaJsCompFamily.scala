@@ -1,6 +1,7 @@
 package poligon.scalajscomp
 
 import com.avsystem.commons.SharedExtensions.MapOps.Entry
+import monix.eval.Task
 import org.scalajs.dom.Element
 import org.scalajs.dom.raw.Node
 import poligon.comp.CompFamily
@@ -75,26 +76,23 @@ object ScalaJsCompFamily extends CompFamily[Element] {
           new VerticalLayoutBuilder
       }
       property.listen { modifications =>
-        modifications.foreach {
+        gatherModifications(modifications).map(_.foreach {
           case Removed(index) =>
             val removedComponent: Node = builder.removeElement(index)
             po.deregisterSubObservers(removedComponent)
           case Added(index, added) =>
-            val c = added.bind(po)
-            builder.addElement(index, c)
-        }
-      }
-      builder.container
+            builder.addElement(index, added)
+        })
+      }.map(_ => builder.container)
     }
 
   def label(property: Obs[String], styleName: String): BComp = dynamic { implicit po =>
     val l = st.span(st.cls := styleName).render
-    property.listen(s => l.innerHTML = s)
-    l
+    property.listen(s => l.innerHTML = s).map(_ => l)
   }
 
   def textField(caption: String, initValue: String, onValueSet: Sin[String]): BComp =
-    dynamic { implicit po =>
+    simple { implicit po =>
       val input = st.input(st.`type` := "text", st.cls := "form-control", st.id := caption).render
       input.onchange = { _ => onValueSet.push(input.value) }
       st.div(st.cls := "form-group")(
@@ -107,13 +105,13 @@ object ScalaJsCompFamily extends CompFamily[Element] {
     dynamic { implicit po =>
       val b = st.button(st.cls := "btn").render
       b.onclick = { _ => onClick.push(()) }
-      caption.listen(v => b.innerHTML = v)
-      enabled.listen(enabled => b.disabled = !enabled)
-      b
+      val t1 = caption.listen(v => b.innerHTML = v)
+      val t2 = enabled.listen(enabled => b.disabled = !enabled)
+      Task.gatherUnordered(List(t1, t2)).map(_ => b)
     }
 
   def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): BComp =
-    dynamic { implicit po =>
+    simple { implicit po =>
       val in = st.input(st.`type` := "checkbox", st.value := caption).render
       in.checked = initValue
       in.onclick = { _ =>
@@ -146,7 +144,7 @@ object ScalaJsCompFamily extends CompFamily[Element] {
   }
 
   def menuBar[T](menuItems: Seq[(List[String], MenuItem[T])], itemSelected: Sin[T]): BComp =
-    dynamic { implicit po =>
+    simple { implicit po =>
       val menuTree = MenuTree.toTree(menuItems)
       dropDownMenu[T](menuTree, item => itemSelected.push(item))
     }
@@ -155,15 +153,15 @@ object ScalaJsCompFamily extends CompFamily[Element] {
     dynamic { implicit po =>
       val wrapper = st.div().render
       property.listen { c =>
-        val currentContent = wrapper.firstChild
-        val newContent = c.bind(po)
-        po.deregisterSubObservers(currentContent)
-        if (currentContent != null) {
-          wrapper.replaceChild(newContent, currentContent)
-        } else {
-          wrapper.appendChild(newContent)
+        c.bind(po).map { newContent =>
+          val currentContent = wrapper.firstChild
+          po.deregisterSubObservers(currentContent)
+          if (currentContent != null) {
+            wrapper.replaceChild(newContent, currentContent)
+          } else {
+            wrapper.appendChild(newContent)
+          }
         }
-      }
-      wrapper
+      }.map(_ => wrapper)
     }
 }

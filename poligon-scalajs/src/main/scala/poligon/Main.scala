@@ -15,12 +15,14 @@ object Main {
     val currentTimeService = new CurrentTimeService
     val dmService = new DmService
     val services = new Services(new FutureTranslator, executeTasksService, dmService, currentTimeService)
-    val propertyObservers = PropertyObserver.createRoot(new TaskRunner(Scheduler.Implicits.global))
-    MainView.create(services)
+    val runner = new TaskRunner(Scheduler.Implicits.global)
+    val propertyObservers = PropertyObserver.createRoot(runner)
+    val view = MainView.create(services)
       .createComponent(ScalaJsCompFamily)
-      .foreach { c =>
-        val view = c.bind(propertyObservers)
-        dom.document.body.appendChild(view)
-      }(monix.execution.Scheduler.Implicits.global)
+      .bind(propertyObservers)
+      .foreachL { c =>
+        dom.document.body.appendChild(c)
+      }
+    runner.runTask(view)
   }
 }

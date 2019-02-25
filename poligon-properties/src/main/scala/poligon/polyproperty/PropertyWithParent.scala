@@ -41,7 +41,7 @@ object PropertyWithParent {
       PropertyChanger.set(p, value, enforceListeners = true)
     })
 
-    def listen(listener: T => Task[Unit], init: Boolean = false)(implicit o: PropertyObservers): Unit = {
+    def listen(listener: T => Task[Unit], init: Boolean = false)(implicit o: PropertyObservers): Task[Unit] = {
       o.observe(p.property, new PropertyObserver[T] {
         override def propertyChanged(property: Property[T]): Task[Unit] = {
           listener(read)
@@ -57,6 +57,8 @@ object PropertyWithParent {
       })
       if (init) {
         listener(read)
+      } else {
+        Task.unit
       }
     }
 
@@ -153,7 +155,7 @@ object PropertyWithParent {
                               (listener: StructuralChangeWithParents[K, V, T] => Task[Unit])
                               (implicit
                                o: PropertyObservers,
-                               c: StructuralPropertyCodec[K, V, T]): Unit = {
+                               c: StructuralPropertyCodec[K, V, T]): Task[Unit] = {
     o.observe(p.property, new PropertyObserver[T] {
       override def propertyChanged(property: Property[T]): Task[Unit] = {
         Task.unit
@@ -173,6 +175,8 @@ object PropertyWithParent {
       val entries = c.getEntries(p.property.asInstanceOf[c.PropertyType])
         .map(e => Added(e.map(sp => new PropertyWithParent[V](sp, p.opt))))
       listener(new StructuralChangeWithParents(p, entries))
+    } else {
+      Task.unit
     }
   }
 

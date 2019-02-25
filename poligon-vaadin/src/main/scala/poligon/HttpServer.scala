@@ -18,9 +18,8 @@ import poligon.exampleapp.view.MainView
 import poligon.polyproperty.PropertyObserver
 import poligon.polyproperty.PropertyObserver.TaskRunner
 import poligon.vaadincomp.VaadinCompFamily
-import scala.concurrent.duration._
 
-import scala.concurrent.{Await, ExecutionContextExecutorService}
+import scala.concurrent.ExecutionContextExecutorService
 
 /**
   * Next:
@@ -69,11 +68,11 @@ object HttpServer {
       val propertyObservers = PropertyObserver.createRoot(taskRunner)
       val mainView = MainView.create(services)
         .createComponent(VaadinCompFamily)
-        .foreachL { comp =>
-          val view = comp.bind(propertyObservers)
+        .bind(propertyObservers)
+        .foreachL { view =>
           setContent(view)
         }
-      Await.ready(taskRunner.runTask(mainView), 5.seconds)
+      taskRunner.runTask(mainView)
     }
   }
 

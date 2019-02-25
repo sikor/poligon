@@ -1,6 +1,7 @@
 package poligon.comp
 
 import com.avsystem.commons.misc.OptArg
+import monix.eval.Task
 import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.MenuItem
 import poligon.comp.CompFamily.{LayoutModification, LayoutSettings}
@@ -11,8 +12,16 @@ trait CompFamily[C] {
 
   type BComp = BindableComp[C]
 
-  def dynamic(factory: PropertyObservers => C): BComp =
-    new BindableComp((po: PropertyObservers) => factory(po))
+  protected def gatherModifications(modifications: Seq[LayoutModification[BComp]])(implicit po: PropertyObservers):
+  Task[Seq[LayoutModification[C]]] =
+    Task.gather(modifications.map {
+      case Removed(i) => Task.now(Removed[C](i))
+      case Added(i, c) => c.bind(po).map(Added(i, _))
+    })
+
+  def dynamic(factory: PropertyObservers => Task[C]): BComp = BindableComp.dynamic(factory)
+
+  def simple(factory: PropertyObservers => C): BindableComp[C] = BindableComp.simple(factory)
 
   def layout(property: Obs[Seq[LayoutModification[BindableComp[C]]]],
              layoutDescription: LayoutSettings = LayoutSettings()): BindableComp[C]
@@ -101,4 +110,5 @@ object CompFamily {
     case class Removed[V](index: Int) extends LayoutModification[V]
 
   }
+
 }

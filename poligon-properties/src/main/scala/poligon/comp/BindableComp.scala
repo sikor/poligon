@@ -1,10 +1,13 @@
 package poligon.comp
 
+import monix.eval.Task
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 
-class BindableComp[C](val create: PropertyObservers => C) {
-  def bind(parentPo: PropertyObservers): C = {
+trait BindableComp[C] {
+  def create(po: PropertyObservers): Task[C]
+
+  def bind(parentPo: PropertyObservers): Task[C] = {
     val po = parentPo.createSubObservers()
     val c = create(po)
     parentPo.registerSubObservers(c, po)
@@ -14,7 +17,10 @@ class BindableComp[C](val create: PropertyObservers => C) {
 
 object BindableComp {
 
-  def dynamic[C](factory: PropertyObservers => C): BindableComp[C] =
-    new BindableComp((po: PropertyObservers) => factory(po))
+  def dynamic[C](factory: PropertyObservers => Task[C]): BindableComp[C] =
+    (po: PropertyObservers) => factory(po)
+
+  def simple[C](factory: PropertyObservers => C): BindableComp[C] =
+    (po: PropertyObservers) => Task.now(factory(po))
 
 }
