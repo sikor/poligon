@@ -1,7 +1,7 @@
 package poligon.comp
 
 import monix.eval.Task
-import poligon.comp.CompFamily.LayoutModification.Added
+import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.MenuItem
 import poligon.comp.CompFamily.{LayoutModification, LayoutSettings}
 import poligon.polyproperty.{HasSimplePropertyCodec, Obs, PropertyWithParent, Sin}
@@ -35,14 +35,14 @@ object Comp extends HasSimplePropertyCodec[Comp] {
   }
 
   def dynLayout[V](
-                    property: Obs[Seq[LayoutModification[Comp]]],
+                    modifications: Obs[Seq[LayoutModification[Comp]]],
                     layoutDescription: LayoutSettings = LayoutSettings()): Comp =
     new Comp {
       def createComponent[C](family: CompFamily[C]): Task[BindableComp[C]] = {
-        val comps = property.map(mods => mods.map(mod => mod
-          .map(desc => desc.createComponent(family))
-          .map(_ => family.label(Obs.constant("not supported")))
-        ))
+        val comps = modifications.mapAsync(mods => Task.gatherUnordered(mods.map {
+          case Added(index, v) => v.createComponent(family).map(bindableComp => Added(index, bindableComp))
+          case Removed(index) => Task.now(Removed[BindableComp[C]](index))
+        }))
         Task.now(family.layout(comps, layoutDescription))
       }
     }
@@ -75,7 +75,7 @@ object Comp extends HasSimplePropertyCodec[Comp] {
   def replaceable(property: Obs[Comp]): Comp =
     new Comp {
       def createComponent[C](family: CompFamily[C]): Task[BindableComp[C]] = {
-        val c = property.map(c => c.createComponent(family)).map(_ => family.label(Obs.constant("not supported")))
+        val c = property.mapAsync(c => c.createComponent(family))
         Task.now(family.replaceable(c))
       }
     }

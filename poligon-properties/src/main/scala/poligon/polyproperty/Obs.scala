@@ -6,7 +6,9 @@ import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty.PropertyWithParent.{Struct, listenStructure}
 
-trait Obs[T] {
+trait Obs[+T] {
+  self =>
+
   def listenAsync(listener: T => Task[Unit])(implicit obs: PropertyObservers): Unit
 
   def listen(listener: T => Unit)(implicit obs: PropertyObservers): Unit =
@@ -15,6 +17,14 @@ trait Obs[T] {
   def map[R](f: T => R): Obs[R] = mapAsync(v => Task.now(f(v)))
 
   def mapAsync[R](f: T => Task[R]): Obs[R] = new MapObs[T, R](this, f)
+
+  def flatMap[R](f: T => Obs[R]): Obs[R] = new Obs[R] {
+    def listenAsync(listener: R => Task[Unit])(implicit obs: PropertyObservers): Unit = {
+      self.listen { t =>
+        f(t).listenAsync(listener)
+      }
+    }
+  }
 }
 
 object Obs {
