@@ -6,7 +6,7 @@ import poligon.polyproperty.Property.SortedMapProperty
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, EntryPatch}
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.StructuralChange
-import poligon.polyproperty.PropertyObserver.{PropertyObservers, RootPropertyObservers}
+import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 import scala.collection.SortedMap
 
@@ -31,8 +31,12 @@ object PropertyWithParent {
 
     def set(value: T): Act[Unit] = Act.create(implicit r => PropertyChanger.set(p, value))
 
+    def set: Sin[T] = Sin.eval(t => set(t))
+
     def setEnforcingListeners(value: T): Act[Unit] =
       Act.create(implicit r => PropertyChanger.set(p, value, enforceListeners = true))
+
+    def setEnforcingListeners: Sin[T] = Sin.eval(v => setEnforcingListeners(v))
 
     def listen(listener: T => Task[Unit], init: Boolean = false)(implicit o: PropertyObservers): Task[Unit] = {
       o.observe(p.property, new PropertyObserver[T] {
@@ -79,27 +83,14 @@ object PropertyWithParent {
     def getSeq: Seq[PropertyWithParent[T]] =
       SubProperty.getSeq(p.property).map(e => new PropertyWithParent[T](e, p.opt))
 
-    def insert(index: Int, value: T*)(implicit observed: RootPropertyObservers): Unit = {
-      PropertyChanger.insert[T](p, index, value: _*)
-    }
+    def insert(index: Int, values: Seq[T]): Act[Unit] =
+      Act.create(implicit po => PropertyChanger.insert(p, index, values: _*))
 
-    def insert: Sin[(Int, Seq[T])] = Sin(implicit po => {
-      case (index, value) => PropertyChanger.insert(p, index, value: _*)
-    })
+    def append(value: T*): Act[Unit] =
+      Act.create(implicit po => PropertyChanger.append[T](p, value: _*))
 
-    def append(value: T*)(implicit observed: RootPropertyObservers): Unit = {
-      PropertyChanger.append[T](p, value: _*)
-    }
-
-    def append: Sin[Seq[T]] = Sin(implicit po => v => append(v: _*))
-
-    def remove(index: Int, count: Int)(implicit observed: RootPropertyObservers): Unit = {
-      PropertyChanger.remove[T](p, index, count)
-    }
-
-    def remove: Sin[(Int, Int)] = Sin(implicit po => {
-      case (index, count) => remove(index, count)
-    })
+    def remove(index: Int, count: Int): Act[Unit] =
+      Act.create(implicit po => PropertyChanger.remove[T](p, index, count))
 
     def structObs: Obs[Struct[T]] = Obs.struct(p)
   }
@@ -114,19 +105,11 @@ object PropertyWithParent {
       wrap(seqSortedMap(key))
     }
 
-    def put(key: K, value: V)(implicit observed: RootPropertyObservers): Unit = {
-      PropertyChanger.put(key, value, p, c)
-    }
+    def put(key: K, value: V): Act[Unit] =
+      Act.create(implicit po => PropertyChanger.put(key, value, p, c))
 
-    def put: Sin[(K, V)] = Sin(implicit po => {
-      case (k, v) => put(k, v)
-    })
-
-    def remove(key: K)(implicit observed: RootPropertyObservers): Unit = {
-      PropertyChanger.remove(key, p, c)
-    }
-
-    def remove: Sin[K] = Sin(implicit po => k => remove(k))
+    def remove(key: K): Act[Unit] =
+      Act.create(implicit po => PropertyChanger.remove(key, p, c))
 
     private def wrap(s: Property[V]): PropertyWithParent[V] = {
       new PropertyWithParent[V](s, p.opt)

@@ -9,6 +9,7 @@ trait Sin[T] {
 object Sin {
 
   def eval[T](f: T => Act[Unit]): Sin[T] = new ActFunSin[T](f)
+  def evalUnit(f: => Act[Unit]): Sin[Unit] = new ActFunSin[Unit](_ => f)
 
   class ActFunSin[T](f: T => Act[Unit]) extends Sin[T] {
     def push(v: T)(implicit po: RootPropertyObservers): Unit = {
