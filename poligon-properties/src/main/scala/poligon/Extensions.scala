@@ -45,8 +45,7 @@ object Extensions {
 
   private class ObservableObs[T](source: Observable[T]) extends Obs[T] {
     def listen(listener: T => Task[Unit])(implicit po: PropertyObservers): Task[Unit] = {
-      val completeTask = source.mapAsync(listener).completedL
-      po.runTask(completeTask)
+      po.subscribeToObservable(source, listener)
       Task.unit
     }
   }

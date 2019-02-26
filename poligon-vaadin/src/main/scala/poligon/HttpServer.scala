@@ -72,7 +72,7 @@ object HttpServer {
         .foreachL { view =>
           setContent(view)
         }
-      taskRunner.runTask(mainView)
+      taskRunner.renderMainView(mainView)
     }
   }
 

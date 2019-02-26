@@ -7,7 +7,7 @@ import poligon.comp.CompFamily
 import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.{MenuItem, MenuValue}
 import poligon.comp.CompFamily._
-import poligon.polyproperty.PropertyObserver.RootPropertyObservers
+import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty.{Obs, Sin}
 
 import scala.collection.mutable
@@ -68,7 +68,7 @@ object VaadinCompFamily extends CompFamily[Component] {
     cb
   }
 
-  private case class MenuCommand[T](value: MenuItem[T], sin: Sin[T])(implicit po: RootPropertyObservers) extends MenuBar.Command {
+  private case class MenuCommand[T](value: MenuItem[T], sin: Sin[T])(implicit po: PropertyObservers) extends MenuBar.Command {
     def menuSelected(selectedItem: MenuBar#MenuItem): Unit = {
       sin.push(value.asInstanceOf[MenuValue[T]].value)(po)
     }

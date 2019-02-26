@@ -1,9 +1,9 @@
 package poligon.polyproperty
 
-import poligon.polyproperty.PropertyObserver.RootPropertyObservers
+import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 trait Sin[T] {
-  def push(v: T)(implicit po: RootPropertyObservers): Unit
+  def push(v: T)(implicit po: PropertyObservers): Unit
 }
 
 object Sin {
@@ -12,9 +12,8 @@ object Sin {
   def evalUnit(f: => Act[Unit]): Sin[Unit] = new ActFunSin[Unit](_ => f)
 
   class ActFunSin[T](f: T => Act[Unit]) extends Sin[T] {
-    def push(v: T)(implicit po: RootPropertyObservers): Unit = {
-      val task = f(v).run(po)
-      po.taskRunner.runTask(task)
+    def push(v: T)(implicit po: PropertyObservers): Unit = {
+      po.taskRunner.handleEvent(v, f, po)
     }
   }
 

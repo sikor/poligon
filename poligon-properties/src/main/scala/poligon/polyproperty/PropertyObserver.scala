@@ -1,7 +1,10 @@
-package poligon.polyproperty
+package poligon
+package polyproperty
 
 import monix.eval.Task
-import monix.execution.{CancelableFuture, Scheduler}
+import monix.execution.Ack.Continue
+import monix.execution.{Cancelable, CancelableFuture, Scheduler}
+import monix.reactive.Observable
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.StructuralChange
 
 import scala.collection.mutable
@@ -51,11 +54,29 @@ object PropertyObserver {
   }
 
   class TaskRunner(scheduler: Scheduler, onFail: Throwable => Unit = _ => ()) {
-    def runTask(task: Task[Unit]): CancelableFuture[Unit] = {
+
+    private def runTask(task: Task[Unit]): CancelableFuture[Unit] = {
       val future = task.runAsync(scheduler)
       future.failed.foreach { ex => onFail(ex) }(scheduler)
       future
     }
+
+    //TODO: handle removing cancelable when finished
+    // note that side effects that observable might have apart from listener is limited because Property can be changed only with RootPropertyObservers
+    def subscribeToObservable[T](observable: Observable[T], listener: T => Task[Unit], po: PropertyObservers): Unit = {
+      val cancelable = observable.subscribe(value => runTask(listener(value)).mapNow(_ => Continue), onFail)(scheduler)
+      po.addCancelable(cancelable)
+    }
+
+    def handleEvent[T](value: T, handler: T => Act[Unit], po: PropertyObservers): Unit = {
+      val task = handler(value).run(po.root)
+      runTask(task)
+    }
+
+    def renderMainView(task: Task[Unit]): Unit = {
+      runTask(task)
+    }
+
   }
 
   def createRoot(taskRunner: TaskRunner): PropertyObservers = {
@@ -95,17 +116,15 @@ object PropertyObserver {
     }
   }
 
-  object RootPropertyObservers {
-    implicit def fromPo(implicit po: PropertyObservers): RootPropertyObservers = po.root
-  }
+  class PropertyObservers private[PropertyObserver](private[PropertyObserver] val root: RootPropertyObservers) {
 
-  class PropertyObservers private[PropertyObserver](val root: RootPropertyObservers) {
+    def taskRunner: TaskRunner = root.taskRunner
 
     private[PropertyObserver] val map = new ObserversMap()
     private[PropertyObserver] val subObservers: mutable.HashMap[Any, PropertyObservers] = new mutable.HashMap()
 
     //TODO: remove cancelable when finished
-    private val cancelables = new ArrayBuffer[CancelableFuture[Unit]]
+    private val cancelables = new ArrayBuffer[Cancelable]
 
     def createSubObservers(): PropertyObservers = new PropertyObservers(root)
 
@@ -127,8 +146,12 @@ object PropertyObserver {
       map.observe(property, propertyObserver)
     }
 
-    def runTask(task: Task[Unit]): Unit = {
-      cancelables.append(root.taskRunner.runTask(task))
+    def addCancelable(cancelable: Cancelable): Unit = {
+      cancelables.append(cancelable)
+    }
+
+    def subscribeToObservable[T](observable: Observable[T], listener: T => Task[Unit]): Unit = {
+      taskRunner.subscribeToObservable(observable, listener, this)
     }
   }
 

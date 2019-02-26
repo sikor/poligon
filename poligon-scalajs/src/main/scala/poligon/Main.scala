@@ -23,6 +23,6 @@ object Main {
       .foreachL { c =>
         dom.document.body.appendChild(c)
       }
-    runner.runTask(view)
+    runner.renderMainView(view)
   }
 }
