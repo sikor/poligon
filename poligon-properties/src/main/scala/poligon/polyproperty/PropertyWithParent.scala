@@ -27,19 +27,12 @@ object PropertyWithParent {
   implicit class GeneralPropertyExt[T](p: PropertyWithParent[T])(implicit c: PropertyCodec[T]) {
     def read: T = c.readProperty(p.property.asInstanceOf[c.PropertyType])
 
-    def refresh: Sin[Unit] = Sin(implicit po => _ => p.refresher().foreach(d => set.push(d)))
+    def refresh: Act[Unit] = Act.defer(p.refresher().map(d => set(d)).getOrElse(Act.unit))
 
-    def set(value: T)(implicit observed: RootPropertyObservers): Task[Unit] = {
-      PropertyChanger.set(p, value)
-    }
+    def set(value: T): Act[Unit] = Act.create(implicit r => PropertyChanger.set(p, value))
 
-    def setA(value: T): Act[Unit] = Act.create(r => set(value)(r))
-
-    def set: Sin[T] = Sin(implicit po => value => set(value))
-
-    def setEnforcingListeners: Sin[T] = Sin(implicit po => { value =>
-      PropertyChanger.set(p, value, enforceListeners = true)
-    })
+    def setEnforcingListeners(value: T): Act[Unit] =
+      Act.create(implicit r => PropertyChanger.set(p, value, enforceListeners = true))
 
     def listen(listener: T => Task[Unit], init: Boolean = false)(implicit o: PropertyObservers): Task[Unit] = {
       o.observe(p.property, new PropertyObserver[T] {

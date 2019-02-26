@@ -21,5 +21,8 @@ object Act {
 
   def fromTask[T](task: Task[T]): Act[T] = create(_ => task)
 
+  def defer[T](act: => Act[T]): Act[T] = create(r => act.run(r))
+
+  val unit: Act[Unit] = Act.create(_ => Task.unit)
 
 }

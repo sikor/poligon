@@ -25,14 +25,14 @@ object ExecuteTasksButton {
   class ExecuteTasksContext(service: ExecuteTasksService) {
     val executeTaskStatus: PropertyWithParent[ExecuteTasksStatus] = PropertyWithParent(NotStarted)
 
-    def executeTasks: Sin[Unit] = Sin.evalAsync { _ =>
+    def executeTasks: Sin[Unit] = Sin.eval { _ =>
       for {
-        _ <- executeTaskStatus.setA(InProgress)
+        _ <- executeTaskStatus.set(InProgress)
         isSuccess <- Act.fromTask(service.executeTasks())
         _ <- if (isSuccess) {
-          executeTaskStatus.setA(ExecuteTasksStatus.Success)
+          executeTaskStatus.set(ExecuteTasksStatus.Success)
         } else {
-          executeTaskStatus.setA(ExecuteTasksStatus.Failed)
+          executeTaskStatus.set(ExecuteTasksStatus.Failed)
         }
       } yield ()
     }
