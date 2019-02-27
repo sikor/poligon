@@ -1,7 +1,7 @@
 package poligon.polyproperty
 
 import monix.eval.Task
-import poligon.polyproperty.PropertyObserver.RootPropertyObservers
+import poligon.polyproperty.PropertyObserver.{PropertyObservers, RootPropertyObservers}
 
 trait Act[T] {
   self =>
@@ -16,6 +16,12 @@ trait Act[T] {
 }
 
 object Act {
+
+  type Sin[T] = T => Act[Unit]
+
+  def push[T](v: T, f: T => Act[Unit])(implicit po: PropertyObservers): Unit = {
+    po.taskRunner.handleEvent(v, f, po)
+  }
 
   def create[T](f: RootPropertyObservers => Task[T]): Act[T] = (rootScope: RootPropertyObservers) => f(rootScope)
 

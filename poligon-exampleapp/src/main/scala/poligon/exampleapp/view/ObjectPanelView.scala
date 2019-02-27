@@ -7,7 +7,7 @@ import poligon.comp.CompFamily.{Form, Horizontal, LayoutSettings}
 import poligon.exampleapp.services.Services
 import poligon.exampleapp.view.ObjectPanelModel._
 import poligon.polyproperty.Property.Diff.Val
-import poligon.polyproperty.{PropertyWithParent, Sin}
+import poligon.polyproperty.PropertyWithParent
 
 import scala.collection.SortedMap
 
@@ -35,7 +35,7 @@ object ObjectPanelView {
     layout(
       textField("object name", ctx.newObjectName),
       button(
-        Sin.evalUnit(ctx.newObjectName.read |> (on => ctx.model.put(on, SomeObject(on, SortedMap.empty)))),
+        _ => ctx.newObjectName.read |> (on => ctx.model.put(on, SomeObject(on, SortedMap.empty))),
         "add object")
     )(LayoutSettings(Horizontal)),
     dynLayout(ctx.model.structObs.toLayoutMod(createObjectTile(ctx, _)))
@@ -47,16 +47,16 @@ object ObjectPanelView {
     layout(
       layout(
         dynLabel(p.map(o => s"Object ${o.name} (status: ${o.lastAction})"), "h2"),
-        button(Sin.evalUnit(ctx.model.remove(p.read.name)), "remove")
+        button(_ => ctx.model.remove(p.read.name), "remove")
       )(LayoutSettings(Horizontal)),
       layout(
-        textField("instance number", "", Sin.eval(v => p.getField(_.newInstanceNumber).set(Val(v.toInt)))),
-        button(Sin.evalUnit {
+        textField("instance number", "", v => p.getField(_.newInstanceNumber).set(Val(v.toInt))),
+        button(_ =>
           for {
             _ <- p.getField(_.instances).put(newInstanceNum, ObjectInstance(newInstanceNum, SortedMap.empty))
             _ <- p.getField(_.lastAction).set(Val(Action(ActionStatus.Success, s"instance added: $newInstanceNum")))
           } yield ()
-        }, "add instance")
+          , "add instance")
       )(LayoutSettings(Horizontal)),
       dynLayout(p.getField(_.instances).structObs.toLayoutMod(createInstanceTile(ctx, p, _)))
     )()
@@ -66,9 +66,9 @@ object ObjectPanelView {
     layout(
       dynLabel(i.map(instance => s"Instance ${instance.id}"), "h3"),
       layout(
-        textField("resource name", "", Sin.eval(v => i.getField(_.newResourceName).set(Val(v)))),
-        textField("resource value", "", Sin.eval(v => i.getField(_.newResourceValue).set(Val(v)))),
-        button(Sin.evalUnit {
+        textField("resource name", "", v => i.getField(_.newResourceName).set(Val(v))),
+        textField("resource value", "", v => i.getField(_.newResourceValue).set(Val(v))),
+        button(_ => {
           val newResourceName = i.getField(_.newResourceName).read.toOpt.get
           val newResourceValue = i.getField(_.newResourceValue).read.toOpt.get
           i.getField(_.resources).put(newResourceName, SingleResource(newResourceName, newResourceValue))
@@ -76,17 +76,17 @@ object ObjectPanelView {
       )(LayoutSettings(Horizontal)),
       dynLayout(i.getField(_.resources).structObs.toLayoutMod { r =>
         r.getCase[SingleResource].map { s =>
-          textField(s.read.name, s.getField(_.value).read, Sin.eval(v => for {
+          textField(s.read.name, s.getField(_.value).read, v => for {
             _ <- s.getField(_.formValue).set(Val(v))
             _ <- s.getField(_.lastAction).set(Val(Action(ActionStatus.Draft, "")))
-          } yield ()))
+          } yield ())
         }.orElse {
           r.getCase[MultiResource].map { m =>
             createMultiResource(p.read.name, i.read.id, m)
           }
         }.get
       }, LayoutSettings(Form)),
-      button(Sin.evalUnit {
+      button(_ => {
         val resourcesSnap = i.getField(_.resources).read
         resourcesSnap.values.flatMap {
           case s: SingleResource =>
@@ -103,11 +103,10 @@ object ObjectPanelView {
 
   def createMultiResource(o: String, instance: Int, m: PropertyWithParent[MultiResource]): Comp =
     dynLayout(m.getField(_.value).structObs.toLayoutMod(ri =>
-      textField(ri.read.idx.toString, ri.getField(_.value).read, Sin.eval { v =>
+      textField(ri.read.idx.toString, ri.getField(_.value).read, v =>
         for {
           _ <- ri.getField(_.formValue).set(Val(v))
           _ <- ri.getField(_.lastAction).set(Val(Action(ActionStatus.Draft, "")))
-        } yield ()
-      })
+        } yield ())
     ), LayoutSettings(Form, caption = m.read.name))
 }

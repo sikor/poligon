@@ -7,8 +7,9 @@ import poligon.comp.CompFamily
 import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.{MenuItem, MenuValue}
 import poligon.comp.CompFamily._
+import poligon.polyproperty.Act.Sin
 import poligon.polyproperty.PropertyObserver.PropertyObservers
-import poligon.polyproperty.{Obs, Sin}
+import poligon.polyproperty.{Act, Obs}
 
 import scala.collection.mutable
 
@@ -45,14 +46,14 @@ object VaadinCompFamily extends CompFamily[Component] {
   def textField(caption: String, initValue: String, onValueSet: Sin[String]): BComp = simple { implicit po =>
     val field = new TextField()
     field.setValue(initValue)
-    field.addValueChangeListener(_ => onValueSet.push(field.getValue))
+    field.addValueChangeListener(_ => Act.push(field.getValue, onValueSet))
     field.setCaption(caption)
     field
   }
 
   def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): BComp = dynamic { implicit po =>
     val button = new Button()
-    button.addClickListener(_ => onClick.push(()))
+    button.addClickListener(_ => Act.push((), onClick))
     val t1 = caption.listenNow { s =>
       button.setCaption(s)
     }
@@ -62,15 +63,15 @@ object VaadinCompFamily extends CompFamily[Component] {
     Task.gatherUnordered(List(t1, t2)).map(_ => button)
   }
 
-  def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): BComp = simple { implicit po =>
+  def checkBox(caption: String, initValue: Boolean, l: Sin[Boolean]): BComp = simple { implicit po =>
     val cb = new CheckBox(caption, initValue)
-    cb.addValueChangeListener((_: Property.ValueChangeEvent) => value.push(cb.getValue))
+    cb.addValueChangeListener((_: Property.ValueChangeEvent) => Act.push[Boolean](cb.getValue, l))
     cb
   }
 
   private case class MenuCommand[T](value: MenuItem[T], sin: Sin[T])(implicit po: PropertyObservers) extends MenuBar.Command {
     def menuSelected(selectedItem: MenuBar#MenuItem): Unit = {
-      sin.push(value.asInstanceOf[MenuValue[T]].value)(po)
+      Act.push(value.asInstanceOf[MenuValue[T]].value, sin)
     }
   }
 

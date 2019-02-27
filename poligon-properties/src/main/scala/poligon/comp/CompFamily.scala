@@ -5,6 +5,7 @@ import monix.eval.Task
 import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.MenuItem
 import poligon.comp.CompFamily.{LayoutModification, LayoutSettings}
+import poligon.polyproperty.Act.Sin
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty._
 

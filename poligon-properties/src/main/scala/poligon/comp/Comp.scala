@@ -4,7 +4,8 @@ import monix.eval.Task
 import poligon.comp.CompFamily.LayoutModification.Added
 import poligon.comp.CompFamily.MenuTree.MenuItem
 import poligon.comp.CompFamily.{LayoutModification, LayoutSettings}
-import poligon.polyproperty.{HasSimplePropertyCodec, Obs, PropertyWithParent, Sin}
+import poligon.polyproperty.Act.Sin
+import poligon.polyproperty.{HasSimplePropertyCodec, Obs, PropertyWithParent}
 
 /**
   * TODO:

@@ -4,7 +4,8 @@ import poligon.comp.Comp
 import poligon.comp.Comp._
 import poligon.exampleapp.services.ExecuteTasksService
 import poligon.exampleapp.view.ExecuteTasksButton.ExecuteTasksStatus.{InProgress, NotStarted}
-import poligon.polyproperty.{Act, HasSimplePropertyCodec, PropertyWithParent, Sin}
+import poligon.polyproperty.Act.Sin
+import poligon.polyproperty.{Act, HasSimplePropertyCodec, PropertyWithParent}
 
 object ExecuteTasksButton {
 
@@ -25,7 +26,7 @@ object ExecuteTasksButton {
   class ExecuteTasksContext(service: ExecuteTasksService) {
     val executeTaskStatus: PropertyWithParent[ExecuteTasksStatus] = PropertyWithParent(NotStarted)
 
-    def executeTasks: Sin[Unit] = Sin.eval { _ =>
+    def executeTasks: Sin[Unit] = _ =>
       for {
         _ <- executeTaskStatus.set(InProgress)
         isSuccess <- Act.fromTask(service.executeTasks())
@@ -35,7 +36,6 @@ object ExecuteTasksButton {
           executeTaskStatus.set(ExecuteTasksStatus.Failed)
         }
       } yield ()
-    }
   }
 
   def create(ctx: ExecuteTasksContext): Comp =

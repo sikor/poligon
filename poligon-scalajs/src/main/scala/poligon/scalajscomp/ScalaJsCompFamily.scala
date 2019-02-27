@@ -8,7 +8,8 @@ import poligon.comp.CompFamily
 import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.{MenuItem, MenuLink, MenuNode, MenuValue}
 import poligon.comp.CompFamily._
-import poligon.polyproperty.{Obs, Sin}
+import poligon.polyproperty.Act.Sin
+import poligon.polyproperty.{Act, Obs}
 import scalatags.JsDom.all._
 import scalatags.JsDom.{all => st}
 
@@ -94,7 +95,7 @@ object ScalaJsCompFamily extends CompFamily[Element] {
   def textField(caption: String, initValue: String, onValueSet: Sin[String]): BComp =
     simple { implicit po =>
       val input = st.input(st.`type` := "text", st.cls := "form-control", st.id := caption).render
-      input.onchange = { _ => onValueSet.push(input.value) }
+      input.onchange = { _ => Act.push(input.value, onValueSet) }
       st.div(st.cls := "form-group")(
         st.label(st.`for` := caption)(caption),
         input
@@ -104,7 +105,7 @@ object ScalaJsCompFamily extends CompFamily[Element] {
   def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): BComp =
     dynamic { implicit po =>
       val b = st.button(st.cls := "btn").render
-      b.onclick = { _ => onClick.push(()) }
+      b.onclick = { _ => Act.push((), onClick) }
       val t1 = caption.listenNow(v => b.innerHTML = v)
       val t2 = enabled.listenNow(enabled => b.disabled = !enabled)
       Task.gatherUnordered(List(t1, t2)).map(_ => b)
@@ -115,7 +116,7 @@ object ScalaJsCompFamily extends CompFamily[Element] {
       val in = st.input(st.`type` := "checkbox", st.value := caption).render
       in.checked = initValue
       in.onclick = { _ =>
-        value.push(in.checked)
+        Act.push(in.checked, value)
       }
       st.div(cls := "checkbox")(
         st.label(in, caption)
@@ -146,7 +147,7 @@ object ScalaJsCompFamily extends CompFamily[Element] {
   def menuBar[T](menuItems: Seq[(List[String], MenuItem[T])], itemSelected: Sin[T]): BComp =
     simple { implicit po =>
       val menuTree = MenuTree.toTree(menuItems)
-      dropDownMenu[T](menuTree, item => itemSelected.push(item))
+      dropDownMenu[T](menuTree, item => Act.push(item, itemSelected))
     }
 
   def replaceable(child: Obs[BComp]): BComp =

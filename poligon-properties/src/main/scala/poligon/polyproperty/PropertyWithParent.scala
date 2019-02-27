@@ -31,12 +31,8 @@ object PropertyWithParent {
 
     def set(value: T): Act[Unit] = Act.create(implicit r => PropertyChanger.set(p, value))
 
-    def set: Sin[T] = Sin.eval(t => set(t))
-
     def setEnforcingListeners(value: T): Act[Unit] =
       Act.create(implicit r => PropertyChanger.set(p, value, enforceListeners = true))
-
-    def setEnforcingListeners: Sin[T] = Sin.eval(v => setEnforcingListeners(v))
 
     def listen(listener: T => Task[Unit], init: Boolean = false)(implicit o: PropertyObservers): Task[Unit] = {
       o.observe(p.property, new PropertyObserver[T] {
