@@ -63,7 +63,7 @@ object HttpServer {
 
     override def init(request: VaadinRequest): Unit = {
       val executeTasksService = new ExecuteTasksService()
-      val services = new Services(new FutureTranslator, executeTasksService, dmService, currentTimeService)
+      val services = new Services(new FakeTranslator, executeTasksService, dmService, currentTimeService)
       val taskRunner = new TaskRunner(monixScheduler, fail => logger.error("Failed to run task", fail))
       val propertyObservers = PropertyObserver.createRoot(taskRunner)
       val mainView = MainView.create(services)

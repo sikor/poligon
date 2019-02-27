@@ -1,7 +1,9 @@
 package poligon.tran
 
-trait Translator[A[_]] {
+import monix.eval.Task
 
-  def translate(key: TranslationKey): A[String]
+trait Translator {
+
+  def translate(key: TranslationKey, lang: String): Task[String]
 
 }

@@ -2,12 +2,12 @@ package poligon
 package exampleapp.view
 
 import poligon.comp.Comp
-import poligon.exampleapp.view.ExecuteTasksButton.ExecuteTasksContext
-import poligon.polyproperty.{Obs, PropertyWithParent}
-import Comp._
-import poligon.comp.CompFamily.{LayoutSettings, Vertical}
+import poligon.comp.Comp._
 import poligon.comp.CompFamily.MenuTree.MenuValue
+import poligon.comp.CompFamily.{LayoutSettings, Vertical}
 import poligon.exampleapp.services.Services
+import poligon.exampleapp.view.ExecuteTasksButton.ExecuteTasksContext
+import poligon.polyproperty.PropertyWithParent
 
 object MainView {
 
@@ -22,13 +22,10 @@ object MainView {
   def create(services: Services): Comp = Comp.factory(create(new MainViewContext(services)))
 
   private def create(ctx: MainViewContext): Comp = {
-    val helloText: Obs[String] = ctx.services.translator.translate(Hello).toObs.map {
-      case Success(s) => s
-      case Failure(ex) => ex.getMessage
-    }
+    val helloText = ctx.services.translator.translate(Hello, "en")
 
     layout(
-      dynLabel(helloText),
+      dynLabel(helloText.toObs.map(_.getOrElse("fail"))),
       menuBar(ctx.menuItems, ctx.currentPage.setEnforcingListeners),
       ExecuteTasksButton.create(ctx.executeTasksContext),
       replaceable(ctx.currentPage.obs)

@@ -14,7 +14,7 @@ object Main {
     val executeTasksService = new ExecuteTasksService
     val currentTimeService = new CurrentTimeService
     val dmService = new DmService
-    val services = new Services(new FutureTranslator, executeTasksService, dmService, currentTimeService)
+    val services = new Services(new FakeTranslator, executeTasksService, dmService, currentTimeService)
     val runner = new TaskRunner(Scheduler.Implicits.global)
     val propertyObservers = PropertyObserver.createRoot(runner)
     val view = MainView.create(services)

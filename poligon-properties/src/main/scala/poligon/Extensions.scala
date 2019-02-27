@@ -2,7 +2,7 @@ package poligon
 
 import monix.eval.Task
 import monix.reactive.Observable
-import poligon.Extensions.{FutureExtensions, ObservableExtensions, StructObsExtensions, TraversableOnceExtensions}
+import poligon.Extensions._
 import poligon.comp.Comp
 import poligon.comp.CompFamily.LayoutModification
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Removed}
@@ -29,6 +29,9 @@ trait Extensions {
 
   implicit def futureExtensions[T](f: Future[T]): FutureExtensions[T] =
     new FutureExtensions[T](f)
+
+  implicit def taskExtensions[T](t: Task[T]): TaskExtensions[T] =
+    new TaskExtensions[T](t)
 }
 
 object Extensions {
@@ -74,6 +77,16 @@ object Extensions {
 
   class FutureExtensions[T](private val future: Future[T]) extends AnyVal {
     def toObs: Obs[Try[T]] = new FutureObs[T](future)
+  }
+
+  private class TaskObs[T](source: Task[T]) extends Obs[Try[T]] {
+    def listen(listener: Try[T] => Task[Unit])(implicit po: PropertyObservers): Task[Unit] = {
+      source.materialize.flatMap(listener)
+    }
+  }
+
+  class TaskExtensions[T](private val task: Task[T]) extends AnyVal {
+    def toObs: Obs[Try[T]] = new TaskObs[T](task)
   }
 
 }

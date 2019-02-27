@@ -149,10 +149,10 @@ object ScalaJsCompFamily extends CompFamily[Element] {
       dropDownMenu[T](menuTree, item => itemSelected.push(item))
     }
 
-  def replaceable(property: Obs[BComp]): BComp =
+  def replaceable(child: Obs[BComp]): BComp =
     dynamic { implicit po =>
       val wrapper = st.div().render
-      property.listen { c =>
+      child.listen { c =>
         c.bind(po).map { newContent =>
           val currentContent = wrapper.firstChild
           po.deregisterSubObservers(currentContent)
