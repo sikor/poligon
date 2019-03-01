@@ -22,6 +22,8 @@ object GAct {
 
   }
 
+  def now[T](v: T): GAct[T, Any] = create(_ => Task.now(v))
+
   def create[T, S](f: S => Task[T]): GAct[T, S] = (rootScope: S) => f(rootScope)
 
   def fromTask[T, S](task: Task[T]): GAct[T, S] = create(_ => task)

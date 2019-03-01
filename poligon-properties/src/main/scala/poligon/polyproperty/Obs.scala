@@ -17,14 +17,6 @@ trait Obs[+T] {
   def map[R](f: T => R): Obs[R] = mapAsync(v => Task.now(f(v)))
 
   def mapAsync[R](f: T => Task[R]): Obs[R] = new MapObs[T, R](this, f)
-
-  def flatMap[R](f: T => Obs[R]): Obs[R] = new Obs[R] {
-    def listen(listener: R => Task[Unit])(implicit obs: PropertyObservers): Task[Unit] = {
-      self.listen { t =>
-        f(t).listen(listener)
-      }
-    }
-  }
 }
 
 object Obs {
