@@ -5,10 +5,11 @@ import monix.reactive.Observable
 import poligon.Extensions._
 import poligon.comp.Comp
 import poligon.comp.CompFamily.LayoutModification
+import poligon.polyproperty.Obs.Obs
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, Removed}
 import poligon.polyproperty.PropertyObserver.PropertyObservers
+import poligon.polyproperty.PropertyWithParent
 import poligon.polyproperty.PropertyWithParent.Struct
-import poligon.polyproperty.{Obs, PropertyWithParent}
 import poligon.tran.TranslationKey.TranslationKeyOps
 
 import scala.collection.immutable.{SortedMap, TreeMap}
@@ -47,8 +48,8 @@ object Extensions {
   }
 
   private class ObservableObs[T](source: Observable[T]) extends Obs[T] {
-    def listen(listener: T => Task[Unit])(implicit po: PropertyObservers): Task[Unit] = {
-      po.subscribeToObservable(source, listener)
+    def listen(listener: T => Task[Unit], scope: PropertyObservers): Task[Unit] = {
+      scope.subscribeToObservable(source, listener)
       Task.unit
     }
   }
@@ -70,7 +71,7 @@ object Extensions {
   // hold reference only to RootPropertyObserver so leak would occur only when Promise holder lives longer
   // than whole view.
   private class FutureObs[T](source: Future[T]) extends Obs[Try[T]] {
-    def listen(listener: Try[T] => Task[Unit])(implicit po: PropertyObservers): Task[Unit] = {
+    def listen(listener: Try[T] => Task[Unit], scope: PropertyObservers): Task[Unit] = {
       Task.fromFuture(source).materialize.flatMap(listener)
     }
   }
@@ -80,7 +81,7 @@ object Extensions {
   }
 
   private class TaskObs[T](source: Task[T]) extends Obs[Try[T]] {
-    def listen(listener: Try[T] => Task[Unit])(implicit po: PropertyObservers): Task[Unit] = {
+    def listen(listener: Try[T] => Task[Unit], scope: PropertyObservers): Task[Unit] = {
       source.materialize.flatMap(listener)
     }
   }

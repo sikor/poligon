@@ -6,18 +6,18 @@ import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.MenuItem
 import poligon.comp.CompFamily.{LayoutModification, LayoutSettings}
 import poligon.polyproperty.Act.Sin
+import poligon.polyproperty.Obs.Obs
 import poligon.polyproperty.PropertyObserver.PropertyObservers
-import poligon.polyproperty._
 
 trait CompFamily[C] {
 
   type BComp = BindableComp[C]
 
-  protected def gatherModifications(modifications: Seq[LayoutModification[BComp]])(implicit po: PropertyObservers):
+  protected def gatherModifications(modifications: Seq[LayoutModification[BComp]], scope: PropertyObservers):
   Task[Seq[LayoutModification[C]]] =
     Task.gather(modifications.map {
       case Removed(i) => Task.now(Removed[C](i))
-      case Added(i, c) => c.bind(po).map(Added(i, _))
+      case Added(i, c) => c.bind(scope).map(Added(i, _))
     })
 
   def dynamic(factory: PropertyObservers => Task[C]): BComp = BindableComp.dynamic(factory)

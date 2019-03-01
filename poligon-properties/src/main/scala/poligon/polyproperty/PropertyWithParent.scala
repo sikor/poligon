@@ -3,6 +3,7 @@ package polyproperty
 
 import monix.eval.Task
 import poligon.polyproperty.Act.Act
+import poligon.polyproperty.Obs.Obs
 import poligon.polyproperty.Property.SortedMapProperty
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, EntryPatch}
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec

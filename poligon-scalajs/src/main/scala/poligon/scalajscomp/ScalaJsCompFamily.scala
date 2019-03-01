@@ -9,6 +9,7 @@ import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.{MenuItem, MenuLink, MenuNode, MenuValue}
 import poligon.comp.CompFamily._
 import poligon.polyproperty.Act.Sin
+import poligon.polyproperty.Obs.Obs
 import poligon.polyproperty.{Act, Obs}
 import scalatags.JsDom.all._
 import scalatags.JsDom.{all => st}
@@ -69,15 +70,15 @@ object ScalaJsCompFamily extends CompFamily[Element] {
   def layout(
               property: Obs[Seq[LayoutModification[BComp]]],
               layoutDescription: LayoutSettings): BComp =
-    dynamic { implicit po =>
+    dynamic { po =>
       val builder = layoutDescription.layoutType match {
         case Horizontal =>
           new HorizontalLayoutBuilder
         case Vertical | Form =>
           new VerticalLayoutBuilder
       }
-      property.listen { modifications =>
-        gatherModifications(modifications).map(_.foreach {
+      property.listenOn(po) { modifications =>
+        gatherModifications(modifications, po).map(_.foreach {
           case Removed(index) =>
             val removedComponent: Node = builder.removeElement(index)
             po.deregisterSubObservers(removedComponent)
@@ -87,9 +88,9 @@ object ScalaJsCompFamily extends CompFamily[Element] {
       }.map(_ => builder.container)
     }
 
-  def label(property: Obs[String], styleName: String): BComp = dynamic { implicit po =>
+  def label(property: Obs[String], styleName: String): BComp = dynamic { po =>
     val l = st.span(st.cls := styleName).render
-    property.listenNow(s => l.innerHTML = s).map(_ => l)
+    property.listenNow(po)(s => l.innerHTML = s).map(_ => l)
   }
 
   def textField(caption: String, initValue: String, onValueSet: Sin[String]): BComp =
@@ -106,17 +107,17 @@ object ScalaJsCompFamily extends CompFamily[Element] {
     dynamic { implicit po =>
       val b = st.button(st.cls := "btn").render
       b.onclick = { _ => Act.push((), onClick) }
-      val t1 = caption.listenNow(v => b.innerHTML = v)
-      val t2 = enabled.listenNow(enabled => b.disabled = !enabled)
+      val t1 = caption.listenNow(po)(v => b.innerHTML = v)
+      val t2 = enabled.listenNow(po)(enabled => b.disabled = !enabled)
       Task.gatherUnordered(List(t1, t2)).map(_ => b)
     }
 
   def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): BComp =
-    simple { implicit po =>
+    simple { po =>
       val in = st.input(st.`type` := "checkbox", st.value := caption).render
       in.checked = initValue
       in.onclick = { _ =>
-        Act.push(in.checked, value)
+        Act.push(in.checked, value)(po)
       }
       st.div(cls := "checkbox")(
         st.label(in, caption)
@@ -151,9 +152,9 @@ object ScalaJsCompFamily extends CompFamily[Element] {
     }
 
   def replaceable(child: Obs[BComp]): BComp =
-    dynamic { implicit po =>
+    dynamic { po =>
       val wrapper = st.div().render
-      child.listen { c =>
+      child.listenOn(po) { c =>
         c.bind(po).map { newContent =>
           val currentContent = wrapper.firstChild
           po.deregisterSubObservers(currentContent)

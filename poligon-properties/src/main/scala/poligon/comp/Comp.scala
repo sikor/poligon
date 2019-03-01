@@ -5,7 +5,8 @@ import poligon.comp.CompFamily.LayoutModification.Added
 import poligon.comp.CompFamily.MenuTree.MenuItem
 import poligon.comp.CompFamily.{LayoutModification, LayoutSettings}
 import poligon.polyproperty.Act.Sin
-import poligon.polyproperty.{HasSimplePropertyCodec, Obs, PropertyWithParent}
+import poligon.polyproperty.Obs.Obs
+import poligon.polyproperty.{GObs, HasSimplePropertyCodec, PropertyWithParent}
 
 /**
   * TODO:
@@ -82,15 +83,15 @@ object Comp extends HasSimplePropertyCodec[Comp] {
 
   def layout(comps: Comp*)(settings: LayoutSettings = LayoutSettings()): Comp =
     dynLayout(
-      Obs.constant(comps.iterator.zipWithIndex.map { case (comp, index) => Added(index, comp) }.toSeq),
+      GObs.constant(comps.iterator.zipWithIndex.map { case (comp, index) => Added(index, comp) }.toSeq),
       settings)
 
   def label(value: String, styleName: String = ""): Comp =
-    dynLabel(Obs.constant(value), styleName)
+    dynLabel(GObs.constant(value), styleName)
 
   def textField(caption: String, property: PropertyWithParent[String]): Comp =
     textField(caption, property.read, property.set)
 
   def button(onClick: Sin[Unit], caption: String): Comp =
-    button(onClick, Obs.constant(caption), Obs.constant(true))
+    button(onClick, GObs.constant(caption), GObs.constant(true))
 }

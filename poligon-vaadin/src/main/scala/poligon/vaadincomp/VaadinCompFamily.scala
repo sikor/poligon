@@ -8,6 +8,7 @@ import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.{MenuItem, MenuValue}
 import poligon.comp.CompFamily._
 import poligon.polyproperty.Act.Sin
+import poligon.polyproperty.Obs.Obs
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 import poligon.polyproperty.{Act, Obs}
 
@@ -17,7 +18,7 @@ import scala.collection.mutable
 object VaadinCompFamily extends CompFamily[Component] {
 
   def layout(property: Obs[Seq[LayoutModification[BComp]]],
-             layoutDescription: LayoutSettings): BComp = dynamic { implicit po =>
+             layoutDescription: LayoutSettings): BComp = dynamic { po =>
     val layout = layoutDescription.layoutType match {
       case Vertical => new VerticalLayout()
       case Horizontal => new HorizontalLayout()
@@ -25,8 +26,8 @@ object VaadinCompFamily extends CompFamily[Component] {
     }
     layout.setSpacing(layoutDescription.spacing)
 
-    property.listen { modifications =>
-      gatherModifications(modifications).map(_.foreach {
+    property.listen({ modifications =>
+      gatherModifications(modifications, po).map(_.foreach {
         case Removed(index) =>
           val removedComponent = layout.getComponent(index)
           po.deregisterSubObservers(removedComponent)
@@ -34,7 +35,7 @@ object VaadinCompFamily extends CompFamily[Component] {
         case Added(index, added) =>
           layout.addComponent(added, index)
       })
-    }.map(_ => layout)
+    }, po).map(_ => layout)
   }
 
   def label(property: Obs[String], styleName: String): BComp = bindSimple(property, {
@@ -54,10 +55,10 @@ object VaadinCompFamily extends CompFamily[Component] {
   def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): BComp = dynamic { implicit po =>
     val button = new Button()
     button.addClickListener(_ => Act.push((), onClick))
-    val t1 = caption.listenNow { s =>
+    val t1 = caption.listenNow(po) { s =>
       button.setCaption(s)
     }
-    val t2 = enabled.listenNow { e =>
+    val t2 = enabled.listenNow(po) { e =>
       button.setEnabled(e)
     }
     Task.gatherUnordered(List(t1, t2)).map(_ => button)
@@ -111,7 +112,7 @@ object VaadinCompFamily extends CompFamily[Component] {
 
   def replaceable(property: Obs[BComp]): BComp = dynamic { implicit po =>
     val wrapper = new SimpleCustomComponent()
-    property.listen { comp =>
+    property.listenOn(po) { comp =>
       comp.bind(po).map { component =>
         po.deregisterSubObservers(wrapper.getContent)
         wrapper.setContent(component)
@@ -122,6 +123,6 @@ object VaadinCompFamily extends CompFamily[Component] {
   private def bindSimple[T, P <: com.vaadin.data.Property[T] with Component]
   (property: Obs[T], label: => P): BComp = dynamic { implicit po =>
     val l = label
-    property.listenNow(v => l.setValue(v)).map(_ => l)
+    property.listenNow(po)(v => l.setValue(v)).map(_ => l)
   }
 }

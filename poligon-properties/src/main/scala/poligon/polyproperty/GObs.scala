@@ -7,7 +7,9 @@ trait GObs[+T, -S] {
 
   def listen(listener: T => Task[Unit], scope: S): Task[Unit]
 
-  def listenNow(listener: T => Unit, scope: S): Task[Unit] =
+  def listenOn(scope: S)(listener: T => Task[Unit]): Task[Unit] = listen(listener, scope)
+
+  def listenNow(scope: S)(listener: T => Unit): Task[Unit] =
     listen(v => Task.now(listener(v)), scope)
 
   def c[S2 <: S]: GObs[T, S2] = this
