@@ -80,9 +80,9 @@ object PropertyObserver {
 
   }
 
-  def createRoot(taskRunner: TaskRunner): PropertyObservers = {
+  def createRoot[D](taskRunner: TaskRunner, deps: D): GPropertyObservers[D] = {
     val root = new RootPropertyObservers(taskRunner)
-    val po = new PropertyObservers(root)
+    val po = new GPropertyObservers(root, deps)
     root.setPropertyObservers(po)
     po
   }
@@ -117,7 +117,9 @@ object PropertyObserver {
     }
   }
 
-  class PropertyObservers private[PropertyObserver](private[PropertyObserver] val root: RootPropertyObservers) {
+  type PropertyObservers = GPropertyObservers[_]
+
+  class GPropertyObservers[D] private[PropertyObserver](private[PropertyObserver] val root: RootPropertyObservers, deps: D) {
 
     def taskRunner: TaskRunner = root.taskRunner
 
@@ -127,7 +129,7 @@ object PropertyObserver {
     //TODO: remove cancelable when finished
     private val cancelables = new ArrayBuffer[Cancelable]
 
-    def createSubObservers(): PropertyObservers = new PropertyObservers(root)
+    def createSubObservers(): GPropertyObservers[D] = new GPropertyObservers(root, deps)
 
     def registerSubObservers(key: Any, po: PropertyObservers): Unit = {
       require(!subObservers.contains(key))

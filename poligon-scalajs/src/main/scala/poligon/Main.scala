@@ -16,7 +16,7 @@ object Main {
     val dmService = new DmService
     val services = new Services(new FakeTranslator, executeTasksService, dmService, currentTimeService)
     val runner = new TaskRunner(Scheduler.Implicits.global)
-    val propertyObservers = PropertyObserver.createRoot(runner)
+    val propertyObservers = PropertyObserver.createRoot(runner, services)
     val view = MainView.create(services)
       .createComponent(ScalaJsCompFamily)
       .bind(propertyObservers)

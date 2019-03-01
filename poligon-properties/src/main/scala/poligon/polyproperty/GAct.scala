@@ -19,7 +19,6 @@ object GAct {
   implicit class GActExt[T, S](private val g: GAct[T, S]) extends AnyVal {
     def flatMap[T2](f: T => GAct[T2, S]): GAct[T2, S] =
       create(rootScope => g.run(rootScope).flatMap(v => f(v).run(rootScope)))
-
   }
 
   def now[T](v: T): GAct[T, Any] = create(_ => Task.now(v))

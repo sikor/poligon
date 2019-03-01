@@ -65,7 +65,7 @@ object HttpServer {
       val executeTasksService = new ExecuteTasksService()
       val services = new Services(new FakeTranslator, executeTasksService, dmService, currentTimeService)
       val taskRunner = new TaskRunner(monixScheduler, fail => logger.error("Failed to run task", fail))
-      val propertyObservers = PropertyObserver.createRoot(taskRunner)
+      val propertyObservers = PropertyObserver.createRoot(taskRunner, services)
       val mainView = MainView.create(services)
         .createComponent(VaadinCompFamily)
         .bind(propertyObservers)
