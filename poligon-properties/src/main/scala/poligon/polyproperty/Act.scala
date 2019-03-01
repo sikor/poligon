@@ -3,19 +3,9 @@ package poligon.polyproperty
 import monix.eval.Task
 import poligon.polyproperty.PropertyObserver.{PropertyObservers, RootPropertyObservers}
 
-trait Act[T] {
-  self =>
-
-  def run(rootScope: RootPropertyObservers): Task[T]
-
-  def flatMap[T2](f: T => Act[T2]): Act[T2] =
-    Act.create(rootScope => self.run(rootScope).flatMap(v => f(v).run(rootScope)))
-
-  def map[T2](f: T => T2): Act[T2] =
-    Act.create(rootScope => self.run(rootScope).map(f))
-}
-
 object Act {
+
+  type Act[T] = GAct[T, RootPropertyObservers]
 
   type Sin[T] = T => Act[Unit]
 

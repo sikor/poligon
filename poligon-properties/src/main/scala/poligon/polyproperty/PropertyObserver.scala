@@ -5,6 +5,7 @@ import monix.eval.Task
 import monix.execution.Ack.Continue
 import monix.execution.{Cancelable, CancelableFuture, Scheduler}
 import monix.reactive.Observable
+import poligon.polyproperty.Act.Act
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.StructuralChange
 
 import scala.collection.mutable
