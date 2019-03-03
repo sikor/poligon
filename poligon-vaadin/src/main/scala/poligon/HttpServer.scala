@@ -13,6 +13,7 @@ import monix.execution.schedulers.ExecutorScheduler
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.session.{DefaultSessionIdManager, SessionHandler}
 import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
+import poligon.comp.BindableComp
 import poligon.exampleapp.services._
 import poligon.exampleapp.view.MainView
 import poligon.polyproperty.PropertyObserver
@@ -66,9 +67,8 @@ object HttpServer {
       val services = new Services(new FakeTranslator, executeTasksService, dmService, currentTimeService)
       val taskRunner = new TaskRunner(monixScheduler, fail => logger.error("Failed to run task", fail))
       val propertyObservers = PropertyObserver.createRoot(taskRunner, services)
-      val mainView = MainView.create(services)
-        .createComponent(VaadinCompFamily)
-        .bind(propertyObservers)
+      val comp = MainView.create(services).createComponent(VaadinCompFamily)
+      val mainView = BindableComp.bind(comp, propertyObservers)
         .foreachL { view =>
           setContent(view)
         }

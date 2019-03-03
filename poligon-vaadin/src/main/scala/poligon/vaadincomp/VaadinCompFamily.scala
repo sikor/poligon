@@ -3,7 +3,7 @@ package poligon.vaadincomp
 import com.vaadin.data.Property
 import com.vaadin.ui.{Form => _, _}
 import monix.eval.Task
-import poligon.comp.CompFamily
+import poligon.comp.{BindableComp, CompFamily}
 import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.{MenuItem, MenuValue}
 import poligon.comp.CompFamily._
@@ -113,7 +113,7 @@ object VaadinCompFamily extends CompFamily[Component] {
   def replaceable(property: Obs[BComp]): BComp = dynamic { implicit po =>
     val wrapper = new SimpleCustomComponent()
     property.listenOn(po) { comp =>
-      comp.bind(po).map { component =>
+      BindableComp.bind(comp, po).map { component =>
         po.deregisterSubObservers(wrapper.getContent)
         wrapper.setContent(component)
       }

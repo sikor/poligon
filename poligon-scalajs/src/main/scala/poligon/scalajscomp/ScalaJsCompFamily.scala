@@ -4,7 +4,7 @@ import com.avsystem.commons.SharedExtensions.MapOps.Entry
 import monix.eval.Task
 import org.scalajs.dom.Element
 import org.scalajs.dom.raw.Node
-import poligon.comp.CompFamily
+import poligon.comp.{BindableComp, CompFamily}
 import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.{MenuItem, MenuLink, MenuNode, MenuValue}
 import poligon.comp.CompFamily._
@@ -155,7 +155,7 @@ object ScalaJsCompFamily extends CompFamily[Element] {
     dynamic { po =>
       val wrapper = st.div().render
       child.listenOn(po) { c =>
-        c.bind(po).map { newContent =>
+        BindableComp.bind(c, po).map { newContent =>
           val currentContent = wrapper.firstChild
           po.deregisterSubObservers(currentContent)
           if (currentContent != null) {

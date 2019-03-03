@@ -17,7 +17,7 @@ trait CompFamily[C] {
   Task[Seq[LayoutModification[C]]] =
     Task.gather(modifications.map {
       case Removed(i) => Task.now(Removed[C](i))
-      case Added(i, c) => c.bind(scope).map(Added(i, _))
+      case Added(i, c) => BindableComp.bind(c, scope).map(Added(i, _))
     })
 
   def dynamic(factory: PropertyObservers => Task[C]): BComp = BindableComp.dynamic(factory)

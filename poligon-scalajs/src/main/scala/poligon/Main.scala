@@ -2,6 +2,7 @@ package poligon
 
 import monix.execution.Scheduler
 import org.scalajs.dom
+import poligon.comp.BindableComp
 import poligon.exampleapp.services._
 import poligon.exampleapp.view.MainView
 import poligon.polyproperty.PropertyObserver
@@ -17,9 +18,9 @@ object Main {
     val services = new Services(new FakeTranslator, executeTasksService, dmService, currentTimeService)
     val runner = new TaskRunner(Scheduler.Implicits.global)
     val propertyObservers = PropertyObserver.createRoot(runner, services)
-    val view = MainView.create(services)
+    val comp = MainView.create(services)
       .createComponent(ScalaJsCompFamily)
-      .bind(propertyObservers)
+    val view = BindableComp.bind(comp, propertyObservers)
       .foreachL { c =>
         dom.document.body.appendChild(c)
       }
