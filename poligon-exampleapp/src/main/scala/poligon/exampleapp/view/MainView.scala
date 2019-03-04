@@ -21,10 +21,8 @@ object MainView {
   def create(services: Services): Comp = factory(create(new MainViewContext(services)))
 
   private def create(ctx: MainViewContext): Comp = {
-    val helloText = ctx.services.translator.translate(Hello, "en")
-
     layout(
-      dynLabel(helloText.toObs.map(_.getOrElse("fail"))),
+      tLabel(Hello),
       menuBar(ctx.menuItems, ctx.currentPage.setEnforcingListeners),
       ExecuteTasksButton.create(ctx.executeTasksContext),
       replaceable(ctx.currentPage.obs)

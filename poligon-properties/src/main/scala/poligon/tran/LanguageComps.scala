@@ -9,6 +9,9 @@ trait LanguageComps[D <: HasLanguageSupport] {
   def tranLabel(property: GObs[TranslationKey, GPropertyObservers[D]], styleName: String = ""): GComp[D] =
     comps.dynLabel(property.mapAsync(translate))
 
+  def tLabel(property: TranslationKey, styleName: String = ""): GComp[D] =
+    tranLabel(GObs.constant(property))
+
   def translate(key: TranslationKey): GAct[String, GPropertyObservers[D]] =
     GAct.create(d => d.deps.translator.translate(key, d.deps.language.read))
 }
