@@ -3,6 +3,7 @@ package poligon.vaadincomp
 import com.vaadin.data.Property
 import com.vaadin.ui.{Form => _, _}
 import monix.eval.Task
+import poligon.comp.BindableComp.BindableComp
 import poligon.comp.{BindableComp, CompFamily}
 import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.{MenuItem, MenuValue}
@@ -17,8 +18,8 @@ import scala.collection.mutable
 
 object VaadinCompFamily extends CompFamily[Component] {
 
-  def layout(property: Obs[Seq[LayoutModification[BComp]]],
-             layoutDescription: LayoutSettings): BComp = dynamic { po =>
+  def layout[D](property: Obs[Seq[LayoutModification[BindableComp[Component, D]]]],
+             layoutDescription: LayoutSettings): BindableComp[Component, D] = dynamic { po =>
     val layout = layoutDescription.layoutType match {
       case Vertical => new VerticalLayout()
       case Horizontal => new HorizontalLayout()
@@ -110,7 +111,7 @@ object VaadinCompFamily extends CompFamily[Component] {
     def getContent: Component = getCompositionRoot
   }
 
-  def replaceable(property: Obs[BComp]): BComp = dynamic { implicit po =>
+  def replaceable[D](property: Obs[BindableComp[Component, D]]): BindableComp[Component, D] = dynamic { implicit po =>
     val wrapper = new SimpleCustomComponent()
     property.listenOn(po) { comp =>
       BindableComp.bind(comp, po).map { component =>

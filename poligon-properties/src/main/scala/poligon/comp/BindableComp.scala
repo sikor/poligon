@@ -2,14 +2,14 @@ package poligon.comp
 
 import monix.eval.Task
 import poligon.polyproperty.GAct
-import poligon.polyproperty.PropertyObserver.PropertyObservers
+import poligon.polyproperty.PropertyObserver.GPropertyObservers
 
 
 object BindableComp {
 
-  type BindableComp[+C] = GAct[C, PropertyObservers]
+  type BindableComp[+T, -D] = GAct[T, GPropertyObservers[D]]
 
-  def bind[C](bc: BindableComp[C], parentPo: PropertyObservers): Task[C] = {
+  def bind[C, D](bc: BindableComp[C, D], parentPo: GPropertyObservers[D]): Task[C] = {
     val po = parentPo.createSubObservers()
     val cTask = bc.run(po)
     cTask.map { c =>
@@ -18,10 +18,10 @@ object BindableComp {
     }
   }
 
-  def dynamic[C](factory: PropertyObservers => Task[C]): BindableComp[C] =
-    (po: PropertyObservers) => factory(po)
+  def dynamic[T, D](factory: GPropertyObservers[D] => Task[T]): BindableComp[T, D] =
+    (po: GPropertyObservers[D]) => factory(po)
 
-  def simple[C](factory: PropertyObservers => C): BindableComp[C] =
-    (po: PropertyObservers) => Task.now(factory(po))
+  def simple[T, D](factory: GPropertyObservers[D] => T): BindableComp[T, D] =
+    (po: GPropertyObservers[D]) => Task.now(factory(po))
 
 }

@@ -21,78 +21,82 @@ import poligon.polyproperty.{GObs, HasSimplePropertyCodec, PropertyWithParent}
   * 4. Obs flatMap?
   * 5. Try Get rid of replaceable - should be needed only in app root
   */
-trait Comp {
-  def createComponent[C](family: CompFamily[C]): BindableComp[C]
+trait GComp[-D] {
+  def createComponent[T](family: CompFamily[T]): BindableComp[T, D]
 }
 
-object Comp extends HasSimplePropertyCodec[Comp] {
+object Comp extends Comps[Any] {
+  type Comp = GComp[Any]
+}
 
-  def factory(highLevelFactory: => Comp): Comp = new Comp {
-    def createComponent[C](family: CompFamily[C]): BindableComp[C] = highLevelFactory.createComponent(family)
+trait Comps[D] extends HasSimplePropertyCodec[GComp[D]] {
+
+  def factory(highLevelFactory: => GComp[D]): GComp[D] = new GComp[D] {
+    def createComponent[T](family: CompFamily[T]): BindableComp[T, D] = highLevelFactory.createComponent(family)
   }
 
   def dynLayout[V](
-                    modifications: Obs[Seq[LayoutModification[Comp]]],
-                    layoutDescription: LayoutSettings = LayoutSettings()): Comp =
-    new Comp {
-      def createComponent[C](family: CompFamily[C]): BindableComp[C] = {
+                    modifications: Obs[Seq[LayoutModification[GComp[D]]]],
+                    layoutDescription: LayoutSettings = LayoutSettings()): GComp[D] =
+    new GComp[D] {
+      def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = {
         val comps = modifications.map(mods => mods.map(m => m.map(_.createComponent(family))))
         family.layout(comps, layoutDescription)
       }
     }
 
-  def dynLabel(property: Obs[String], styleName: String = ""): Comp =
-    new Comp {
-      def createComponent[C](family: CompFamily[C]): BindableComp[C] = family.label(property, styleName)
+  def dynLabel(property: Obs[String], styleName: String = ""): GComp[D] =
+    new GComp[D] {
+      def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = family.label(property, styleName)
     }
 
-  def textField(caption: String, initValue: String, onValueSet: Sin[String]): Comp =
-    new Comp {
-      def createComponent[C](family: CompFamily[C]): BindableComp[C] = family.textField(caption, initValue, onValueSet)
+  def textField(caption: String, initValue: String, onValueSet: Sin[String]): GComp[D] =
+    new GComp[D] {
+      def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = family.textField(caption, initValue, onValueSet)
     }
 
-  def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): Comp =
-    new Comp {
-      def createComponent[C](family: CompFamily[C]): BindableComp[C] = family.button(onClick, caption, enabled)
+  def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): GComp[D] =
+    new GComp[D] {
+      def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = family.button(onClick, caption, enabled)
     }
 
-  def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): Comp =
-    new Comp {
-      def createComponent[C](family: CompFamily[C]): BindableComp[C] = family.checkBox(caption, initValue, value)
+  def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): GComp[D] =
+    new GComp[D] {
+      def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = family.checkBox(caption, initValue, value)
     }
 
-  def menuBar[T](menuItems: Seq[(List[String], MenuItem[T])], itemSelected: Sin[T]): Comp =
-    new Comp {
-      def createComponent[C](family: CompFamily[C]): BindableComp[C] = family.menuBar(menuItems, itemSelected)
+  def menuBar[T](menuItems: Seq[(List[String], MenuItem[T])], itemSelected: Sin[T]): GComp[D] =
+    new GComp[D] {
+      def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = family.menuBar(menuItems, itemSelected)
     }
 
-  def replaceable(property: Obs[Comp]): Comp =
-    new Comp {
-      def createComponent[C](family: CompFamily[C]): BindableComp[C] = {
+  def replaceable(property: Obs[GComp[D]]): GComp[D] =
+    new GComp[D] {
+      def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = {
         val c = property.map(c => c.createComponent(family))
         family.replaceable(c)
       }
     }
 
-  def asyncComp(compTask: Task[Comp]): Comp = new Comp {
-    def createComponent[C](family: CompFamily[C]): BindableComp[C] = {
-      family.dynamic { po =>
+  def asyncComp(compTask: Task[GComp[D]]): GComp[D] = new GComp[D] {
+    def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = {
+      family.dynamic[D] { po =>
         compTask.flatMap(_.createComponent(family).run(po))
       }
     }
   }
 
-  def layout(comps: Comp*)(settings: LayoutSettings = LayoutSettings()): Comp =
+  def layout(comps: GComp[D]*)(settings: LayoutSettings = LayoutSettings()): GComp[D] =
     dynLayout(
       GObs.constant(comps.iterator.zipWithIndex.map { case (comp, index) => Added(index, comp) }.toSeq),
       settings)
 
-  def label(value: String, styleName: String = ""): Comp =
+  def label(value: String, styleName: String = ""): GComp[D] =
     dynLabel(GObs.constant(value), styleName)
 
-  def textField(caption: String, property: PropertyWithParent[String]): Comp =
+  def textField(caption: String, property: PropertyWithParent[String]): GComp[D] =
     textField(caption, property.read, property.set)
 
-  def button(onClick: Sin[Unit], caption: String): Comp =
+  def button(onClick: Sin[Unit], caption: String): GComp[D] =
     button(onClick, GObs.constant(caption), GObs.constant(true))
 }

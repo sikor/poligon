@@ -4,6 +4,7 @@ import com.avsystem.commons.SharedExtensions.MapOps.Entry
 import monix.eval.Task
 import org.scalajs.dom.Element
 import org.scalajs.dom.raw.Node
+import poligon.comp.BindableComp.BindableComp
 import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.{MenuItem, MenuLink, MenuNode, MenuValue}
 import poligon.comp.CompFamily._
@@ -67,9 +68,9 @@ object ScalaJsCompFamily extends CompFamily[Element] {
     }
   }
 
-  def layout(
-              property: Obs[Seq[LayoutModification[BComp]]],
-              layoutDescription: LayoutSettings): BComp =
+  def layout[D](
+              property: Obs[Seq[LayoutModification[BindableComp[Element, D]]]],
+              layoutDescription: LayoutSettings): BindableComp[Element, D] =
     dynamic { po =>
       val builder = layoutDescription.layoutType match {
         case Horizontal =>
@@ -151,7 +152,7 @@ object ScalaJsCompFamily extends CompFamily[Element] {
       dropDownMenu[T](menuTree, item => Act.push(item, itemSelected))
     }
 
-  def replaceable(child: Obs[BComp]): BComp =
+  def replaceable[D](child: Obs[BindableComp[Element, D]]): BindableComp[Element, D] =
     dynamic { po =>
       val wrapper = st.div().render
       child.listenOn(po) { c =>

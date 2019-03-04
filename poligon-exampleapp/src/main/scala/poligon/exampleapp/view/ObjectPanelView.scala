@@ -1,7 +1,6 @@
 package poligon
 package exampleapp.view
 
-import poligon.comp.Comp
 import poligon.comp.Comp._
 import poligon.comp.CompFamily.{Form, Horizontal, LayoutSettings}
 import poligon.exampleapp.services.Services

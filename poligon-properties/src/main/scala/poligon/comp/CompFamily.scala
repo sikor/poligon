@@ -8,37 +8,37 @@ import poligon.comp.CompFamily.MenuTree.MenuItem
 import poligon.comp.CompFamily.{LayoutModification, LayoutSettings}
 import poligon.polyproperty.Act.Sin
 import poligon.polyproperty.Obs.Obs
-import poligon.polyproperty.PropertyObserver.PropertyObservers
+import poligon.polyproperty.PropertyObserver.GPropertyObservers
 
-trait CompFamily[C] {
+trait CompFamily[T] {
 
-  type BComp = BindableComp[C]
+  type BComp = BindableComp[T, Any]
 
-  protected def gatherModifications(modifications: Seq[LayoutModification[BComp]], scope: PropertyObservers):
-  Task[Seq[LayoutModification[C]]] =
+  protected def gatherModifications[D](modifications: Seq[LayoutModification[BindableComp[T, D]]], scope: GPropertyObservers[D]):
+  Task[Seq[LayoutModification[T]]] =
     Task.gather(modifications.map {
-      case Removed(i) => Task.now(Removed[C](i))
+      case Removed(i) => Task.now(Removed[T](i))
       case Added(i, c) => BindableComp.bind(c, scope).map(Added(i, _))
     })
 
-  def dynamic(factory: PropertyObservers => Task[C]): BComp = BindableComp.dynamic(factory)
+  def dynamic[D](factory: GPropertyObservers[D] => Task[T]): BindableComp[T, D] = BindableComp.dynamic(factory)
 
-  def simple(factory: PropertyObservers => C): BindableComp[C] = BindableComp.simple(factory)
+  def simple[D](factory: GPropertyObservers[D] => T): BindableComp[T, D] = BindableComp.simple(factory)
 
-  def layout(property: Obs[Seq[LayoutModification[BindableComp[C]]]],
-             layoutDescription: LayoutSettings = LayoutSettings()): BindableComp[C]
+  def layout[D](property: Obs[Seq[LayoutModification[BindableComp[T, D]]]],
+             layoutDescription: LayoutSettings = LayoutSettings()): BindableComp[T, D]
 
-  def label(property: Obs[String], styleName: String = ""): BindableComp[C]
+  def label(property: Obs[String], styleName: String = ""): BComp
 
-  def textField(caption: String, initValue: String, onValueSet: Sin[String]): BindableComp[C]
+  def textField(caption: String, initValue: String, onValueSet: Sin[String]): BComp
 
-  def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): BindableComp[C]
+  def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): BComp
 
-  def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): BindableComp[C]
+  def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): BComp
 
-  def menuBar[T](menuItems: Seq[(List[String], MenuItem[T])], itemSelected: Sin[T]): BindableComp[C]
+  def menuBar[I](menuItems: Seq[(List[String], MenuItem[I])], itemSelected: Sin[I]): BComp
 
-  def replaceable(property: Obs[BindableComp[C]]): BindableComp[C]
+  def replaceable[D](property: Obs[BindableComp[T, D]]): BindableComp[T, D]
 }
 
 object CompFamily {

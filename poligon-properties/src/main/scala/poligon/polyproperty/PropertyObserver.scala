@@ -119,7 +119,7 @@ object PropertyObserver {
 
   type PropertyObservers = GPropertyObservers[_]
 
-  class GPropertyObservers[D] private[PropertyObserver](private[PropertyObserver] val root: RootPropertyObservers, deps: D) {
+  class GPropertyObservers[+D] private[PropertyObserver](private[PropertyObserver] val root: RootPropertyObservers, val deps: D) {
 
     def taskRunner: TaskRunner = root.taskRunner
 
