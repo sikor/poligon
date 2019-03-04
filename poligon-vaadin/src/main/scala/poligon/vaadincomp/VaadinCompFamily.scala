@@ -4,14 +4,14 @@ import com.vaadin.data.Property
 import com.vaadin.ui.{Form => _, _}
 import monix.eval.Task
 import poligon.comp.BindableComp.BindableComp
-import poligon.comp.{BindableComp, CompFamily}
 import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.{MenuItem, MenuValue}
 import poligon.comp.CompFamily._
+import poligon.comp.{BindableComp, CompFamily}
 import poligon.polyproperty.Act.Sin
 import poligon.polyproperty.Obs.Obs
-import poligon.polyproperty.PropertyObserver.PropertyObservers
-import poligon.polyproperty.{Act, Obs}
+import poligon.polyproperty.PropertyObserver.{GPropertyObservers, PropertyObservers}
+import poligon.polyproperty.{Act, GObs}
 
 import scala.collection.mutable
 
@@ -39,7 +39,7 @@ object VaadinCompFamily extends CompFamily[Component] {
     }, po).map(_ => layout)
   }
 
-  def label(property: Obs[String], styleName: String): BComp = bindSimple(property, {
+  def label[D](property: GObs[String, GPropertyObservers[D]], styleName: String): BindableComp[Component, D] = bindSimple(property, {
     val l = new Label()
     l.addStyleName(styleName)
     l
@@ -121,8 +121,8 @@ object VaadinCompFamily extends CompFamily[Component] {
     }.map(_ => wrapper)
   }
 
-  private def bindSimple[T, P <: com.vaadin.data.Property[T] with Component]
-  (property: Obs[T], label: => P): BComp = dynamic { implicit po =>
+  private def bindSimple[T, P <: com.vaadin.data.Property[T] with Component, D]
+  (property: GObs[T, GPropertyObservers[D]], label: => P): BindableComp[Component, D] = dynamic { implicit po =>
     val l = label
     property.listenNow(po)(v => l.setValue(v)).map(_ => l)
   }

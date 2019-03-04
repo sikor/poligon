@@ -24,7 +24,7 @@ object GObs {
 
     def map[R](f: T => R): GObs[R, S] = mapAsync(v => GAct.now(f(v)))
 
-    def mapAsync[R](f: T => GAct[R, S]): GObs[R, S] = new MapGObs[T, R, S](g, f)
+    def mapAsync[R, S2 <: S](f: T => GAct[R, S2]): GObs[R, S2] = new MapGObs[T, R, S2](g.c[S2], f)
 
   }
 

@@ -1,7 +1,7 @@
 package poligon.exampleapp.view
 
-import poligon.comp.Comp._
-import poligon.comp.Comp.Comp
+import poligon.exampleapp.EAComp._
+import poligon.exampleapp.EAComp.Comp
 import poligon.exampleapp.services.ExecuteTasksService
 import poligon.exampleapp.view.ExecuteTasksButton.ExecuteTasksStatus.{InProgress, NotStarted}
 import poligon.polyproperty.Act.Sin

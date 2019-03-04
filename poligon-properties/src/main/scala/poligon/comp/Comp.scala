@@ -7,6 +7,7 @@ import poligon.comp.CompFamily.MenuTree.MenuItem
 import poligon.comp.CompFamily.{LayoutModification, LayoutSettings}
 import poligon.polyproperty.Act.Sin
 import poligon.polyproperty.Obs.Obs
+import poligon.polyproperty.PropertyObserver.GPropertyObservers
 import poligon.polyproperty.{GObs, HasSimplePropertyCodec, PropertyWithParent}
 
 /**
@@ -25,11 +26,10 @@ trait GComp[-D] {
   def createComponent[T](family: CompFamily[T]): BindableComp[T, D]
 }
 
-object Comp extends Comps[Any] {
-  type Comp = GComp[Any]
-}
+object Comp extends Comps[Any]
 
 trait Comps[D] extends HasSimplePropertyCodec[GComp[D]] {
+  type Comp = GComp[D]
 
   def factory(highLevelFactory: => GComp[D]): GComp[D] = new GComp[D] {
     def createComponent[T](family: CompFamily[T]): BindableComp[T, D] = highLevelFactory.createComponent(family)
@@ -45,7 +45,7 @@ trait Comps[D] extends HasSimplePropertyCodec[GComp[D]] {
       }
     }
 
-  def dynLabel(property: Obs[String], styleName: String = ""): GComp[D] =
+  def dynLabel(property: GObs[String, GPropertyObservers[D]], styleName: String = ""): GComp[D] =
     new GComp[D] {
       def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = family.label(property, styleName)
     }

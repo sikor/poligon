@@ -7,6 +7,7 @@ import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.MenuItem
 import poligon.comp.CompFamily.{LayoutModification, LayoutSettings}
 import poligon.polyproperty.Act.Sin
+import poligon.polyproperty.GObs
 import poligon.polyproperty.Obs.Obs
 import poligon.polyproperty.PropertyObserver.GPropertyObservers
 
@@ -28,7 +29,7 @@ trait CompFamily[T] {
   def layout[D](property: Obs[Seq[LayoutModification[BindableComp[T, D]]]],
              layoutDescription: LayoutSettings = LayoutSettings()): BindableComp[T, D]
 
-  def label(property: Obs[String], styleName: String = ""): BComp
+  def label[D](property: GObs[String, GPropertyObservers[D]], styleName: String = ""): BindableComp[T, D]
 
   def textField(caption: String, initValue: String, onValueSet: Sin[String]): BComp
 

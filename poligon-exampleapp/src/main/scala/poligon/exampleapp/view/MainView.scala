@@ -1,8 +1,7 @@
 package poligon
 package exampleapp.view
 
-import poligon.comp.Comp
-import poligon.comp.Comp._
+import poligon.exampleapp.EAComp._
 import poligon.comp.CompFamily.MenuTree.MenuValue
 import poligon.comp.CompFamily.{LayoutSettings, Vertical}
 import poligon.exampleapp.services.Services
@@ -19,7 +18,7 @@ object MainView {
     val currentPage: PropertyWithParent[Comp] = PropertyWithParent(ObjectPanelView.create(services))
   }
 
-  def create(services: Services): Comp = Comp.factory(create(new MainViewContext(services)))
+  def create(services: Services): Comp = factory(create(new MainViewContext(services)))
 
   private def create(ctx: MainViewContext): Comp = {
     val helloText = ctx.services.translator.translate(Hello, "en")

@@ -9,9 +9,10 @@ import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.{MenuItem, MenuLink, MenuNode, MenuValue}
 import poligon.comp.CompFamily._
 import poligon.comp.{BindableComp, CompFamily}
-import poligon.polyproperty.Act
+import poligon.polyproperty.{Act, GObs}
 import poligon.polyproperty.Act.Sin
 import poligon.polyproperty.Obs.Obs
+import poligon.polyproperty.PropertyObserver.GPropertyObservers
 import scalatags.JsDom.all._
 import scalatags.JsDom.{all => st}
 
@@ -89,7 +90,7 @@ object ScalaJsCompFamily extends CompFamily[Element] {
       }.map(_ => builder.container)
     }
 
-  def label(property: Obs[String], styleName: String): BComp = dynamic { po =>
+  def label[D](property: GObs[String, GPropertyObservers[D]], styleName: String): BindableComp[Element, D] = dynamic { po =>
     val l = st.span(st.cls := styleName).render
     property.listenNow(po)(s => l.innerHTML = s).map(_ => l)
   }
