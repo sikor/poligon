@@ -4,13 +4,13 @@ import com.avsystem.commons.SharedExtensions.MapOps.Entry
 import monix.eval.Task
 import org.scalajs.dom.Element
 import org.scalajs.dom.raw.Node
-import poligon.comp.{BindableComp, CompFamily}
 import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.{MenuItem, MenuLink, MenuNode, MenuValue}
 import poligon.comp.CompFamily._
+import poligon.comp.{BindableComp, CompFamily}
+import poligon.polyproperty.Act
 import poligon.polyproperty.Act.Sin
 import poligon.polyproperty.Obs.Obs
-import poligon.polyproperty.{Act, Obs}
 import scalatags.JsDom.all._
 import scalatags.JsDom.{all => st}
 

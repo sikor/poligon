@@ -111,7 +111,7 @@ class PropertyCodecTest extends FunSuite {
 
   val taskRunner = new TaskRunner(monix.execution.Scheduler.Implicits.global, f => println(f.getMessage))
   test("sorted map update") {
-    implicit val po: PropertyObservers = PropertyObserver.createRoot(taskRunner)
+    implicit val po: PropertyObservers = PropertyObserver.createRoot(taskRunner, ())
     val p = PropertyWithParent[SortedMap[String, String]](TreeMap("a" -> "a", "b" -> "b", "c" -> "c", "d" -> "d", "y" -> "y"))
     PropertyWithParent.listenStructure[String, String, SortedMap[String, String]](p) { ch =>
       assert(ch.modifications.size == 5)
@@ -139,7 +139,7 @@ class PropertyCodecTest extends FunSuite {
   }
 
   private def sortedMapInsert(key: String, expIndex: Int): Unit = {
-    implicit val po: PropertyObservers = PropertyObserver.createRoot(taskRunner)
+    implicit val po: PropertyObservers = PropertyObserver.createRoot(taskRunner, ())
     val p = PropertyWithParent[SortedMap[String, String]](TreeMap("a" -> "a", "b" -> "b"))
     PropertyWithParent.listenStructure[String, String, SortedMap[String, String]](p) { ch =>
       assert(ch.modifications.size == 1)

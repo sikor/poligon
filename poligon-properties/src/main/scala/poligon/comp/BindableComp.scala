@@ -1,18 +1,17 @@
 package poligon.comp
 
 import monix.eval.Task
+import poligon.polyproperty.GAct
 import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 
-trait BindableComp[C] {
-  def create(po: PropertyObservers): Task[C]
-}
-
 object BindableComp {
+
+  type BindableComp[+C] = GAct[C, PropertyObservers]
 
   def bind[C](bc: BindableComp[C], parentPo: PropertyObservers): Task[C] = {
     val po = parentPo.createSubObservers()
-    val cTask = bc.create(po)
+    val cTask = bc.run(po)
     cTask.map { c =>
       parentPo.registerSubObservers(c, po)
       c

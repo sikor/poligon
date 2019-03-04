@@ -2,6 +2,7 @@ package poligon.comp
 
 import com.avsystem.commons.misc.OptArg
 import monix.eval.Task
+import poligon.comp.BindableComp.BindableComp
 import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.MenuItem
 import poligon.comp.CompFamily.{LayoutModification, LayoutSettings}
