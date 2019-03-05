@@ -118,6 +118,7 @@ object PropertyObserver {
   }
 
   type PropertyObservers = GPropertyObservers[_]
+  type AnyPropertyObservers = GPropertyObservers[Any]
 
   class GPropertyObservers[+D] private[PropertyObserver](private[PropertyObserver] val root: RootPropertyObservers, val deps: D) {
 

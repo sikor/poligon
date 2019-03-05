@@ -8,7 +8,7 @@ import poligon.comp.CompFamily.MenuTree.MenuItem
 import poligon.comp.CompFamily.{LayoutModification, LayoutSettings}
 import poligon.polyproperty.Act.Sin
 import poligon.polyproperty.GObs
-import poligon.polyproperty.Obs.Obs
+import poligon.polyproperty.Obs.AnyObs
 import poligon.polyproperty.PropertyObserver.GPropertyObservers
 
 trait CompFamily[T] {
@@ -26,20 +26,20 @@ trait CompFamily[T] {
 
   def simple[D](factory: GPropertyObservers[D] => T): BindableComp[T, D] = BindableComp.simple(factory)
 
-  def layout[D](property: Obs[Seq[LayoutModification[BindableComp[T, D]]]],
+  def layout[D](property: AnyObs[Seq[LayoutModification[BindableComp[T, D]]]],
              layoutDescription: LayoutSettings = LayoutSettings()): BindableComp[T, D]
 
   def label[D](property: GObs[String, GPropertyObservers[D]], styleName: String = ""): BindableComp[T, D]
 
   def textField(caption: String, initValue: String, onValueSet: Sin[String]): BComp
 
-  def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): BComp
+  def button(onClick: Sin[Unit], caption: AnyObs[String], enabled: AnyObs[Boolean]): BComp
 
   def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): BComp
 
   def menuBar[I](menuItems: Seq[(List[String], MenuItem[I])], itemSelected: Sin[I]): BComp
 
-  def replaceable[D](property: Obs[BindableComp[T, D]]): BindableComp[T, D]
+  def replaceable[D](property: AnyObs[BindableComp[T, D]]): BindableComp[T, D]
 }
 
 object CompFamily {

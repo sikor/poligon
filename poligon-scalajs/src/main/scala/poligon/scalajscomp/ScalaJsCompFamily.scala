@@ -9,10 +9,10 @@ import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.{MenuItem, MenuLink, MenuNode, MenuValue}
 import poligon.comp.CompFamily._
 import poligon.comp.{BindableComp, CompFamily}
-import poligon.polyproperty.{Act, GObs}
 import poligon.polyproperty.Act.Sin
-import poligon.polyproperty.Obs.Obs
+import poligon.polyproperty.Obs.AnyObs
 import poligon.polyproperty.PropertyObserver.GPropertyObservers
+import poligon.polyproperty.{Act, GObs}
 import scalatags.JsDom.all._
 import scalatags.JsDom.{all => st}
 
@@ -70,7 +70,7 @@ object ScalaJsCompFamily extends CompFamily[Element] {
   }
 
   def layout[D](
-              property: Obs[Seq[LayoutModification[BindableComp[Element, D]]]],
+              property: AnyObs[Seq[LayoutModification[BindableComp[Element, D]]]],
               layoutDescription: LayoutSettings): BindableComp[Element, D] =
     dynamic { po =>
       val builder = layoutDescription.layoutType match {
@@ -105,7 +105,7 @@ object ScalaJsCompFamily extends CompFamily[Element] {
       ).render
     }
 
-  def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): BComp =
+  def button(onClick: Sin[Unit], caption: AnyObs[String], enabled: AnyObs[Boolean]): BComp =
     dynamic { implicit po =>
       val b = st.button(st.cls := "btn").render
       b.onclick = { _ => Act.push((), onClick) }
@@ -153,7 +153,7 @@ object ScalaJsCompFamily extends CompFamily[Element] {
       dropDownMenu[T](menuTree, item => Act.push(item, itemSelected))
     }
 
-  def replaceable[D](child: Obs[BindableComp[Element, D]]): BindableComp[Element, D] =
+  def replaceable[D](child: AnyObs[BindableComp[Element, D]]): BindableComp[Element, D] =
     dynamic { po =>
       val wrapper = st.div().render
       child.listenOn(po) { c =>

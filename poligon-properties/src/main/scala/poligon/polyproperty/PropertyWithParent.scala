@@ -3,7 +3,7 @@ package polyproperty
 
 import monix.eval.Task
 import poligon.polyproperty.Act.Act
-import poligon.polyproperty.Obs.Obs
+import poligon.polyproperty.Obs.AnyObs
 import poligon.polyproperty.Property.SortedMapProperty
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, EntryPatch}
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec
@@ -57,9 +57,9 @@ object PropertyWithParent {
       }
     }
 
-    def obs: Obs[T] = Obs(p)
+    def obs: AnyObs[T] = Obs(p)
 
-    def map[R](f: T => R): Obs[R] = obs.map(f)
+    def map[R](f: T => R): AnyObs[R] = obs.map(f)
   }
 
   implicit class UnionPropertyExt[S](p: PropertyWithParent[S])(implicit c: UnionPropertyCodec[S]) {
@@ -90,7 +90,7 @@ object PropertyWithParent {
     def remove(index: Int, count: Int): Act[Unit] =
       Act.create(implicit po => PropertyChanger.remove[T](p, index, count))
 
-    def structObs: Obs[Struct[T]] = Obs.struct(p)
+    def structObs: AnyObs[Struct[T]] = Obs.struct(p)
   }
 
   implicit class SortedMapPropertyExt[K, V](val p: PropertyWithParent[SortedMap[K, V]])(implicit val c: SortedMapPropertyCodec[K, V]) {
@@ -117,7 +117,7 @@ object PropertyWithParent {
       p.property.asInstanceOf[SortedMapProperty[K, V, BSortedMap[K, V]]].value
     }
 
-    def structObs: Obs[Struct[V]] = Obs.struct(p)
+    def structObs: AnyObs[Struct[V]] = Obs.struct(p)
   }
 
   class StructuralChangeWithParents[K, V, T] private[PropertyWithParent](val property: PropertyWithParent[T],

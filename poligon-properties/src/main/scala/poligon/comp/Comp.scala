@@ -6,7 +6,7 @@ import poligon.comp.CompFamily.LayoutModification.Added
 import poligon.comp.CompFamily.MenuTree.MenuItem
 import poligon.comp.CompFamily.{LayoutModification, LayoutSettings}
 import poligon.polyproperty.Act.Sin
-import poligon.polyproperty.Obs.Obs
+import poligon.polyproperty.Obs.AnyObs
 import poligon.polyproperty.PropertyObserver.GPropertyObservers
 import poligon.polyproperty.{GObs, HasSimplePropertyCodec, PropertyWithParent}
 
@@ -36,7 +36,7 @@ trait Comps[D] extends HasSimplePropertyCodec[GComp[D]] {
   }
 
   def dynLayout[V](
-                    modifications: Obs[Seq[LayoutModification[GComp[D]]]],
+                    modifications: AnyObs[Seq[LayoutModification[GComp[D]]]],
                     layoutDescription: LayoutSettings = LayoutSettings()): GComp[D] =
     new GComp[D] {
       def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = {
@@ -55,7 +55,7 @@ trait Comps[D] extends HasSimplePropertyCodec[GComp[D]] {
       def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = family.textField(caption, initValue, onValueSet)
     }
 
-  def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): GComp[D] =
+  def button(onClick: Sin[Unit], caption: AnyObs[String], enabled: AnyObs[Boolean]): GComp[D] =
     new GComp[D] {
       def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = family.button(onClick, caption, enabled)
     }
@@ -70,7 +70,7 @@ trait Comps[D] extends HasSimplePropertyCodec[GComp[D]] {
       def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = family.menuBar(menuItems, itemSelected)
     }
 
-  def replaceable(property: Obs[GComp[D]]): GComp[D] =
+  def replaceable(property: AnyObs[GComp[D]]): GComp[D] =
     new GComp[D] {
       def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = {
         val c = property.map(c => c.createComponent(family))

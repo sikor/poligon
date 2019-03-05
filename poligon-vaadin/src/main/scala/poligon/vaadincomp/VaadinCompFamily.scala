@@ -9,7 +9,7 @@ import poligon.comp.CompFamily.MenuTree.{MenuItem, MenuValue}
 import poligon.comp.CompFamily._
 import poligon.comp.{BindableComp, CompFamily}
 import poligon.polyproperty.Act.Sin
-import poligon.polyproperty.Obs.Obs
+import poligon.polyproperty.Obs.AnyObs
 import poligon.polyproperty.PropertyObserver.{GPropertyObservers, PropertyObservers}
 import poligon.polyproperty.{Act, GObs}
 
@@ -18,7 +18,7 @@ import scala.collection.mutable
 
 object VaadinCompFamily extends CompFamily[Component] {
 
-  def layout[D](property: Obs[Seq[LayoutModification[BindableComp[Component, D]]]],
+  def layout[D](property: AnyObs[Seq[LayoutModification[BindableComp[Component, D]]]],
              layoutDescription: LayoutSettings): BindableComp[Component, D] = dynamic { po =>
     val layout = layoutDescription.layoutType match {
       case Vertical => new VerticalLayout()
@@ -53,7 +53,7 @@ object VaadinCompFamily extends CompFamily[Component] {
     field
   }
 
-  def button(onClick: Sin[Unit], caption: Obs[String], enabled: Obs[Boolean]): BComp = dynamic { implicit po =>
+  def button(onClick: Sin[Unit], caption: AnyObs[String], enabled: AnyObs[Boolean]): BComp = dynamic { implicit po =>
     val button = new Button()
     button.addClickListener(_ => Act.push((), onClick))
     val t1 = caption.listenNow(po) { s =>
@@ -111,7 +111,7 @@ object VaadinCompFamily extends CompFamily[Component] {
     def getContent: Component = getCompositionRoot
   }
 
-  def replaceable[D](property: Obs[BindableComp[Component, D]]): BindableComp[Component, D] = dynamic { implicit po =>
+  def replaceable[D](property: AnyObs[BindableComp[Component, D]]): BindableComp[Component, D] = dynamic { implicit po =>
     val wrapper = new SimpleCustomComponent()
     property.listenOn(po) { comp =>
       BindableComp.bind(comp, po).map { component =>
