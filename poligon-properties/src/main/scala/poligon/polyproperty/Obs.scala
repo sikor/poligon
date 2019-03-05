@@ -8,8 +8,8 @@ import poligon.polyproperty.PropertyWithParent.{Struct, listenStructure}
 
 object Obs {
 
-  type Obs[+T, -D] = GObs[T, GPropertyObservers[D]]
-  type AnyObs[+T] = Obs[T, Any]
+  type BObs[+T, -D] = GObs[T, GPropertyObservers[D]]
+  type AnyObs[+T] = BObs[T, Any]
 
   def apply[T: PropertyCodec](property: PropertyWithParent[T]): AnyObs[T] = new PropertyObs[T](property)
 

@@ -18,8 +18,7 @@ object Main {
     val services = new Services(new FakeTranslator, executeTasksService, dmService, currentTimeService)
     val runner = new TaskRunner(Scheduler.Implicits.global)
     val propertyObservers = PropertyObserver.createRoot(runner, services)
-    val comp = MainView.create(services)
-      .createComponent(ScalaJsCompFamily)
+    val comp = MainView.create.createComponent(ScalaJsCompFamily)
     val view = BindableComp.bind(comp, propertyObservers)
       .foreachL { c =>
         dom.document.body.appendChild(c)

@@ -1,11 +1,12 @@
 package poligon.exampleapp.view
 
-import poligon.exampleapp.EAComp._
-import poligon.exampleapp.EAComp.Comp
-import poligon.exampleapp.services.ExecuteTasksService
+import poligon.exampleapp.EAComp.{Comp, _}
+import poligon.exampleapp.MyAct
+import poligon.exampleapp.MyAct._
+import poligon.exampleapp.services.Services
 import poligon.exampleapp.view.ExecuteTasksButton.ExecuteTasksStatus.{InProgress, NotStarted}
-import poligon.polyproperty.Act.Sin
-import poligon.polyproperty.{Act, HasSimplePropertyCodec, PropertyWithParent}
+import poligon.polyproperty.PropertyObserver.GPropertyObservers
+import poligon.polyproperty.{HasSimplePropertyCodec, PropertyWithParent}
 
 object ExecuteTasksButton {
 
@@ -23,13 +24,13 @@ object ExecuteTasksButton {
 
   }
 
-  class ExecuteTasksContext(service: ExecuteTasksService) {
+  class ExecuteTasksContext {
     val executeTaskStatus: PropertyWithParent[ExecuteTasksStatus] = PropertyWithParent(NotStarted)
 
     def executeTasks: Sin[Unit] = _ =>
       for {
-        _ <- executeTaskStatus.set(InProgress)
-        isSuccess <- Act.fromTask(service.executeTasks())
+        _ <- executeTaskStatus.set(InProgress).c[GPropertyObservers[Services]]
+        isSuccess <- MyAct.deps(_.executeTasksService.executeTasks())
         _ <- if (isSuccess) {
           executeTaskStatus.set(ExecuteTasksStatus.Success)
         } else {

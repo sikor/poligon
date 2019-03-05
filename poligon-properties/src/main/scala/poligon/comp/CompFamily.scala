@@ -6,8 +6,8 @@ import poligon.comp.BindableComp.BindableComp
 import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.MenuItem
 import poligon.comp.CompFamily.{LayoutModification, LayoutSettings}
-import poligon.polyproperty.Act.Sin
-import poligon.polyproperty.Obs.{AnyObs, Obs}
+import poligon.polyproperty.Act.GSin
+import poligon.polyproperty.Obs.BObs
 import poligon.polyproperty.PropertyObserver.GPropertyObservers
 
 trait CompFamily[T] {
@@ -25,20 +25,20 @@ trait CompFamily[T] {
 
   def simple[D](factory: GPropertyObservers[D] => T): BindableComp[T, D] = BindableComp.simple(factory)
 
-  def layout[D](property: Obs[Seq[LayoutModification[BindableComp[T, D]]], D],
-             layoutDescription: LayoutSettings = LayoutSettings()): BindableComp[T, D]
+  def layout[D](property: BObs[Seq[LayoutModification[BindableComp[T, D]]], D],
+                layoutDescription: LayoutSettings = LayoutSettings()): BindableComp[T, D]
 
-  def label[D](property: Obs[String, D], styleName: String = ""): BindableComp[T, D]
+  def label[D](property: BObs[String, D], styleName: String = ""): BindableComp[T, D]
 
-  def textField[D](caption: String, initValue: String, onValueSet: Sin[String]): BindableComp[T, D]
+  def textField[D](caption: String, initValue: String, onValueSet: GSin[String, D]): BindableComp[T, D]
 
-  def button[D](onClick: Sin[Unit], caption: Obs[String, D], enabled: Obs[Boolean, D]): BindableComp[T, D]
+  def button[D](onClick: GSin[Unit, D], caption: BObs[String, D], enabled: BObs[Boolean, D]): BindableComp[T, D]
 
-  def checkBox[D](caption: String, initValue: Boolean, value: Sin[Boolean]): BindableComp[T, D]
+  def checkBox[D](caption: String, initValue: Boolean, value: GSin[Boolean, D]): BindableComp[T, D]
 
-  def menuBar[I](menuItems: Seq[(List[String], MenuItem[I])], itemSelected: Sin[I]): BComp
+  def menuBar[I, D](menuItems: Seq[(List[String], MenuItem[I])], itemSelected: GSin[I, D]): BindableComp[T, D]
 
-  def replaceable[D](property: AnyObs[BindableComp[T, D]]): BindableComp[T, D]
+  def replaceable[D](property: BObs[BindableComp[T, D], D]): BindableComp[T, D]
 }
 
 object CompFamily {

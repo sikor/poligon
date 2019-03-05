@@ -1,12 +1,11 @@
 package poligon.comp
 
-import monix.eval.Task
 import poligon.comp.BindableComp.BindableComp
 import poligon.comp.CompFamily.LayoutModification.Added
 import poligon.comp.CompFamily.MenuTree.MenuItem
 import poligon.comp.CompFamily.{LayoutModification, LayoutSettings}
-import poligon.polyproperty.Act.Sin
-import poligon.polyproperty.Obs.{AnyObs, Obs}
+import poligon.polyproperty.Act.{BAct, GSin}
+import poligon.polyproperty.Obs.{AnyObs, BObs}
 import poligon.polyproperty.{GObs, HasSimplePropertyCodec, PropertyWithParent}
 
 /**
@@ -42,32 +41,32 @@ trait Comps[D] extends HasSimplePropertyCodec[GComp[D]] {
       }
     }
 
-  def dynLabel(property: Obs[String, D], styleName: String = ""): GComp[D] =
+  def dynLabel(property: BObs[String, D], styleName: String = ""): GComp[D] =
     new GComp[D] {
       def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = family.label(property, styleName)
     }
 
-  def textField(caption: String, initValue: String, onValueSet: Sin[String]): GComp[D] =
+  def textField(caption: String, initValue: String, onValueSet: GSin[String, D]): GComp[D] =
     new GComp[D] {
       def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = family.textField(caption, initValue, onValueSet)
     }
 
-  def button(onClick: Sin[Unit], caption: AnyObs[String], enabled: AnyObs[Boolean]): GComp[D] =
+  def button(onClick: GSin[Unit, D], caption: BObs[String, D], enabled: BObs[Boolean, D]): GComp[D] =
     new GComp[D] {
       def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = family.button(onClick, caption, enabled)
     }
 
-  def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): GComp[D] =
+  def checkBox(caption: String, initValue: Boolean, value: GSin[Boolean, D]): GComp[D] =
     new GComp[D] {
       def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = family.checkBox(caption, initValue, value)
     }
 
-  def menuBar[T](menuItems: Seq[(List[String], MenuItem[T])], itemSelected: Sin[T]): GComp[D] =
+  def menuBar[T](menuItems: Seq[(List[String], MenuItem[T])], itemSelected: GSin[T, D]): GComp[D] =
     new GComp[D] {
       def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = family.menuBar(menuItems, itemSelected)
     }
 
-  def replaceable(property: AnyObs[GComp[D]]): GComp[D] =
+  def replaceable(property: BObs[GComp[D], D]): GComp[D] =
     new GComp[D] {
       def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = {
         val c = property.map(c => c.createComponent(family))
@@ -75,10 +74,10 @@ trait Comps[D] extends HasSimplePropertyCodec[GComp[D]] {
       }
     }
 
-  def asyncComp(compTask: Task[GComp[D]]): GComp[D] = new GComp[D] {
+  def asyncComp(compTask: BAct[GComp[D], D]): GComp[D] = new GComp[D] {
     def createComponent[C](family: CompFamily[C]): BindableComp[C, D] = {
       family.dynamic[D] { po =>
-        compTask.flatMap(_.createComponent(family).run(po))
+        compTask.flatMap(_.createComponent(family)).run(po)
       }
     }
   }
@@ -94,6 +93,6 @@ trait Comps[D] extends HasSimplePropertyCodec[GComp[D]] {
   def textField(caption: String, property: PropertyWithParent[String]): GComp[D] =
     textField(caption, property.read, property.set)
 
-  def button(onClick: Sin[Unit], caption: String): GComp[D] =
+  def button(onClick: GSin[Unit, D], caption: String): GComp[D] =
     button(onClick, GObs.constant(caption), GObs.constant(true))
 }

@@ -1,10 +1,9 @@
 package poligon
 package exampleapp.view
 
-import poligon.exampleapp.EAComp._
 import poligon.comp.CompFamily.MenuTree.MenuValue
 import poligon.comp.CompFamily.{LayoutSettings, Vertical}
-import poligon.exampleapp.services.Services
+import poligon.exampleapp.EAComp._
 import poligon.exampleapp.view.ExecuteTasksButton.ExecuteTasksContext
 import poligon.polyproperty.PropertyWithParent
 
@@ -12,13 +11,13 @@ object MainView {
 
   private val Hello = "hello".tr
 
-  private class MainViewContext(val services: Services) {
-    val executeTasksContext: ExecuteTasksContext = new ExecuteTasksContext(services.executeTasksService)
-    val menuItems: Seq[(List[String], MenuValue[Comp])] = Seq(List("Menu", "Object Panel") -> MenuValue(ObjectPanelView.create(services)))
-    val currentPage: PropertyWithParent[Comp] = PropertyWithParent(ObjectPanelView.create(services))
+  private class MainViewContext {
+    val executeTasksContext: ExecuteTasksContext = new ExecuteTasksContext()
+    val menuItems: Seq[(List[String], MenuValue[Comp])] = Seq(List("Menu", "Object Panel") -> MenuValue(ObjectPanelView.create))
+    val currentPage: PropertyWithParent[Comp] = PropertyWithParent(ObjectPanelView.create)
   }
 
-  def create(services: Services): Comp = factory(create(new MainViewContext(services)))
+  def create: Comp = factory(create(new MainViewContext()))
 
   private def create(ctx: MainViewContext): Comp = {
     layout(

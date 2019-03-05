@@ -5,7 +5,7 @@ import monix.eval.Task
 import monix.execution.Ack.Continue
 import monix.execution.{Cancelable, CancelableFuture, Scheduler}
 import monix.reactive.Observable
-import poligon.polyproperty.Act.AnyAct
+import poligon.polyproperty.Act.BAct
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.StructuralChange
 
 import scala.collection.mutable
@@ -69,7 +69,7 @@ object PropertyObserver {
       po.addCancelable(cancelable)
     }
 
-    def handleEvent[T](value: T, handler: T => AnyAct[Unit], po: PropertyObservers): Unit = {
+    def handleEvent[T, D](value: T, handler: T => BAct[Unit, D], po: GPropertyObservers[D]): Unit = {
       val task = handler(value).run(po)
       runTask(task)
     }

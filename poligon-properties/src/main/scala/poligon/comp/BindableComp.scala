@@ -1,13 +1,13 @@
 package poligon.comp
 
 import monix.eval.Task
-import poligon.polyproperty.Act.Act
+import poligon.polyproperty.Act.BAct
 import poligon.polyproperty.PropertyObserver.GPropertyObservers
 
 
 object BindableComp {
 
-  type BindableComp[+T, -D] = Act[T, D]
+  type BindableComp[+T, -D] = BAct[T, D]
 
   def bind[C, D](bc: BindableComp[C, D], parentPo: GPropertyObservers[D]): Task[C] = {
     val po = parentPo.createSubObservers()

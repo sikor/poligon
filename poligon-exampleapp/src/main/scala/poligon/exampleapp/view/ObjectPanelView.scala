@@ -1,9 +1,9 @@
 package poligon
 package exampleapp.view
 
-import poligon.exampleapp.EAComp._
 import poligon.comp.CompFamily.{Form, Horizontal, LayoutSettings}
-import poligon.exampleapp.services.Services
+import poligon.exampleapp.EAComp._
+import poligon.exampleapp.MyAct
 import poligon.exampleapp.view.ObjectPanelModel._
 import poligon.polyproperty.Property.Diff.Val
 import poligon.polyproperty.PropertyWithParent
@@ -12,22 +12,24 @@ import scala.collection.SortedMap
 
 object ObjectPanelView {
 
-  private class ObjectsPanelContext(val services: Services) {
-    val model: PropertyWithParent[SortedMap[String, SomeObject]] = PropertyWithParent(() => dmToObjects(services.dmService.getDm))
+  private class ObjectsPanelContext(objects: SortedMap[String, SomeObject]) {
+    val model: PropertyWithParent[SortedMap[String, SomeObject]] = PropertyWithParent(objects)
     val newObjectName = PropertyWithParent("")
     val currentTimeOn = PropertyWithParent(true)
   }
 
-  def create(services: Services): Comp =
-    factory(createObjectPanelView(new ObjectsPanelContext(services)))
+  def create: Comp = asyncComp(MyAct.depsNow { d =>
+    val objects = dmToObjects(d.dmService.getDm)
+    createObjectPanelView(new ObjectsPanelContext(objects))
+  })
 
   def createObjectPanelView(ctx: ObjectsPanelContext): Comp = layout(
     label("Objects", "h1"),
     replaceable(ctx.currentTimeOn.obs.map { isOn =>
       if (isOn) {
-        dynLabel(ctx.services.currentTimeService.currentTime.map(_.toString).toObs)
+        dynLabel(MyAct.createObs(_.currentTimeService.currentTime.map(_.toString)))
       } else {
-        dynLabel(ctx.services.currentTimeService.currentTime.map(_.toString).take(1).toObs)
+        dynLabel(MyAct.createObs(_.currentTimeService.currentTime.map(_.toString).take(1)))
       }
     }),
     checkBox("Current time on", ctx.currentTimeOn.read, ctx.currentTimeOn.set),
@@ -85,18 +87,18 @@ object ObjectPanelView {
           }
         }.get
       }, LayoutSettings(Form)),
-      button(_ => {
+      button(_ => MyAct.depsFlat { services =>
         val resourcesSnap = i.getField(_.resources).read
         resourcesSnap.values.flatMap {
           case s: SingleResource =>
             s.formValue.toOpt.map(v =>
-              ctx.services.dmService.setValue(List(p.read.name, i.read.id.toString, s.name), v))
+              services.dmService.setValue(List(p.read.name, i.read.id.toString, s.name), v))
           case m: MultiResource =>
             m.value.values.flatMap(ri =>
               ri.formValue.toOpt.map(v =>
-                ctx.services.dmService.setValue(List(p.read.name, i.read.id.toString, m.name, ri.idx.toString), v)))
+                services.dmService.setValue(List(p.read.name, i.read.id.toString, m.name, ri.idx.toString), v)))
         }
-        ctx.model.refresh
+        ctx.model.set(dmToObjects(services.dmService.getDm))
       }, "Save")
     )()
 

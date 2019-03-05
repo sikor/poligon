@@ -20,16 +20,12 @@ class PropertyWithParent[S](val property: Property[S], val parent: Opt[PropertyW
 
 
 object PropertyWithParent {
-  def apply[T: PropertyCodec](value: () => T): PropertyWithParent[T] =
-    new PropertyWithParent[T](PropertyCodec.newProperty[T](value()), Opt.Empty, () => value().opt)
 
   def apply[T: PropertyCodec](value: T): PropertyWithParent[T] =
     new PropertyWithParent[T](PropertyCodec.newProperty[T](value), Opt.Empty)
 
   implicit class GeneralPropertyExt[T](p: PropertyWithParent[T])(implicit c: PropertyCodec[T]) {
     def read: T = c.readProperty(p.property.asInstanceOf[c.PropertyType])
-
-    def refresh: AnyAct[Unit] = Act.defer(p.refresher().map(d => set(d)).getOrElse(Act.unit))
 
     def set(value: T): AnyAct[Unit] = Act.create(implicit r => PropertyChanger.set(p, value))
 
