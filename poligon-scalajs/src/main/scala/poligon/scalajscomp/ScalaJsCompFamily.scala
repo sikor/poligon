@@ -9,10 +9,9 @@ import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.{MenuItem, MenuLink, MenuNode, MenuValue}
 import poligon.comp.CompFamily._
 import poligon.comp.{BindableComp, CompFamily}
+import poligon.polyproperty.Act
 import poligon.polyproperty.Act.Sin
-import poligon.polyproperty.Obs.AnyObs
-import poligon.polyproperty.PropertyObserver.GPropertyObservers
-import poligon.polyproperty.{Act, GObs}
+import poligon.polyproperty.Obs.{AnyObs, Obs}
 import scalatags.JsDom.all._
 import scalatags.JsDom.{all => st}
 
@@ -70,7 +69,7 @@ object ScalaJsCompFamily extends CompFamily[Element] {
   }
 
   def layout[D](
-              property: AnyObs[Seq[LayoutModification[BindableComp[Element, D]]]],
+              property: Obs[Seq[LayoutModification[BindableComp[Element, D]]], D],
               layoutDescription: LayoutSettings): BindableComp[Element, D] =
     dynamic { po =>
       val builder = layoutDescription.layoutType match {
@@ -90,12 +89,12 @@ object ScalaJsCompFamily extends CompFamily[Element] {
       }.map(_ => builder.container)
     }
 
-  def label[D](property: GObs[String, GPropertyObservers[D]], styleName: String): BindableComp[Element, D] = dynamic { po =>
+  def label[D](property: Obs[String, D], styleName: String): BindableComp[Element, D] = dynamic { po =>
     val l = st.span(st.cls := styleName).render
     property.listenNow(po)(s => l.innerHTML = s).map(_ => l)
   }
 
-  def textField(caption: String, initValue: String, onValueSet: Sin[String]): BComp =
+  def textField[D](caption: String, initValue: String, onValueSet: Sin[String]): BindableComp[Element, D] =
     simple { implicit po =>
       val input = st.input(st.`type` := "text", st.cls := "form-control", st.id := caption).render
       input.onchange = { _ => Act.push(input.value, onValueSet) }
@@ -105,7 +104,7 @@ object ScalaJsCompFamily extends CompFamily[Element] {
       ).render
     }
 
-  def button(onClick: Sin[Unit], caption: AnyObs[String], enabled: AnyObs[Boolean]): BComp =
+  def button[D](onClick: Sin[Unit], caption: Obs[String, D], enabled: Obs[Boolean, D]): BindableComp[Element, D] =
     dynamic { implicit po =>
       val b = st.button(st.cls := "btn").render
       b.onclick = { _ => Act.push((), onClick) }
@@ -114,7 +113,7 @@ object ScalaJsCompFamily extends CompFamily[Element] {
       Task.gatherUnordered(List(t1, t2)).map(_ => b)
     }
 
-  def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): BComp =
+  def checkBox[D](caption: String, initValue: Boolean, value: Sin[Boolean]): BindableComp[Element, D] =
     simple { po =>
       val in = st.input(st.`type` := "checkbox", st.value := caption).render
       in.checked = initValue

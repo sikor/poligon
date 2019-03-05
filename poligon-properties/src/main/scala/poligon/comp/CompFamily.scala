@@ -7,8 +7,7 @@ import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.MenuItem
 import poligon.comp.CompFamily.{LayoutModification, LayoutSettings}
 import poligon.polyproperty.Act.Sin
-import poligon.polyproperty.GObs
-import poligon.polyproperty.Obs.AnyObs
+import poligon.polyproperty.Obs.{AnyObs, Obs}
 import poligon.polyproperty.PropertyObserver.GPropertyObservers
 
 trait CompFamily[T] {
@@ -26,16 +25,16 @@ trait CompFamily[T] {
 
   def simple[D](factory: GPropertyObservers[D] => T): BindableComp[T, D] = BindableComp.simple(factory)
 
-  def layout[D](property: AnyObs[Seq[LayoutModification[BindableComp[T, D]]]],
+  def layout[D](property: Obs[Seq[LayoutModification[BindableComp[T, D]]], D],
              layoutDescription: LayoutSettings = LayoutSettings()): BindableComp[T, D]
 
-  def label[D](property: GObs[String, GPropertyObservers[D]], styleName: String = ""): BindableComp[T, D]
+  def label[D](property: Obs[String, D], styleName: String = ""): BindableComp[T, D]
 
-  def textField(caption: String, initValue: String, onValueSet: Sin[String]): BComp
+  def textField[D](caption: String, initValue: String, onValueSet: Sin[String]): BindableComp[T, D]
 
-  def button(onClick: Sin[Unit], caption: AnyObs[String], enabled: AnyObs[Boolean]): BComp
+  def button[D](onClick: Sin[Unit], caption: Obs[String, D], enabled: Obs[Boolean, D]): BindableComp[T, D]
 
-  def checkBox(caption: String, initValue: Boolean, value: Sin[Boolean]): BComp
+  def checkBox[D](caption: String, initValue: Boolean, value: Sin[Boolean]): BindableComp[T, D]
 
   def menuBar[I](menuItems: Seq[(List[String], MenuItem[I])], itemSelected: Sin[I]): BComp
 

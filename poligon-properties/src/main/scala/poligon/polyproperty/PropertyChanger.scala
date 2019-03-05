@@ -6,7 +6,7 @@ import poligon.polyproperty.Property.SortedMapProperty
 import poligon.polyproperty.PropertyCodec.PropertyChange
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Removed, ValueChange}
 import poligon.polyproperty.PropertyCodec.StructuralPropertyCodec.StructuralChange
-import poligon.polyproperty.PropertyObserver.RootPropertyObservers
+import poligon.polyproperty.PropertyObserver.AnyPropertyObservers
 
 import scala.collection.SortedMap
 
@@ -22,7 +22,7 @@ import scala.collection.SortedMap
   **/
 object PropertyChanger {
   def set[T: PropertyCodec](property: PropertyWithParent[T], value: T, enforceListeners: Boolean = false)
-                           (implicit po: RootPropertyObservers): Task[Unit] = {
+                           (implicit po: AnyPropertyObservers): Task[Unit] = {
     val childrenChanges = PropertyCodec.updateProperty(value, property.property)
     val changes = withParents(property, childrenChanges)
     if (enforceListeners && changes.isEmpty) {
@@ -37,7 +37,7 @@ object PropertyChanger {
                                    index: Int,
                                    value: E*)(
                                    implicit
-                                   observed: RootPropertyObservers): Task[Unit] = {
+                                   observed: AnyPropertyObservers): Task[Unit] = {
     val seqProp = SubProperty.asSeqProperty(property.property)
     val patch = SeqPropertyCodec[E].insert(seqProp, index, value)
     callListeners(withParents(property, patch), observed)
@@ -47,7 +47,7 @@ object PropertyChanger {
                                    property: PropertyWithParent[Seq[E]],
                                    value: E*)(
                                    implicit
-                                   observed: RootPropertyObservers): Task[Unit] = {
+                                   observed: AnyPropertyObservers): Task[Unit] = {
     val seqProp = SubProperty.asSeqProperty(property.property)
     val patch = SeqPropertyCodec[E].append(seqProp, value)
     callListeners(withParents(property, patch), observed)
@@ -58,7 +58,7 @@ object PropertyChanger {
                                    index: Int,
                                    count: Int)(
                                    implicit
-                                   observed: RootPropertyObservers): Task[Unit] = {
+                                   observed: AnyPropertyObservers): Task[Unit] = {
     val seqProp = SubProperty.asSeqProperty(property.property)
     val patch = SeqPropertyCodec[E].remove(seqProp, index, count)
     callListeners(withParents(property, patch), observed)
@@ -70,7 +70,7 @@ object PropertyChanger {
                  property: PropertyWithParent[SortedMap[K, V]],
                  codec: SortedMapPropertyCodec[K, V])(
                  implicit
-                 observed: RootPropertyObservers): Task[Unit] = {
+                 observed: AnyPropertyObservers): Task[Unit] = {
     val mapProp = property.property.asInstanceOf[SortedMapProperty[K, V, BSortedMap[K, V]]]
     val patch = codec.put(key, value, mapProp)
     callListeners(withParents(property, patch), observed)
@@ -82,7 +82,7 @@ object PropertyChanger {
                     property: PropertyWithParent[SortedMap[K, V]],
                     codec: SortedMapPropertyCodec[K, V])(
                     implicit
-                    observed: RootPropertyObservers): Task[Unit] = {
+                    observed: AnyPropertyObservers): Task[Unit] = {
     val mapProp = property.property.asInstanceOf[SortedMapProperty[K, V, BSortedMap[K, V]]]
     val patch = codec.remove(key, mapProp)
     callListeners(withParents(property, patch), observed)
@@ -96,15 +96,15 @@ object PropertyChanger {
     }
   }
 
-  private def callListeners(changes: Seq[PropertyChange], po: RootPropertyObservers): Task[Unit] = {
+  private def callListeners(changes: Seq[PropertyChange], po: AnyPropertyObservers): Task[Unit] = {
     val tasks = changes.flatMap {
       case v: ValueChange =>
-        Vector(po.propertyChanged(v.property))
+        Vector(po.root.propertyChanged(v.property))
       case sp: StructuralChange[_, _, _] =>
-        val sc = po.structureChange(sp)
+        val sc = po.root.structureChange(sp)
         val removed = sp.modifications.map {
           case Removed(entry) =>
-            po.propertyRemoved(entry.value)
+            po.root.propertyRemoved(entry.value)
           case _ =>
             Task.unit
         }.toVector

@@ -8,17 +8,17 @@ import poligon.comp.CompFamily.LayoutModification.{Added, Removed}
 import poligon.comp.CompFamily.MenuTree.{MenuItem, MenuValue}
 import poligon.comp.CompFamily._
 import poligon.comp.{BindableComp, CompFamily}
+import poligon.polyproperty.Act
 import poligon.polyproperty.Act.Sin
-import poligon.polyproperty.Obs.AnyObs
-import poligon.polyproperty.PropertyObserver.{GPropertyObservers, PropertyObservers}
-import poligon.polyproperty.{Act, GObs}
+import poligon.polyproperty.Obs.{AnyObs, Obs}
+import poligon.polyproperty.PropertyObserver.PropertyObservers
 
 import scala.collection.mutable
 
 
 object VaadinCompFamily extends CompFamily[Component] {
 
-  def layout[D](property: AnyObs[Seq[LayoutModification[BindableComp[Component, D]]]],
+  def layout[D](property: Obs[Seq[LayoutModification[BindableComp[Component, D]]], D],
              layoutDescription: LayoutSettings): BindableComp[Component, D] = dynamic { po =>
     val layout = layoutDescription.layoutType match {
       case Vertical => new VerticalLayout()
@@ -39,13 +39,13 @@ object VaadinCompFamily extends CompFamily[Component] {
     }, po).map(_ => layout)
   }
 
-  def label[D](property: GObs[String, GPropertyObservers[D]], styleName: String): BindableComp[Component, D] = bindSimple(property, {
+  def label[D](property: Obs[String, D], styleName: String): BindableComp[Component, D] = bindSimple(property, {
     val l = new Label()
     l.addStyleName(styleName)
     l
   })
 
-  def textField(caption: String, initValue: String, onValueSet: Sin[String]): BComp = simple { implicit po =>
+  def textField[D](caption: String, initValue: String, onValueSet: Sin[String]): BindableComp[Component, D] = simple { implicit po =>
     val field = new TextField()
     field.setValue(initValue)
     field.addValueChangeListener(_ => Act.push(field.getValue, onValueSet))
@@ -53,7 +53,7 @@ object VaadinCompFamily extends CompFamily[Component] {
     field
   }
 
-  def button(onClick: Sin[Unit], caption: AnyObs[String], enabled: AnyObs[Boolean]): BComp = dynamic { implicit po =>
+  def button[D](onClick: Sin[Unit], caption: Obs[String, D], enabled: Obs[Boolean, D]): BindableComp[Component, D] = dynamic { implicit po =>
     val button = new Button()
     button.addClickListener(_ => Act.push((), onClick))
     val t1 = caption.listenNow(po) { s =>
@@ -65,7 +65,7 @@ object VaadinCompFamily extends CompFamily[Component] {
     Task.gatherUnordered(List(t1, t2)).map(_ => button)
   }
 
-  def checkBox(caption: String, initValue: Boolean, l: Sin[Boolean]): BComp = simple { implicit po =>
+  def checkBox[D](caption: String, initValue: Boolean, l: Sin[Boolean]): BindableComp[Component, D] = simple { implicit po =>
     val cb = new CheckBox(caption, initValue)
     cb.addValueChangeListener((_: Property.ValueChangeEvent) => Act.push[Boolean](cb.getValue, l))
     cb
@@ -122,7 +122,7 @@ object VaadinCompFamily extends CompFamily[Component] {
   }
 
   private def bindSimple[T, P <: com.vaadin.data.Property[T] with Component, D]
-  (property: GObs[T, GPropertyObservers[D]], label: => P): BindableComp[Component, D] = dynamic { implicit po =>
+  (property: Obs[T, D], label: => P): BindableComp[Component, D] = dynamic { implicit po =>
     val l = label
     property.listenNow(po)(v => l.setValue(v)).map(_ => l)
   }

@@ -2,7 +2,7 @@ package poligon
 package polyproperty
 
 import monix.eval.Task
-import poligon.polyproperty.Act.Act
+import poligon.polyproperty.Act.AnyAct
 import poligon.polyproperty.Obs.AnyObs
 import poligon.polyproperty.Property.SortedMapProperty
 import poligon.polyproperty.PropertyCodec.PropertyChange.{Added, EntryPatch}
@@ -29,11 +29,11 @@ object PropertyWithParent {
   implicit class GeneralPropertyExt[T](p: PropertyWithParent[T])(implicit c: PropertyCodec[T]) {
     def read: T = c.readProperty(p.property.asInstanceOf[c.PropertyType])
 
-    def refresh: Act[Unit] = Act.defer(p.refresher().map(d => set(d)).getOrElse(Act.unit))
+    def refresh: AnyAct[Unit] = Act.defer(p.refresher().map(d => set(d)).getOrElse(Act.unit))
 
-    def set(value: T): Act[Unit] = Act.create(implicit r => PropertyChanger.set(p, value))
+    def set(value: T): AnyAct[Unit] = Act.create(implicit r => PropertyChanger.set(p, value))
 
-    def setEnforcingListeners(value: T): Act[Unit] =
+    def setEnforcingListeners(value: T): AnyAct[Unit] =
       Act.create(implicit r => PropertyChanger.set(p, value, enforceListeners = true))
 
     def listen(listener: T => Task[Unit], init: Boolean = false)(implicit o: PropertyObservers): Task[Unit] = {
@@ -81,13 +81,13 @@ object PropertyWithParent {
     def getSeq: Seq[PropertyWithParent[T]] =
       SubProperty.getSeq(p.property).map(e => new PropertyWithParent[T](e, p.opt))
 
-    def insert(index: Int, values: Seq[T]): Act[Unit] =
+    def insert(index: Int, values: Seq[T]): AnyAct[Unit] =
       Act.create(implicit po => PropertyChanger.insert(p, index, values: _*))
 
-    def append(value: T*): Act[Unit] =
+    def append(value: T*): AnyAct[Unit] =
       Act.create(implicit po => PropertyChanger.append[T](p, value: _*))
 
-    def remove(index: Int, count: Int): Act[Unit] =
+    def remove(index: Int, count: Int): AnyAct[Unit] =
       Act.create(implicit po => PropertyChanger.remove[T](p, index, count))
 
     def structObs: AnyObs[Struct[T]] = Obs.struct(p)
@@ -103,10 +103,10 @@ object PropertyWithParent {
       wrap(seqSortedMap(key))
     }
 
-    def put(key: K, value: V): Act[Unit] =
+    def put(key: K, value: V): AnyAct[Unit] =
       Act.create(implicit po => PropertyChanger.put(key, value, p, c))
 
-    def remove(key: K): Act[Unit] =
+    def remove(key: K): AnyAct[Unit] =
       Act.create(implicit po => PropertyChanger.remove(key, p, c))
 
     private def wrap(s: Property[V]): PropertyWithParent[V] = {
