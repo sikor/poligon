@@ -6,7 +6,7 @@ import poligon.exampleapp.EAComp._
 import poligon.exampleapp.MyAct
 import poligon.exampleapp.view.ObjectPanelModel._
 import poligon.polyproperty.Property.Diff.Val
-import poligon.polyproperty.PropertyWithParent
+import poligon.polyproperty.{Act, PropertyWithParent}
 
 import scala.collection.SortedMap
 
@@ -18,9 +18,10 @@ object ObjectPanelView {
     val currentTimeOn = PropertyWithParent(true)
   }
 
-  def create: Comp = asyncComp(MyAct.depsNow { d =>
-    val objects = dmToObjects(d.dmService.getDm)
-    createObjectPanelView(new ObjectsPanelContext(objects))
+  def create: Comp = asyncComp(MyAct.deps { d =>
+    for {objects <- d.dmService.getDm} yield {
+      createObjectPanelView(new ObjectsPanelContext(dmToObjects(objects)))
+    }
   })
 
   def createObjectPanelView(ctx: ObjectsPanelContext): Comp = layout(
@@ -98,7 +99,10 @@ object ObjectPanelView {
               ri.formValue.toOpt.map(v =>
                 services.dmService.setValue(List(p.read.name, i.read.id.toString, m.name, ri.idx.toString), v)))
         }
-        ctx.model.set(dmToObjects(services.dmService.getDm))
+        for {
+          objects <- Act.fromTask(services.dmService.getDm)
+          _ <- ctx.model.set(dmToObjects(objects))
+        } yield ()
       }, "Save")
     )()
 
