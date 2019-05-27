@@ -11,6 +11,7 @@ import poligon.polyproperty.{GObs, HasSimplePropertyCodec, PropertyWithParent}
 /**
   * TODO:
   * 1. We should allow components to wait for some async resource and use global spinner for that - blocking UI.
+  * 1.1 Handle situation when component that waits for data is removed when data arrives -
   * 2. routing
   * 3. Obs combine
   */
