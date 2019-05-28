@@ -120,11 +120,5 @@ lazy val `poligon-vaadin` = project.dependsOn(`poligon-exampleapp` % "compile->c
   .settings(libraryDependencies += "org.eclipse.jetty" % "jetty-servlet" % "9.4.12.v20180830")
   .settings(libraryDependencies += "org.eclipse.jetty" % "jetty-continuation" % "9.4.12.v20180830")
 
-lazy val `poligon-retirement` = project.dependsOn(`poligon-macros`)
-  .enablePlugins(ScalaJSPlugin)
-  .settings(libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "0.9.2")
-  .settings(libraryDependencies += "com.lihaoyi" %%% "scalatags" % "0.6.7")
-  .settings(scalaJSUseMainModuleInitializer := true)
-
 lazy val poligon = project.in(file("."))
   .aggregate(`poligon-macros`, `poligon-scalaConfig`, `poligon-functional`)
